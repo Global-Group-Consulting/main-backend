@@ -1,0 +1,29 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-text font-size="16px" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#F0F0F0" width="800px">
+    <mj-section>
+      <mj-column>
+        <!-- header and logo -->
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="0">
+      <mj-column border="solid 1px #D7D9DA" border-bottom="0" background-color="#fff" padding="25px">
+
+        <mj-include path="../${fileToInclude}.mjml" />
+
+      </mj-column>
+    </mj-section>
+
+    <!--
+    <mj-section padding-top="0">
+      <mj-column padding-top="0" border="solid 1px #D7D9DA" border-top="0" background-color="#fff">
+      </mj-column>
+    </mj-section>
+-->
+  </mj-body>
+</mjml>

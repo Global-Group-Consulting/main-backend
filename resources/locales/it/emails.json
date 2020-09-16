@@ -1,0 +1,8 @@
+{
+  "password_recover": {
+    "subject": "Recupero della password",
+    "content": {
+      "row1": "Per recuperare cliccka quì."
+    }
+  }
+}
