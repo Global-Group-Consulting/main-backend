@@ -1,21 +1,16 @@
 'use strict'
 
-const User = use("App/Models/User")
+const User    = use('App/Models/User')
+const Persona = use('Persona')
 
 class UserController {
-  async add({ request, auth, response }) {
-    const username = request.input("username")
-    const email = request.input("email")
-    const password = request.input("password")
-
-    let user = new User()
-    user.username = username
-    user.email = email
-    user.password = password
-
-    user = await user.save()
-    //let accessToken = await auth.generate(user)
-    //return response.json({ "user": user, "access_token": accessToken })
+  async add({ request, response }) {
+    const payload = request.only([ 'username', 'email' ])
+    const user    = await Persona.register({
+      ...payload,
+      password:              'tempPassword',
+      password_confirmation: 'tempPassword'
+    })
 
     return response.json({ user })
   }
@@ -24,7 +19,7 @@ class UserController {
     const user = await User.find(params.id)
 
     if (!user) {
-      throw new Error("User not found")
+      throw new Error('User not found')
     }
 
     return user

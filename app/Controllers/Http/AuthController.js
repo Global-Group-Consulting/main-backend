@@ -1,31 +1,19 @@
 'use strict'
 
-const User = use('App/Models/User');
-const Event = use('Event')
-const Env = use("Env")
-const jwt = require('njwt')
+const User    = use('App/Models/User')
+const Event   = use('Event')
+const Env     = use('Env')
+const Persona = use('Persona')
+const jwt     = require('njwt')
+
 
 class AuthController {
   async login({ request, auth, response }) {
-    const email = request.input("email")
-    const password = request.input("password");
+    const payload = request.only([ 'uid', 'password' ])
 
-    try {
-      const userAuth = await auth
-        .withRefreshToken()
-        .attempt(email, password)
+    const user = await Persona.verify(payload)
 
-      const user = await User.findBy({ "email": email })
-
-      if (userAuth) {
-        return response.json({ "user": user, "access_token": userAuth })
-      }
-    }
-
-    catch (e) {
-      console.log(e);
-      return response.json({ message: 'You first need to register!', error: e })
-    }
+    await auth.login(user)
   }
 
   async logout({ auth }) {
@@ -48,13 +36,30 @@ class AuthController {
 
     user.passwordResetToken = jwt.create({
       email,
-      type: "password_reset"
-    }, Env.getOrFail("TOKENS_KEY")).compact()
+      type: 'password_reset'
+    }, Env.getOrFail('TOKENS_KEY')).compact()
 
     await user.save()
 
-    Event.fire("user::reset-password", user)
+    Event.fire('user::reset-password', user)
   }
+
+  async verifyEmail({ request }) {
+    const token = request.input('token').replace(' ', '+')
+
+    console.log(token)
+
+    const user = await Persona.verifyEmail(token)
+
+    return user
+  }
+
+  async forgotPassword({ request }) {
+    const email = request.input('email')
+
+    await Persona.forgotPassword({ email })
+  }
+
 }
 
 module.exports = AuthController
