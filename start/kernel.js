@@ -3,6 +3,12 @@
 /** @type {import('@adonisjs/framework/src/Server')} */
 const Server = use('Server')
 
+const Persona = use('Persona')
+const Antl = use('Antl')
+
+const moment = require('moment')
+const { get: _get, template: _template, templateSettings: _templateSettings } = require('lodash')
+
 /*
 |--------------------------------------------------------------------------
 | Global Middleware
@@ -61,3 +67,47 @@ Server
   .registerGlobal(globalMiddleware)
   .registerNamed(namedMiddleware)
   .use(serverMiddleware)
+
+Persona.registerationRules = function () {
+  // disable this control in favor of Validators/users
+  return {}
+}
+Persona.getUserByUids = async function (value) {
+  const userQuery = this.getModel().query()
+
+  /**
+   * Search for all uids to allow login with
+   * any identifier
+   */
+  this.config.uids.forEach((uid) => userQuery.where(uid, value))
+
+  /**
+   * Search for user
+   */
+  const user = await userQuery.first()
+  if (!user) {
+    const data = { field: 'uid', validation: 'exists', value }
+
+    throw this.Validator.ValidationException.validationFailed([
+      {
+        message: this._makeCustomMessage('uid.exists', data, 'Unable to locate user'),
+        field: 'uid',
+        validation: 'exists'
+      }
+    ])
+  }
+
+  return user
+}
+
+Antl.compile = function (locale, key, data) {
+  locale = locale || 'it'
+
+  const translation = _get(this._messages, [locale, key].join('.'))
+
+  const tmplString = _template(translation, {
+    interpolate: /{([\s\S]+?)}/g
+  })
+
+  return tmplString(data || {})
+}

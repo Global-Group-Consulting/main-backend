@@ -15,34 +15,18 @@
 
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
+const UserRoutes = require('./routes/users.js')
+const AuthRoutes = require('./routes/auth.js')
+const EmailRoutes = require('./routes/emails.js')
 
 Route.on('/').render('welcome')
 
-Route.group(() => {
-  Route
-    .post('/login', 'AuthController.login')
-    
-  Route
-    .post('/reset', 'AuthController.reset')
+UserRoutes(Route)
+AuthRoutes(Route)
+EmailRoutes(Route)
 
-  Route
-    .post('/logout', 'AuthController.logout')
-    .middleware('auth')
-}).prefix("/auth")
 
-Route.group(() => {
-  Route.post('/api/users/add', 'UserController.add')
-    .validator('User')
 
-  Route
-    .get('/me', 'UserController.me')
 
-  Route
-    .get('/:id', 'UserController.show')
-
-  Route.get('/', "UserController.getAll")
-}).prefix("/api/users")
-  .middleware('auth')
-  .namespace('Api')
 
 

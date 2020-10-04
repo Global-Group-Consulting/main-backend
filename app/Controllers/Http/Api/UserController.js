@@ -1,43 +1,45 @@
 'use strict'
 
-const User = use("App/Models/User")
+const User = use('App/Models/User')
+const Persona = use('Persona')
 
 class UserController {
-  async add({ request, auth, response }) {
-    const username = request.input("username")
-    const email = request.input("email")
-    const password = request.input("password")
-
-    let user = new User()
-    user.username = username
-    user.email = email
-    user.password = password
-
-    user = await user.save()
-    //let accessToken = await auth.generate(user)
-    //return response.json({ "user": user, "access_token": accessToken })
+  async create ({ request, response }) {
+    const incomingUser = request.only(User.updatableFields)
+    const user = await Persona.register(incomingUser)
 
     return response.json({ user })
   }
 
-  async show({ params }) {
+  async read ({ params }) {
     const user = await User.find(params.id)
-
-    if (!user) {
-      throw new Error("User not found")
-    }
 
     return user
   }
 
-  me({ auth, params }) {
+  async update ({ request, params }) {
+    const incomingUser = request.only(User.updatableFields)
+    const user = await User.find(params.id)
+
+    delete incomingUser.email
+
+    return Persona.updateProfile(user, incomingUser)
+  }
+
+  async delete ({ params }) {
+    const user = await User.find(params.id)
+
+    await user.delete()
+  }
+
+  me ({ auth, params }) {
     /*if (auth.user.id !== Number(params.id)) {
       return "You cannot see someone else's profile"
     }*/
     return auth.user
   }
 
-  async getAll() {
+  async getAll () {
     return User.all()
   }
 }

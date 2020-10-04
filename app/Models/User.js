@@ -6,26 +6,103 @@ const Hash = use('Hash')
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 
+const ContractCounter = use('App/Controllers/Http/CountersController')
+
 class User extends Model {
-  static boot() {
+  static userFields = {
+    'personType': '',
+    'businessName': '',
+    'vatNumber': '',
+    'firstName': '',
+    'lastName': '',
+    'fiscalCode': '',
+    'gender': '',
+    'birthCountry': '',
+    'birthProvince': '',
+    'birthCity': '',
+    'birthDate': '',
+    'docType': '',
+    'docNumber': '',
+    'docExpiration': '',
+    'businessCountry': '',
+    'businessRegion': '',
+    'businessProvince': '',
+    'businessCity': '',
+    'businessZip': '',
+    'businessAddress': '',
+    'legalRepresentativeCountry': '',
+    'legalRepresentativeRegion': '',
+    'legalRepresentativeProvince': '',
+    'legalRepresentativeCity': '',
+    'legalRepresentativeZip': '',
+    'legalRepresentativeAddress': '',
+    'email': '',
+    'mobile': '',
+    'phone': '',
+    'contractNumber': '',
+    'contractDate': '',
+    'contractPercentage': '',
+    'contractIban': '',
+    'contractBic': '',
+    'role': '',
+    'referenceAgent': '',
+    'created_at': '',
+    'updated_at': '',
+    'activated_at': '',
+    'verified_at': '',
+    'account_status': ''
+  }
+
+  static get allUserFields () {
+    return Object.keys(User.userFields)
+  }
+
+  static get updatableFields () {
+    const avoidFields = ['contractNumber', 'contractDate', 'id', 'created_at',
+      'updated_at', 'activated_at', 'verified_at', 'account_status']
+    const fields = Object.keys(User.userFields)
+
+    return fields.reduce((acc, field) => {
+      if (!avoidFields.includes(field)) {
+        acc.push(field)
+      }
+
+      return acc
+    }, [])
+  }
+
+  static boot () {
     super.boot()
+
+    this.addHook('beforeCreate', async (userData) => {
+      userData.contractNumber = await (new ContractCounter()).incrementContract()
+    })
 
     /**
      * A hook to hash the user password before saving
      * it to the database.
      */
     this.addHook('beforeSave', async (userInstance) => {
+      userInstance.id && (delete userInstance.id)
+
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
+    })
+
+    this.addHook('afterFind', async (userInstance) => {
+      userInstance.id = userInstance._id
+    })
+    this.addHook('afterFetch', async (userInstances) => {
+      userInstances.map(inst => inst.id = inst._id)
     })
   }
 
   /**
    * Hides the fields in the array that returns
    */
-  static get hidden() {
-    return ["password"]
+  static get hidden () {
+    return ['password', '_id', '__v']
   }
 
   /**
@@ -38,7 +115,7 @@ class User extends Model {
    *
    * @return {Object}
    */
-  tokens() {
+  tokens () {
     return this.hasMany('App/Models/Token')
   }
 }
