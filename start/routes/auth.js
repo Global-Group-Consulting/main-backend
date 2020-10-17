@@ -2,22 +2,26 @@ module.exports = function (Route) {
   Route.group(() => {
     Route
       .post('/login', 'AuthController.login')
+      .validator('Auth/login')
 
     Route
       .post('/activate', 'AuthController.activate')
-      .validator('auth/AuthActivate')
+      .middleware('guest')
+      .validator('Auth/activate')
 
     Route
       .post('/forgot', 'AuthController.forgot')
-    // .validator('auth/AuthVerify')
+      .middleware('guest')
+    // .validator('Auth/AuthVerify')
 
     Route
       .post('/resetPassword', 'AuthController.resetPassword')
-    // .validator('auth/AuthVerify')
+      .middleware('guest')
+    // .validator('Auth/AuthVerify')
 
     Route
       .post('/logout', 'AuthController.logout')
-    // .middleware('auth')
-  }).prefix('/api/auth')
+      .middleware('auth')
+  }).prefix('/api/Auth')
     .namespace('Api')
 }

@@ -21,6 +21,6 @@ module.exports = function (Route) {
       .validator('users/UserDelete')
 
   }).prefix('/api/users')
+    .middleware('auth')
     .namespace('Api')
-  // .middleware('auth')
 }

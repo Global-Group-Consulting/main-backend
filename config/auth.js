@@ -40,7 +40,7 @@ module.exports = {
   | Basic Auth
   |--------------------------------------------------------------------------
   |
-  | The basic auth authenticator uses basic auth header to authenticate a
+  | The basic Auth authenticator uses basic Auth header to authenticate a
   | user.
   |
   | NOTE:
@@ -72,9 +72,10 @@ module.exports = {
     scheme: 'jwt',
     uid: 'email',
     password: 'password',
-    expiry: '20m',
+    // expiry: '20m',
     options: {
-      secret: Env.get('APP_KEY')
+      secret: Env.get('APP_KEY'),
+      expiresIn: '20m'
     }
   },
 

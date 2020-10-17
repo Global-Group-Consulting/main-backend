@@ -36,15 +36,15 @@ const globalMiddleware = [
 |
 | // define
 | {
-|   auth: 'Adonis/Middleware/Auth'
+|   Auth: 'Adonis/Middleware/Auth'
 | }
 |
 | // use
-| Route.get().middleware('auth')
+| Route.get().middleware('Auth')
 |
 */
 const namedMiddleware = {
-  auth: 'Adonis/Middleware/Auth',
+  auth: 'App/Middleware/AuthJwt',
   guest: 'Adonis/Middleware/AllowGuestOnly'
 }
 

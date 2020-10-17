@@ -1,6 +1,6 @@
 'use strict'
 
-class AuthActivate {
+class Activate {
   get rules () {
     return {
       token: 'required',
@@ -9,4 +9,4 @@ class AuthActivate {
   }
 }
 
-module.exports = AuthActivate
+module.exports = Activate

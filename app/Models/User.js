@@ -106,7 +106,7 @@ class User extends Model {
   }
 
   /**
-   * A relationship on tokens is required for auth to
+   * A relationship on tokens is required for Auth to
    * work. Since features like `refreshTokens` or
    * `rememberToken` will be saved inside the
    * tokens table.
@@ -117,6 +117,10 @@ class User extends Model {
    */
   tokens () {
     return this.hasMany('App/Models/Token')
+  }
+
+  apiTokens () {
+    return this.hasMany('App/Model/Token')
   }
 }
 

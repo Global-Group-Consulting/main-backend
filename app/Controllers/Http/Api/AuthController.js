@@ -2,38 +2,81 @@
 
 const User = use('App/Models/User')
 const Event = use('Event')
-const Env = use('Env')
-const jwt = require('njwt')
 const Persona = use('Persona')
+
+/**
+ * @typedef AuthResult
+ * @property {string} type
+ * @property {string} token
+ * @property {string} refreshToken
+ */
 
 class AuthController {
   _formatToken (token) {
     return token.replace(/ /g, '+')
   }
 
+  /**
+   * Login a user returning a token and a refreshToken that is stored
+   * in the db so that the user can refresh its token.
+   *
+   * @param request
+   * @param auth
+   * @param response
+   * @return {Promise<void|*>}
+   */
   async login ({ request, auth, response }) {
-    const email = request.input('email')
-    const password = request.input('password')
+    const { email, password } = request.only(['email', 'password'])
 
     try {
-      const userAuth = await auth
+      /**
+       * @type {AuthResult}
+       */
+      const authResult = await auth
         .withRefreshToken()
         .attempt(email, password)
 
       const user = await User.findBy({ 'email': email })
 
-      if (userAuth) {
-        return response.json({ 'user': user, 'access_token': userAuth })
-      }
+      return response.json({
+        'user': user.toJSON(),
+        'token': authResult.token,
+        'refreshToken': authResult.refreshToken
+      })
     } catch (e) {
       console.log(e)
       return response.json({ message: 'You first need to register!', error: e })
     }
   }
 
+  /**
+   * Deletes the refreshing token so that the user can'0t refresh it's token.
+   * CLient side it still needs to remove it from the api call header.
+   *
+   * @param auth
+   * @return {Promise<void>}
+   */
+  async logout ({ auth }) {
+    const user = auth.current.user
+    const tokens = await auth.listTokensForUser(user)
+
+    await auth.revokeTokens(tokens.map(token => token.token), true)
+  }
+
+  /**
+   * After the user is created, it receives an email with a token that
+   * must to be used to verify its email. That form requires to set a password for the account.
+   *
+   * This method receives the password and the token
+   * and changes the user data.
+   *
+   * @param request
+   * @param response
+   * @return {Promise<void>}
+   */
   async activate ({ request, response }) {
     const token = this._formatToken(request.input('token'))
-    const password = request.input("password")
+    const password = request.input('password')
 
     const user = await Persona.verifyEmail(token)
 
@@ -46,6 +89,15 @@ class AuthController {
     response.ok()
   }
 
+  /**
+   * When the user goes to the "Forgot password" page,
+   * this method creates a token and trigger the sending of
+   * the email with the instructions to recover it.
+   *
+   * @param request
+   * @param response
+   * @return {Promise<void>}
+   */
   async forgot ({ request, response }) {
     const email = request.input('email')
 
@@ -54,6 +106,16 @@ class AuthController {
     response.ok()
   }
 
+  /**
+   * After the user has received the email with the token for recovering the password,
+   * sets the new password.
+   *
+   * This method stores the new password for the user.
+   *
+   * @param request
+   * @param response
+   * @return {Promise<void>}
+   */
   async resetPassword ({ request, response }) {
     const inputData = request.only(['token', 'password', 'password_confirmation'])
 
