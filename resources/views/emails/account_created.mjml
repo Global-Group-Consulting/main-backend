@@ -1,0 +1,26 @@
+<mjml>
+  <mj-body>
+    <mj-text padding-bottom="0">
+      ${t.row1}
+    </mj-text>
+
+    <mj-text padding-top="0">
+      ${t.row2}
+    </mj-text>
+
+    <mj-text>
+      ${t.row3}
+    </mj-text>
+
+    <mj-text>
+      ${t.row4}
+    </mj-text>
+
+    <mj-button font-family="Helvetica" background-color="#f45e43" color="white" font-size="16px" href="${data.formLink}">
+      ${t.btn_label}
+    </mj-button>
+    <mj-text font-size="10px" align="center">
+      <a href="${data.formLink}">${data.formLink}</>
+    </mj-text>
+  </mj-body>
+</mjml>

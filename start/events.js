@@ -1,20 +1,27 @@
 const Event = use('Event')
 
-const EmailController = use("App/Controllers/Http/EmailController")
+/**
+ * @type {import("../providers/EmailSender").default}
+ */
+const EmailSender = use('EmailSender')
 
-Event.on('user::resend-activation-mail', async ({ user, token, client_id }) => {
-  const loginToken = encodeURIComponent(token)
-
-  email.resendActivation({
-    ...user,
-    loginToken,
-    client_id
+Event.on('user::created', async ({ user, token }) => {
+  await EmailSender.onAccountCreated({
+    ...user.toObject(),
+    token
   })
 })
 
-Event.on('user::forgot-password', async (user) => {
-  const emails = new EmailController()
+Event.on('forgot::password', async ({ user, token }) => {
+  await EmailSender.onPasswordForgot({
+    ...user.toObject(),
+    token
+  })
+})
 
-  emails.forgotPassword(user)
+Event.on('password::recovered', async ({ user }) => {
+  await EmailSender.onPasswordRecovered({
+    ...user.toObject()
+  })
 })
 

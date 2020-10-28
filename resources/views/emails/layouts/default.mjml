@@ -8,14 +8,18 @@
     <mj-section>
       <mj-column>
         <!-- header and logo -->
+         <mj-image width="278px" src="${publicUrl}/logo_large.png" />
       </mj-column>
     </mj-section>
 
     <mj-section padding="0">
-      <mj-column border="solid 1px #D7D9DA" border-bottom="0" background-color="#fff" padding="25px">
+      <mj-column border="solid 1px #D7D9DA" background-color="#fff" padding="25px">
 
         <mj-include path="../${fileToInclude}.mjml" />
 
+        <mj-text padding-top="30px">
+          ${t.signature}
+        </mj-text>
       </mj-column>
     </mj-section>
 

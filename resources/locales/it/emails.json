@@ -1,8 +1,30 @@
 {
-  "password_recover": {
-    "subject": "Recupero della password",
+  "signature": "Cordiali saluti,<br>Global Group Consulting",
+  "account_created": {
+    "subject": "Benvenuto in Global Group Consulting!",
     "content": {
-      "row1": "Per recuperare cliccka quì."
+      "row1": "Gentile { firstName } { lastName } , ",
+      "row2": "siamo lieti di darLe il benvenuto in <strong>Global Group Consulting</strong>!",
+      "row3": "Per poter accedere al suo account personale, la inviatiamo a creare una password che potrà successivamente usare per effettuare l'accesso.",
+      "row4": "Faccia click sul pulsante sottostante. In alternativa può copiare il link indicato ed incollarlo nella barra di ricerca del suo browser.",
+      "btn_label": "Imposta la password"
+    }
+  },
+  "password_forgot": {
+    "subject": "Recupero password account",
+    "content": {
+      "row1": "Gentile {firstName} {lastName},",
+      "row2": "per recuperare la password del suo account la invitiamo a cliccare sul pulsante sottostante.",
+      "row3": "In alternativa può copiare il link indicato ed incollarlo nella barra di ricerca del suo browser.",
+      "btn_label": "Recupera password"
+    }
+  },
+  "password_recovered": {
+    "subject": "Password cambiata correttamente",
+    "content": {
+      "row1": "Gentile {firstName} {lastName},",
+      "row2": "desideriamo informarla che la password del suo account è stata cambiata correttamente.",
+      "row3": "Qualora non sia stata Lei ad effettuare questa modifica la preghiamo di informarci il prima possibile all'email <a href=\"mailto:{publicEmail}\">{publicEmail}</a>"
     }
   }
 }

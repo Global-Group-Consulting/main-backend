@@ -10,7 +10,7 @@ module.exports = {
   |--------------------------------------------------------------------------
   |
   | Driver to be used for hashing values. The same driver is used by the
-  | auth module too.
+  | Auth module too.
   |
   */
   driver: Env.get('HASH_DRIVER', 'bcrypt'),

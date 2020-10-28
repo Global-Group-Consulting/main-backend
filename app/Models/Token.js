@@ -4,15 +4,17 @@
 const Model = use('Model')
 
 class Token extends Model {
-  static boot() {
+  static boot () {
     super.boot()
 
-    this.addHook('beforeCreate', async (tokenInstance) => {
-      tokenInstance.is_revoked = false
+    this.addHook('beforeSave', async (token) => {
+      if (!token.hasOwnProperty('is_revoked')) {
+        token.is_revoked = false
+      }
     })
   }
 
-  user() {
+  user () {
     return this.belongsTo('App/Models/User')
   }
 }
