@@ -6,6 +6,7 @@ class UserCreate {
       email: 'required|email|unique:users',
       firstName: 'required',
       lastName: 'required',
+      role: 'number'
     }
   }
 

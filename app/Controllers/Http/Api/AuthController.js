@@ -36,16 +36,24 @@ class AuthController {
         .withRefreshToken()
         .attempt(email, password)
 
-      const user = await User.findBy({ 'email': email })
+      // const user = await User.findBy({ 'email': email })
+      // 'user': user.toJSON(),
 
       return response.json({
-        'user': user.toJSON(),
         'token': authResult.token,
         'refreshToken': authResult.refreshToken
       })
     } catch (e) {
       console.log(e)
-      return response.json({ message: 'You first need to register!', error: e })
+      return response.badRequest({ message: 'You first need to register!', error: e })
+    }
+  }
+
+  async user ({ request, auth, response }) {
+    try {
+      return await auth.getUser()
+    } catch (error) {
+      response.send('Missing or invalid jwt token')
     }
   }
 
@@ -57,10 +65,18 @@ class AuthController {
    * @return {Promise<void>}
    */
   async logout ({ auth }) {
-    const user = auth.current.user
+    const user = await auth.getUser()
     const tokens = await auth.listTokensForUser(user)
 
     await auth.revokeTokens(tokens.map(token => token.token), true)
+  }
+
+  async refresh ({ request, auth }) {
+    const refreshToken = request.input('refresh_token')
+
+    const newToken = await auth.generateForRefreshToken(refreshToken.split(' ')[1], true)
+
+    return newToken
   }
 
   /**

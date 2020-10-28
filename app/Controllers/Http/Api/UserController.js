@@ -40,7 +40,16 @@ class UserController {
   }
 
   async getAll () {
-    return User.all()
+    return User.query().aggregate([
+      {
+        $group: {
+          _id: '$role',
+          data: {
+            $push: '$$ROOT'
+          }
+        }
+      }
+    ])
   }
 }
 

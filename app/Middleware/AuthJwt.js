@@ -19,7 +19,7 @@ class AuthJwt {
     }
 
     if (lastError) {
-      // console.info(lastError)
+      console.info(lastError)
       return response.unauthorized()
     }
 
