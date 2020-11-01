@@ -1,5 +1,5 @@
 class BasicEnum {
-  constructor (enumName) {
+  constructor(enumName) {
     /**
      * @type {Object.<string, {index: number, id: string, text: string}>}
      */
@@ -13,7 +13,7 @@ class BasicEnum {
    * @param id
    * @returns {{index: *, id: string, text: string}|*}
    */
-  get (id) {
+  get(id) {
     if (typeof id === 'number' || !isNaN(Number(id))) {
       return {
         index: id,
@@ -35,7 +35,7 @@ class BasicEnum {
     return foundedEnum
   }
 
-  get iterable () {
+  get iterable() {
     return Object.entries(this.data).reduce((acc, curr) => {
       const value = +curr[0]
 
@@ -48,7 +48,7 @@ class BasicEnum {
     }, [])
   }
 
-  get list () {
+  get list() {
     return Object.entries(this.data).reduce((acc, curr) => {
       const value = +curr[0]
 
@@ -64,4 +64,4 @@ class BasicEnum {
   }
 }
 
-export { BasicEnum }
+exports.BasicEnum = BasicEnum

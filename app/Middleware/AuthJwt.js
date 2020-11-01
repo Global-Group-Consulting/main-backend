@@ -1,7 +1,13 @@
+const Env = use("Env")
+
 class AuthJwt {
-  async handle ({ request, auth, response }, next) {
+  async handle({ request, auth, response }, next) {
     const scheme = 'jwt'
     let lastError = null
+
+    if (request.hostname() === "localhost" && request.headers()["user-agent"].startsWith("PostmanRuntime") && Env.get("NODE_ENV") === "development") {
+      return next()
+    }
 
     try {
       const authenticator = auth.authenticator(scheme)

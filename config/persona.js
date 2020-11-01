@@ -51,7 +51,7 @@ module.exports = {
   | State of user when a new account is created
   |
   */
-  newAccountState: 'pending',
+  newAccountState: 'draft',
 
   /*
   |--------------------------------------------------------------------------
@@ -61,7 +61,7 @@ module.exports = {
   | State of user after they verify their email address
   |
   */
-  verifiedAccountState: 'active',
+  verifiedAccountState: 'draft',
 
   /*
   |--------------------------------------------------------------------------

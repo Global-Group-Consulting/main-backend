@@ -1,10 +1,10 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
 
 class UserRoles extends BasicEnum {
   /**
    * @enum
    */
-  constructor () {
+  constructor() {
     super('UserRoles')
 
     this.SUPER_ADMIN = 0
@@ -49,4 +49,4 @@ class UserRoles extends BasicEnum {
   }
 }
 
-export default new UserRoles()
+module.exports = new UserRoles()
