@@ -2,6 +2,7 @@
 
 const User = use('App/Models/User')
 const Persona = use('Persona')
+const AccountStatuses = require("../../../../enums/AccountStatuses")
 
 class UserController {
   async create({ request, response }) {
@@ -65,6 +66,10 @@ class UserController {
 
       return _group
     })
+  }
+
+  async getValidatedUsers() {
+    return await User.where({ account_status: AccountStatuses.VALIDATED }).fetch()
   }
 }
 
