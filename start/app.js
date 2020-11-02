@@ -14,7 +14,7 @@ const path = require('path')
 */
 const providers = [
   '@adonisjs/antl/providers/AntlProvider',
-  '@adonisjs/Auth/providers/AuthProvider',
+  '@adonisjs/auth/providers/AuthProvider',
   '@adonisjs/bodyparser/providers/BodyParserProvider',
   '@adonisjs/cors/providers/CorsProvider',
   '@adonisjs/framework/providers/AppProvider',
