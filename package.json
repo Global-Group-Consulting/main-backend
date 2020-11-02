@@ -3,7 +3,7 @@
   "version": "4.1.0",
   "adonis-version": "4.1.0",
   "description": "The fullstack application boilerplate for Adonisjs",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "watch": "nodemon --watch app server.js",
@@ -44,6 +44,9 @@
   "devDependencies": {},
   "autoload": {
     "App": "./app"
+  },
+  "engines": {
+    "node": "12.18.4"
   },
   "volta": {
     "node": "12.18.4",
