@@ -61,7 +61,7 @@ module.exports = {
   | State of user after they verify their email address
   |
   */
-  verifiedAccountState: 'draft',
+  verifiedAccountState: 'active',
 
   /*
   |--------------------------------------------------------------------------

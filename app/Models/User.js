@@ -82,12 +82,12 @@ class User extends Model {
       userData.role = userData.role || UserRoles.CLIENTE
       userData.personType = userData.personType || PersonTypes.FISICA
 
-      if (!userData.account_status) {
+      /* if (!userData.account_status) {
         // If the account type is admin or serv cliente, skip the normal user procedure
-        if ([UserRoles.ADMIN || UserRoles.SERV_CLIENTI].includes(userData.role)) {
+        if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userData.role)) {
           userData.account_status = AccountStatuses.APPROVED
         }
-      }
+      } */
 
       userData.contractNumber = await (new ContractCounter()).incrementContract()
     })
