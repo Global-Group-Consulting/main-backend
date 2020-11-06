@@ -44,6 +44,9 @@ class AccountStatuses extends BasicEnum {
 
     /** Account activated by the user after the otp has been inserted */
     this.ACTIVE = "active"
+
+
+    this.EMAIL_VERIFY = "email_verify"
   }
 }
 

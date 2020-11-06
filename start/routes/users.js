@@ -20,6 +20,9 @@ module.exports = function (Route) {
     Route.delete('/:id', 'UserController.delete')
       .validator('users/UserDelete')
 
+    Route.put('/:id/approve', 'UserController.approve')
+      .validator('users/UserApprove')
+
   }).prefix('/api/users')
     .middleware('auth')
     .namespace('Api')

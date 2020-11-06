@@ -5,6 +5,7 @@ const Hash = use('Hash')
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
+const File = use('App/Models/File')
 
 const ContractCounter = use('App/Controllers/Http/CountersController')
 
@@ -75,6 +76,10 @@ class User extends Model {
     }, [])
   }
 
+  static async includeFiles(data) {
+    data.files = await File.where({ userId: data.id }).fetch()
+  }
+
   static boot() {
     super.boot()
 
@@ -82,18 +87,21 @@ class User extends Model {
       userData.role = userData.role || UserRoles.CLIENTE
       userData.personType = userData.personType || PersonTypes.FISICA
 
-      if (!userData.account_status) {
+      userData.files = null
+
+      /* if (!userData.account_status) {
         // If the account type is admin or serv cliente, skip the normal user procedure
-        if ([UserRoles.ADMIN || UserRoles.SERV_CLIENTI].includes(userData.role)) {
+        if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userData.role)) {
           userData.account_status = AccountStatuses.APPROVED
         }
-      }
+      } */
 
       userData.contractNumber = await (new ContractCounter()).incrementContract()
     })
 
-    this.addHook("afterCreate", async (userDat) => {
-      userDat.id = userDat._id.toString()
+    this.addHook("afterCreate", async (userData) => {
+      userData.id = userData._id.toString()
+      await this.includeFiles(userData)
     })
 
     /**
@@ -103,13 +111,21 @@ class User extends Model {
     this.addHook('beforeSave', async (userInstance) => {
       userInstance.id && (delete userInstance.id)
 
+      userInstance.files = null
+
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
     })
 
+    this.addHook('afterSave', async (userData) => {
+      await this.includeFiles(userData)
+    })
+
     this.addHook('afterFind', async (userInstance) => {
       userInstance.id = userInstance._id
+
+      await this.includeFiles(userInstance)
     })
     this.addHook('afterFetch', async (userInstances) => {
       userInstances.map(inst => inst.id = inst._id)
@@ -135,6 +151,10 @@ class User extends Model {
    */
   tokens() {
     return this.hasMany('App/Models/Token')
+  }
+
+  files() {
+    return this.hasMany('App/Models/File')
   }
 
   apiTokens() {
