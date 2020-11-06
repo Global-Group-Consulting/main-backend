@@ -23,6 +23,11 @@ Event.on('user::created', async ({ user, token }) => {
 Event.on('user::approved', async ({ user, token }) => {
   const userRole = +user.role
 
+  // Dont' send any email for normal users
+  if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+    return
+  }
+
   await EmailSender.onAccountCreated({
     ...user.toObject(),
     token

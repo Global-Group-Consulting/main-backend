@@ -2,15 +2,23 @@
 
 const User = use('App/Models/User')
 const Token = use('App/Models/Token')
+const File = use('App/Models/File')
 const Persona = use('Persona')
 const Event = use('Event')
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 const UserRoles = require("../../../../enums/UserRoles")
 
 class UserController {
-  async create({ request, response }) {
+  async create({ request, response, auth }) {
     const incomingUser = request.only(User.updatableFields)
     const user = await Persona.register(incomingUser)
+
+    const files = request.files()
+
+    if (Object.keys(files).length > 0) {
+      await File.store(files, user.id, auth.user.id)
+      await User.includeFiles(user)
+    }
 
     return response.json(user)
   }
@@ -21,13 +29,22 @@ class UserController {
     return user.toJSON()
   }
 
-  async update({ request, params }) {
+  async update({ request, params, auth }) {
     const incomingUser = request.only(User.updatableFields)
     const user = await User.find(params.id)
 
     delete incomingUser.email
 
-    return Persona.updateProfile(user, incomingUser)
+    const result = await Persona.updateProfile(user, incomingUser)
+
+    const files = request.files()
+
+    if (Object.keys(files).length > 0) {
+      await File.store(files, user.id, auth.user.id)
+      await User.includeFiles(result)
+    }
+
+    return result
   }
 
   async delete({ params }) {
