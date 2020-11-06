@@ -164,6 +164,14 @@ class User extends Model {
   get_id(value) {
     return value.toString()
   }
+
+  getRole(value) {
+    return +value
+  }
+
+  getPersonType(value) {
+    return +value
+  }
 }
 
 module.exports = User
