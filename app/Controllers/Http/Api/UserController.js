@@ -61,7 +61,7 @@ class UserController {
     }
 
     // If the status is DRAFT but the user is not a Admin or servCLienti, block it
-    if (AccountStatuses.DRAFT == user.account_status && ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(user.role)) {
+    if (AccountStatuses.DRAFT == user.account_status && ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)) {
       throw new Error("Invalid user role.")
     }
 
