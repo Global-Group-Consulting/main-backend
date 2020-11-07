@@ -3,14 +3,27 @@
 const Env = use('Env')
 const Mail = use('Mail')
 const Antl = use('Antl')
+const Config = use('Adonis/Src/Config')
 
 const mjml2html = require('mjml')
 const fs = require('fs').promises
 const path = require('path')
 const { template: _template, get: _get } = require('lodash')
+const { ServerClient } = require("postmark");
 
 class EmailSender {
-  _getTranslations (tmplName, locale, data) {
+  constructor() {
+    /**
+     * @type {'smtp' | 'postmark'}
+     */
+    this.provider = Config.get("mail.connection")
+
+    if (this.provider === "postmark") {
+      this.postmarkClient = new ServerClient(Config.get("mail.postmark.apiKey"))
+    }
+  }
+
+  _getTranslations(tmplName, locale, data) {
     const rawTrans = Antl.forLocale(locale).list()
     const emailTrans = _get(rawTrans, `emails.${tmplName}`)
 
@@ -26,7 +39,7 @@ class EmailSender {
     return translations
   }
 
-  async _renderTemplate (templateName, locale, data) {
+  async _renderTemplate(templateName, locale, data) {
     const tmplPath = path.resolve(__dirname, `../../resources/views/emails/layouts/default.mjml`)
     const tmplFile = await fs.readFile(tmplPath, 'utf-8')
     const translations = this._getTranslations(templateName, locale, data)
@@ -68,7 +81,7 @@ class EmailSender {
     })
   }
 
-  async _send (tmpl, data) {
+  async _send(tmpl, data) {
     const locale = data.locale || 'it'
 
     if (data.toObject) {
@@ -80,25 +93,35 @@ class EmailSender {
 
     const emailBody = await this._renderTemplate(tmpl, locale, data)
 
-    return await Mail.raw(emailBody, (message) => {
-      message.to(data.email)
-      message.from(Env.get('MAIL_FROM'))
-      message.subject(Antl.compile(locale, `emails.${tmpl}.subject`, data))
-    })
+    if (this.provider === "postmark") {
+      this.postmarkClient.sendEmail({
+        "From": Env.get('MAIL_FROM'),
+        "To": data.email,
+        "Subject": Antl.compile(locale, `emails.${tmpl}.subject`, data),
+        "HtmlBody": emailBody,
+        "MessageStream": "outbound"
+      })
+    } else {
+      return await Mail.raw(emailBody, (message) => {
+        message.to(data.email)
+        message.from(Env.get('MAIL_FROM'))
+        message.subject(Antl.compile(locale, `emails.${tmpl}.subject`, data))
+      })
+    }
   }
 
-  async onAccountCreated (user) {
+  async onAccountCreated(user) {
     return await this._send('account_created', {
       ...user,
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${user.token}`
     })
   }
 
-  async onPasswordRecovered (user) {
+  async onPasswordRecovered(user) {
     return await this._send('password_recovered', user)
   }
 
-  async onPasswordForgot (user) {
+  async onPasswordForgot(user) {
     return await this._send('password_forgot', {
       ...user,
       formLink: `${Env.get('PUBLIC_URL')}/auth/recover?t=${user.token}`

@@ -6,6 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:dev": "adonis serve --dev",
     "watch": "nodemon --watch app server.js",
     "test": "node ace test"
   },
@@ -40,7 +41,8 @@
     "mjml": "^4.6.3",
     "njwt": "^1.0.0",
     "nodejs": "0.0.0",
-    "nodemon": "^2.0.4"
+    "nodemon": "^2.0.4",
+    "postmark": "^2.6.0"
   },
   "devDependencies": {},
   "autoload": {
