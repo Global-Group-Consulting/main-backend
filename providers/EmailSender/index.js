@@ -94,7 +94,8 @@ class EmailSender {
         "From": Env.get('MAIL_FROM'),
         "To": data.email,
         "Subject": Antl.compile(locale, `emails.${tmpl}.subject`, data),
-        "TextBody": emailBody
+        "HtmlBody": emailBody,
+        "MessageStream": "outbound"
       })
     } else {
       return await Mail.raw(emailBody, (message) => {
