@@ -13,10 +13,14 @@ const { ServerClient } = require("postmark");
 
 class EmailSender {
   constructor() {
-    const secretKey = Config.get("mail.postmark.apiKey")
-
+    /**
+     * @type {'smtp' | 'postmark'}
+     */
     this.provider = Config.get("mail.connection")
-    this.postmarkClient = new ServerClient(secretKey)
+
+    if (this.provider === "postmark") {
+      this.postmarkClient = new ServerClient(Config.get("mail.postmark.apiKey"))
+    }
   }
 
   _getTranslations(tmplName, locale, data) {
