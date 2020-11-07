@@ -6,6 +6,8 @@ const Hash = use('Hash')
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
+const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
+
 
 const ContractCounter = use('App/Controllers/Http/CountersController')
 
@@ -130,6 +132,19 @@ class User extends Model {
     this.addHook('afterFetch', async (userInstances) => {
       userInstances.map(inst => inst.id = inst._id)
     })
+  }
+
+  /**
+   *
+   * @param {string} key
+   * @param {string} value
+   */
+  static async checkExists(key, value) {
+    const result = await User.findBy(key, value)
+
+    if (!result) {
+      throw new UserNotFoundException()
+    }
   }
 
   /**

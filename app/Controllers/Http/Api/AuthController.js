@@ -3,6 +3,8 @@
 const User = use('App/Models/User')
 const Event = use('Event')
 const Persona = use('Persona')
+const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
+
 
 /**
  * @typedef AuthResult
@@ -36,16 +38,12 @@ class AuthController {
         .withRefreshToken()
         .attempt(email, password)
 
-      // const user = await User.findBy({ 'email': email })
-      // 'user': user.toJSON(),
-
       return response.json({
         'token': authResult.token,
         'refreshToken': authResult.refreshToken
       })
     } catch (e) {
-      console.log(e)
-      return response.badRequest({ message: 'Invalid username or password!', error: e })
+      throw new InvalidLoginException()
     }
   }
 
@@ -53,6 +51,7 @@ class AuthController {
     try {
       return await auth.getUser()
     } catch (error) {
+      throw new Error('Missing or invalid jwt token')
       response.send('Missing or invalid jwt token')
     }
   }
@@ -123,6 +122,8 @@ class AuthController {
    */
   async forgot({ request, response }) {
     const email = request.input('email')
+
+    await User.checkExists("email", email)
 
     await Persona.forgotPassword(email)
 

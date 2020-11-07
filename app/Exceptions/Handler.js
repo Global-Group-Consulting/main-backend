@@ -1,6 +1,7 @@
 'use strict'
 
 const BaseExceptionHandler = use('BaseExceptionHandler')
+const Log = use("App/Models/Log")
 
 /**
  * This class handles all exceptions thrown during
@@ -20,7 +21,7 @@ class ExceptionHandler extends BaseExceptionHandler {
    *
    * @return {void}
    */
-  async handle (error, { request, response }) {
+  async handle(error, { request, response }) {
     //response.status(error.status).json(error)
     return super.handle(...arguments)
   }
@@ -35,7 +36,23 @@ class ExceptionHandler extends BaseExceptionHandler {
    *
    * @return {void}
    */
-  async report (error, { request }) {
+  async report(error, { request }) {
+    await Log.create({
+      ...error,
+      code: error.code,
+      message: error.message,
+      name: error.name,
+      status: error.status,
+      stack: error.stack,
+      request: {
+        headers: request.headers(),
+        ip: request.ip(),
+        ips: request.ips(),
+        method: request.method(),
+        originalUrl: request.originalUrl()
+      }
+    })
+
   }
 }
 
