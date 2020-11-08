@@ -1,12 +1,13 @@
 'use strict'
 
 class UserCreate {
-  get rules () {
+  get rules() {
     return {
       email: 'required|email|unique:users',
       firstName: 'required',
       lastName: 'required',
-      role: 'number'
+      role: 'number',
+      contractInitialInvestment: "number"
     }
   }
 

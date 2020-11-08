@@ -1,14 +1,16 @@
 'use strict'
 
 class UserUpdate {
-  get data () {
+  get data() {
+
     return Object.assign({}, this.ctx.request.body, this.ctx.params)
   }
 
-  get rules () {
+  get rules() {
     return {
-      'id': 'required|idExists',
-      'email': 'required'
+      id: 'required|idExists',
+      email: 'required',
+      contractInitialInvestment: "number"
     }
   }
 }
