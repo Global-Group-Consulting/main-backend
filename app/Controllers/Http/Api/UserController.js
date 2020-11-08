@@ -86,11 +86,21 @@ class UserController {
     return auth.user
   }
 
-  async getAll() {
+  async getAll({ request }) {
+    const filter = request.input("f")
+
+    if (filter) {
+      const result = await User.where({ role: { $in: [filter.toString(), +filter] } })
+        .sort({ firstName: 1, lastName: 1 })
+        .fetch()
+
+      return result ? result.rows : []
+    }
+
     const result = await User.query().aggregate([
       {
         $group: {
-          _id: '$role',
+          _id: { $toInt: '$role' },
           data: {
             $push: '$$ROOT'
           }
@@ -98,8 +108,10 @@ class UserController {
       }
     ])
 
+
     return result.map(_group => {
-      _group.id = _group._id
+      _group.id = +_group._id
+
       delete _group._id
 
       _group.data = _group.data.map(_entry => {

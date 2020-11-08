@@ -49,6 +49,7 @@ class User extends Model {
     'contractNumber': '',
     'contractDate': '',
     'contractPercentage': '',
+    'contractInitialInvestment': 0,
     'contractIban': '',
     'contractBic': '',
     'role': '',
