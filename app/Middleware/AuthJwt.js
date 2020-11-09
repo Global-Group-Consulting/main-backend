@@ -1,3 +1,5 @@
+const TokenExpiredException = use("App/Exceptions/TokenExpiredException")
+
 const Env = use("Env")
 
 class AuthJwt {
@@ -26,7 +28,8 @@ class AuthJwt {
 
     if (lastError) {
       console.info(lastError)
-      return response.unauthorized()
+
+      throw new TokenExpiredException()
     }
 
     await next()

@@ -5,11 +5,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "yarn start",
+      "command": "yarn start:dev",
       "name": "Run npm start",
       "request": "launch",
       "type": "node-terminal"
-    },{
+    },
+    {
       "command": "heroku local",
       "name": "Heroku local",
       "request": "launch",
