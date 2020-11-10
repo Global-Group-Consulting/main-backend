@@ -47,7 +47,44 @@ class AccountStatuses extends BasicEnum {
 
 
     this.EMAIL_VERIFY = "email_verify"
+
+    this.data = {
+      [this.DRAFT]: {
+        id: "draft",
+      },
+      [this.PENDING_SIGNATURE]: {
+        id: "pending_signature"
+      },
+      [this.PENDING_CONFIRM]: {
+        id: "pending_confirm"
+      },
+      [this.CREATED]: {
+        id: "created"
+      },
+      [this.VALIDATED]: {
+        id: "validated",
+        color: "#FFEE58"
+      },
+      [this.INCOMPLETE]: {
+        id: "incomplete",
+        color: "#FFA726"
+      },
+      [this.MUST_REVALIDATE]: {
+        id: "must_revalidate",
+        color: "#CE93D8"
+      },
+      [this.APPROVED]: {
+        id: "approved",
+        color: "#cddc39"
+      },
+      [this.ACTIVE]: {
+        id: "active",
+        color: "#8bc34a"
+      },
+    }
   }
+
+
 }
 
 module.exports = new AccountStatuses()

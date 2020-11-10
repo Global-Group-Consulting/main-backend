@@ -7,6 +7,7 @@ const Persona = use('Persona')
 const Event = use('Event')
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 const UserRoles = require("../../../../enums/UserRoles")
+const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
 
 class UserController {
   async create({ request, response, auth }) {
@@ -77,6 +78,23 @@ class UserController {
     Event.emit("user::approved", { user, token })
 
     return user
+  }
+
+  async changeStatus({ params, request }) {
+    const userId = params.id
+    const newStatus = request.input("status")
+
+    const user = await User.find(userId)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    user.account_status = newStatus
+
+    await user.save()
+
+    return user.toJSON()
   }
 
   me({ auth, params }) {

@@ -1,4 +1,6 @@
-export interface ResponseDescriptiveMethods {
+import Request from '@adonisjs/framework/src/Response'
+
+export interface ResponseDescriptiveMethods extends Request {
   continue(message?: any)
   switchingProtocols(message?: any)
   ok(message?: any)
