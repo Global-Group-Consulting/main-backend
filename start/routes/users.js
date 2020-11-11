@@ -19,9 +19,17 @@ module.exports = function (Route) {
 
     Route.delete('/:id', 'UserController.delete')
       .validator('users/UserDelete')
+      .middleware("authSuperAdmin")
 
     Route.put('/:id/approve', 'UserController.approve')
       .validator('users/UserApprove')
+
+    Route.post('/:id/sendEmailActivation', 'UserController.sendEmailActivation')
+    // .validator('users/UserApprove')
+
+    Route.post('/:id/status', 'UserController.changeStatus')
+      .validator('users/UserChangeStatus')
+      .middleware("authSuperAdmin")
 
   }).prefix('/api/users')
     .middleware('auth')

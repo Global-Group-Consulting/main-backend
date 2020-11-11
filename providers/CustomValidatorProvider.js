@@ -10,7 +10,7 @@ class CustomValidatorProvider extends ServiceProvider {
    *
    * @return {void}
    */
-  register () {
+  register() {
   }
 
   /**
@@ -21,7 +21,7 @@ class CustomValidatorProvider extends ServiceProvider {
    *
    * @return {void}
    */
-  boot () {
+  boot() {
     const Validator = use('Validator')
 
     Validator.extend('idExists', async function (data, field, message, args, get) {
@@ -34,8 +34,25 @@ class CustomValidatorProvider extends ServiceProvider {
 
       const existingUser = await User.find(value)
 
-      if (!existingUser){
+      if (!existingUser) {
         throw "Invalid id."
+      }
+    })
+
+    Validator.extend('validAccountStatus', async function (data, field, message, args, get) {
+      const AccountStatuses = require('../enums/AccountStatuses')
+      const value = get(data, field)
+
+      if (!value) {
+        return
+      }
+
+      const statusExists = AccountStatuses.iterable.find(_status => {
+        return _status.value === value
+      })
+
+      if (!statusExists) {
+        throw "Invalid status"
       }
     })
   }
