@@ -1,5 +1,9 @@
 'use strict'
 
+/**
+ * @typedef {import("../../../../@types/HttpResponse").AdonisHttpResponse} AdonisHttpResponse
+ */
+
 const User = use('App/Models/User')
 const Token = use('App/Models/Token')
 const File = use('App/Models/File')
@@ -58,7 +62,7 @@ class UserController {
     const user = await User.find(params.id)
 
     if (!user) {
-      throw new Error("No user found")
+      throw new UserNotFoundException()
     }
 
     // If the status is DRAFT but the user is not a Admin or servCLienti, block it
@@ -78,6 +82,27 @@ class UserController {
     Event.emit("user::approved", { user, token })
 
     return user
+  }
+
+  /**
+   * 
+   * @param {{response: AdonisHttpResponse}} param0 
+   */
+  async sendEmailActivation({ params, response }) {
+    const user = await User.find(params.id)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    const token = await Token.where({ user_id: user.id, type: "email" }).first()
+
+    if (!token) {
+      return response.badRequest("Invalid user status.")
+    }
+
+    // Invia solo l'email di benvenuto con il codice per l'attivazione.
+    Event.emit("user::approved", { user, token: token.token })
   }
 
   async changeStatus({ params, request }) {

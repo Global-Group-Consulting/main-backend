@@ -24,6 +24,9 @@ module.exports = function (Route) {
     Route.put('/:id/approve', 'UserController.approve')
       .validator('users/UserApprove')
 
+    Route.post('/:id/sendEmailActivation', 'UserController.sendEmailActivation')
+    // .validator('users/UserApprove')
+
     Route.post('/:id/status', 'UserController.changeStatus')
       .validator('users/UserChangeStatus')
       .middleware("authSuperAdmin")
