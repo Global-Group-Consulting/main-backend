@@ -19,6 +19,7 @@ const AuthRoutes = require('./routes/auth')
 const FilesRoutes = require('./routes/files')
 const DashboardsRoutes = require('./routes/dashboards.js')
 const EmailRoutes = require('./routes/emails.js')
+const RequestsRoutes = require('./routes/requests.js')
 const UserRoutes = require('./routes/users.js')
 
 Route.on('/').render('welcome')
@@ -27,6 +28,7 @@ AuthRoutes(Route)
 FilesRoutes(Route)
 DashboardsRoutes(Route)
 EmailRoutes(Route)
+RequestsRoutes(Route)
 UserRoutes(Route)
 
 
