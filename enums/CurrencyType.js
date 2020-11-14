@@ -1,7 +1,7 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('@/classes/BasicEnum')
 
 class CurrencyType extends BasicEnum {
-  constructor () {
+  constructor() {
     super('CurrencyType')
 
     this.EURO = 1
@@ -20,4 +20,4 @@ class CurrencyType extends BasicEnum {
   }
 }
 
-export default new CurrencyType()
+module.exports = new CurrencyType()

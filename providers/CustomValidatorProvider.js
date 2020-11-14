@@ -55,6 +55,26 @@ class CustomValidatorProvider extends ServiceProvider {
         throw "Invalid status"
       }
     })
+
+    Validator.extend('objectId', async function (data, field, message, args, get) {
+      const { ObjectId } = require('mongodb')
+      const value = get(data, field)
+      let validObjectId = true
+
+      if (!value) {
+        return
+      }
+
+      try {
+        validObjectId = new ObjectId(value).toString() === value
+      } catch (er) {
+        validObjectId = false
+      }
+
+      if (!validObjectId) {
+        throw "Invalid id"
+      }
+    })
   }
 }
 

@@ -8,7 +8,8 @@ const File = use("App/Models/File")
 const Drive = use('Drive')
 const Helpers = use('Helpers')
 const path = require("path")
-const { existsSync, unlinkSync } = require("fs")
+
+const { existsSync } = require("fs")
 
 class FileController {
   _getFilePath(file) {
@@ -36,17 +37,12 @@ class FileController {
     const { id } = params
 
     const file = await File.find(id)
-    const filePath = this._getFilePath(file)
 
     if (!file) {
       return response.badRequest("File not found")
     }
 
     await file.delete()
-
-    if (existsSync(filePath)) {
-      unlinkSync(filePath)
-    }
 
     return response.ok()
   }
