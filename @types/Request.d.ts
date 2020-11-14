@@ -1,11 +1,20 @@
+import RequestStatus from "../enums/RequestStatus"
+import RequestTypes from "../enums/RequestTypes"
+import WalletTypes from "../enums/WalletTypes"
+import CurrencyType from "../enums/CurrencyType"
+
 export interface Request {
   userId: string
-  state: string
-  type: string
-  amount: string
-  created_at: string
-  updated_at: string
-  completed_at: string
+  status: typeof RequestStatus
+  type: typeof RequestTypes
+  wallet: typeof WalletTypes
+  amount: number
+  currency: typeof CurrencyType
+  notes: string
+
+  created_at: Date
+  updated_at: Date
+  completed_at: Date
   contractNumber: string
   email: string
   firstName: string

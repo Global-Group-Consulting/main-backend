@@ -4,22 +4,23 @@ const { WhitelistValidator } = require("../WhitelistValidator")
 
 /** @typedef {import("../../../@types/Request").Request} RequestModel} */
 
-class requestsCreate extends WhitelistValidator {
-  get includeParams() {
-    return true
-  }
+const rules = {
+  amount: "required|number",
+  userId: "required|objectId",
+  type: "required|number",
+  wallet: "required|number",
+  currency: "required|number",
+  notes: "string"
+}
 
+class requestsCreate extends WhitelistValidator {
   /** 
    * @returns {RequestModel} 
    */
   get rules() {
-    return {
-      amount: "required",
-      contractNumber: "required",
-      type: "required",
-    }
+    return rules
   }
-
 }
 
+exports.rules = rules
 module.exports = requestsCreate

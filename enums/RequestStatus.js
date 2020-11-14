@@ -1,7 +1,10 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
 
 class RequestStatus extends BasicEnum {
-  constructor () {
+  /**
+   * @enum
+   */
+  constructor() {
     super('RequestStatus')
 
     this.NUOVA = 1
@@ -30,4 +33,4 @@ class RequestStatus extends BasicEnum {
   }
 }
 
-export default new RequestStatus()
+module.exports = new RequestStatus()

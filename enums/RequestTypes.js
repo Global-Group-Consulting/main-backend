@@ -1,7 +1,7 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
 
 class RequestTypes extends BasicEnum {
-  constructor () {
+  constructor() {
     super('RequestTypes')
 
     // this.ADMIN = 1
@@ -35,4 +35,4 @@ class RequestTypes extends BasicEnum {
   }
 }
 
-export default new RequestTypes()
+module.exports = new RequestTypes()
