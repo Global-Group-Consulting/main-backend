@@ -5,6 +5,7 @@
 /** @type {import("../../../Models/Request")} */
 
 const RequestModel = use("App/Models/Request")
+const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
 
 class RequestController {
 
@@ -23,7 +24,7 @@ class RequestController {
     const data = await RequestModel.find(params.id)
 
     if (!data) {
-      return response.badRequest()
+      throw new RequestNotFoundException()
     }
 
     return data
@@ -53,7 +54,7 @@ class RequestController {
     const existingRequest = await RequestModel.find(params.id)
 
     if (!existingRequest) {
-      return response.badRequest()
+      throw new RequestNotFoundException()
     }
 
     existingRequest.merge(incomingData)
@@ -68,7 +69,21 @@ class RequestController {
    * @param {Params} ctx.params
    * @param {AdonisHttpResponse} ctx.response
    */
-  async delete({ params, response }) { }
+  async delete({ params, response }) {
+    const foundedRequest = await RequestModel.find(params.id)
+
+    if (!foundedRequest) {
+      throw new RequestNotFoundException()
+    }
+
+    const result = await foundedRequest.delete()
+
+    if (result) {
+      return response.ok()
+    } else {
+      return response.badRequest("Can't delete request.")
+    }
+  }
 
 }
 

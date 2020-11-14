@@ -5,6 +5,7 @@ module.exports = function (Route) {
 
     Route
       .post('/', 'RequestController.create')
+      .validator("requests/create")
 
     Route
       .put('/:id', 'RequestController.update')
@@ -15,6 +16,7 @@ module.exports = function (Route) {
 
     Route
       .delete('/:id', 'RequestController.delete')
+      .validator("requests/delete")
 
 
   }).prefix('/api/requests')
