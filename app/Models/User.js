@@ -15,6 +15,8 @@ const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 
+const { groupBy: _groupBy } = require("lodash")
+
 class User extends Model {
   static userFields = {
     'personType': '',
@@ -146,6 +148,27 @@ class User extends Model {
     if (!result) {
       throw new UserNotFoundException()
     }
+  }
+
+  static async groupByRole(filter = {}, returnFlat = false) {
+    const data = await this.where({ ...filter })
+      .sort({ firstName: 1, lastName: 1 })
+      .fetch()
+
+    if (returnFlat) {
+      return data.rows || []
+    }
+
+    const groupedData = _groupBy(data.rows, (value) => value.role)
+
+    return Object.keys(groupedData).reduce((acc, key) => {
+      acc.push({
+        id: key.toString(),
+        data: groupedData[key]
+      })
+
+      return acc
+    }, [])
   }
 
   /**

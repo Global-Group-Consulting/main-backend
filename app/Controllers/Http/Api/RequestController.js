@@ -105,11 +105,16 @@ class RequestController {
    * @param {Params} ctx.params
    * @param {AdonisHttpResponse} ctx.response
    */
-  async delete({ params, response }) {
+  async delete({ params, response, auth }) {
     const foundedRequest = await RequestModel.find(params.id)
 
     if (!foundedRequest) {
       throw new RequestNotFoundException()
+    }
+
+    if (+foundedRequest.status !== RequestStatus.NUOVA
+      || auth.user.id.toString() !== foundedRequest.userId.toString()) {
+      return response.badRequest("Can't delete request.")
     }
 
     const result = await foundedRequest.delete()

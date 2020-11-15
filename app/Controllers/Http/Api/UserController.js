@@ -129,44 +129,22 @@ class UserController {
     return auth.user
   }
 
-  async getAll({ request }) {
-    const filter = request.input("f")
+  async getAll({ request, auth }) {
+    const userRole = +auth.user.role
+    const filter = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) ? request.input("f") : null
+    let match = {}
+    let returnFlat = false
 
     if (filter) {
-      const result = await User.where({ role: { $in: [filter.toString(), +filter] } })
-        .sort({ firstName: 1, lastName: 1 })
-        .fetch()
-
-      return result ? result.rows : []
+      match = { role: { $in: [filter.toString(), +filter] } }
+      returnFlat = true
     }
 
-    const result = await User.query().aggregate([
-      {
-        $group: {
-          _id: { $toInt: '$role' },
-          data: {
-            $push: '$$ROOT'
-          }
-        }
-      }
-    ])
+    if (userRole === UserRoles.AGENTE) {
+      match = { "referenceAgent": auth.user.id.toString() }
+    }
 
-
-    return result.map(_group => {
-      _group.id = +_group._id
-
-      delete _group._id
-
-      _group.data = _group.data.map(_entry => {
-        _entry.id = _entry._id.toString()
-
-        delete _entry._id
-
-        return _entry
-      })
-
-      return _group
-    })
+    return await User.groupByRole(match, returnFlat)
   }
 
   async getValidatedUsers() {
