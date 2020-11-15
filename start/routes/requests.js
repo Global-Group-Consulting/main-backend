@@ -18,7 +18,15 @@ module.exports = function (Route) {
       .delete('/:id', 'RequestController.delete')
       .validator("requests/delete")
 
+    Route
+      .put('/:id/approve', 'RequestController.approve')
+      .validator("requests/delete")
+
+    Route
+      .put('/:id/reject', 'RequestController.reject')
+      .validator("requests/reject")
 
   }).prefix('/api/requests')
+    .middleware('auth')
     .namespace('Api')
 }

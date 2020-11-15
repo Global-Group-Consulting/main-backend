@@ -35,6 +35,10 @@ class Request extends Model {
       data.status = RequestStatus.NUOVA
     })
 
+    this.addHook("beforeSave", /** @param {RequestModel} data */async (data) => {
+      data.files = null
+    })
+
     this.addHook("afterCreate", async (data) => {
       this.switchIdField(data)
     })
@@ -55,13 +59,73 @@ class Request extends Model {
   }
 
   static async includeFiles(data) {
-    data.files = await File.where({ requestId: data.id }).fetch()
+    const files = await File.where({ requestId: data.id }).fetch()
+
+    data.files = files.rows || files
   }
 
   static switchIdField(data) {
     data.id = data._id.toString()
 
     return data
+  }
+
+  static async allWithUser() {
+    return this.query().aggregate([
+      {
+        '$addFields': {
+          'uId': {
+            '$toObjectId': '$userId'
+          },
+          'id': {
+            '$toString': "$_id"
+          }
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'uId': '$uId'
+          },
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$$uId', '$_id'
+                  ]
+                }
+              }
+            }, {
+              '$project': {
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1
+              }
+            }
+          ],
+          'as': 'user'
+        }
+      }, {
+        '$lookup': {
+          'from': 'files',
+          'let': {
+            "id": { $toString: "$_id" }
+          },
+          'pipeline': [
+            { "$match": { $expr: { $eq: ["$$id", "$requestId"] } } }
+          ],
+          'as': 'files'
+        }
+      }, {
+        '$unwind': '$user'
+      }, {
+        '$project': {
+          '_id': 0,
+        }
+      }
+    ])
   }
 
   get_id(value) {

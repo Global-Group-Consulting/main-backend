@@ -9,6 +9,7 @@ const RequestModel = use("App/Models/Request")
 const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
 const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
 const UserRoles = require("../../../../enums/UserRoles")
+const RequestStatus = require("../../../../enums/RequestStatus")
 
 
 /** @type {import("../../../Models/Request")} */
@@ -21,6 +22,10 @@ class RequestController {
     const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
     const sorting = { "created_at": -1, "updated_at": -1, "completed_at": -1, "firstName": 1, "lastname": 1 }
     const filter = adminUser ? {} : { userId: auth.user.id.toString() }
+
+    if (adminUser) {
+      return await RequestModel.allWithUser()
+    }
 
     const data = await RequestModel.where(filter).sort(sorting).fetch()
 
@@ -116,6 +121,47 @@ class RequestController {
     }
   }
 
+  async approve({ params, response }) {
+    const requestId = params.id
+    const foundedRequest = await RequestModel.find(requestId)
+
+    if (!foundedRequest) {
+      throw new RequestNotFoundException()
+    }
+
+    if (+foundedRequest.status !== RequestStatus.NUOVA) {
+      return response.badRequest("Can't change request status.")
+    }
+
+    foundedRequest.status = RequestStatus.ACCETTATA
+    foundedRequest.completed_at = new Date()
+
+    await foundedRequest.save()
+
+    return foundedRequest
+  }
+
+  async reject({ request, params, response }) {
+    const requestId = params.id
+    const reason = request.input("reason")
+    const foundedRequest = await RequestModel.find(requestId)
+
+    if (!foundedRequest) {
+      throw new RequestNotFoundException()
+    }
+
+    if (+foundedRequest.status !== RequestStatus.NUOVA) {
+      return response.badRequest("Can't change request status.")
+    }
+
+    foundedRequest.status = RequestStatus.RIFIUTATA
+    foundedRequest.rejectReason = reason
+    foundedRequest.completed_at = new Date()
+
+    await foundedRequest.save()
+
+    return foundedRequest
+  }
 }
 
 module.exports = RequestController
