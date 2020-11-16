@@ -131,7 +131,7 @@ class UserController {
 
   async getAll({ request, auth }) {
     const userRole = +auth.user.role
-    const filter = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) ? request.input("f") : null
+    const filterRole = request.input("f")
     let match = {}
     let returnFlat = false
 
