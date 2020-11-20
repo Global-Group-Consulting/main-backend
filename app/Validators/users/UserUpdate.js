@@ -10,6 +10,7 @@ class UserUpdate {
     return {
       id: 'required|idExists',
       email: 'required',
+      contractPercentage: "required|number",
       contractInitialInvestment: "number"
     }
   }

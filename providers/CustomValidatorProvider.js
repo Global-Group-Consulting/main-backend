@@ -1,6 +1,7 @@
 'use strict'
 
 const { ServiceProvider } = require('@adonisjs/fold')
+const MovementTypes = require("../enums/MovementTypes")
 
 class CustomValidatorProvider extends ServiceProvider {
   /**
@@ -74,6 +75,22 @@ class CustomValidatorProvider extends ServiceProvider {
       if (!validObjectId) {
         throw "Invalid id"
       }
+    })
+
+    Validator.extend('validMovement', async function (data, field, message, args, get) {
+      const value = get(data, field)
+      let validObjectId = true
+
+      if (Number.isNaN(+value)) {
+        return
+      }
+
+      const existingType = MovementTypes.data[value]
+
+      if (!existingType) {
+        throw "Invalid movement type"
+      }
+
     })
   }
 }

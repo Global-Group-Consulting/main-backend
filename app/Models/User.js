@@ -236,6 +236,10 @@ class User extends Model {
     return this.hasMany('App/Models/Token')
   }
 
+  movements() {
+    return this.hasMany('App/Models/Movement', "_id", "userId")
+  }
+
   files() {
     return this.hasMany(File, "_id", "userId")
   }
