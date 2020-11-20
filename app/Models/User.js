@@ -8,14 +8,16 @@ const Model = use('Model')
 const File = use('App/Models/File')
 const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
 
-
 const ContractCounter = use('App/Controllers/Http/CountersController')
+
+/** @type {import("./History")} */
+const HistoryModel = use('App/Models/History')
 
 const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 
-const { groupBy: _groupBy } = require("lodash")
+const { groupBy: _groupBy, omit: _omit, pick: _pick } = require("lodash")
 
 class User extends Model {
   static userFields = {
@@ -82,7 +84,25 @@ class User extends Model {
   }
 
   static async includeFiles(data) {
-    data.files = await File.where({ userId: data.id }).fetch()
+    // const files = await File.where({ userId: { $in: [data.id.toString(), data.id] } }).fetch()
+    const files = await data.files().fetch()
+
+    data.files = files.rows ? files.rows : files
+  }
+
+  static async includeReferenceAgent(data) {
+    const agent = await data.fetchReferenceAgent().fetch()
+
+    if (agent) {
+      const jsonData = agent.toJSON()
+
+      data.referenceAgentData = {
+        id: jsonData.id,
+        firstName: jsonData.firstName,
+        lastName: jsonData.lastName,
+        email: jsonData.email,
+      }
+    }
   }
 
   static boot() {
@@ -116,11 +136,13 @@ class User extends Model {
     this.addHook('beforeSave', async (userInstance) => {
       userInstance.id && (delete userInstance.id)
 
-      userInstance.files = null
+      userInstance.files = []
 
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
+
+      HistoryModel.addChanges(this, userInstance)
     })
 
     this.addHook('afterSave', async (userData) => {
@@ -131,6 +153,11 @@ class User extends Model {
       userInstance.id = userInstance._id
 
       await this.includeFiles(userInstance)
+
+      if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userInstance.role) &&
+        userInstance.referenceAgent) {
+        await this.includeReferenceAgent(userInstance)
+      }
     })
     this.addHook('afterFetch', async (userInstances) => {
       userInstances.map(inst => inst.id = inst._id)
@@ -150,16 +177,33 @@ class User extends Model {
     }
   }
 
-  static async groupByRole(filter = {}, returnFlat = false) {
-    const data = await this.where({ ...filter })
+  static async groupByRole(filter = {}, returnFlat = false, project) {
+    let data = await this.where({ ...filter })
       .sort({ firstName: 1, lastName: 1 })
       .fetch()
 
-    if (returnFlat) {
-      return data.rows || []
+    data = data.rows
+
+    if (project) {
+      const mode = Object.values(project).includes(1) ? "pick" : "omit"
+      const projectKeys = Object.keys(project)
+
+      data = data.map(_entry => {
+        const jsonData = _entry.toJSON()
+
+        if (mode === "pick") {
+          return _pick(jsonData, projectKeys)
+        } else {
+          return _omit(jsonData, projectKeys)
+        }
+      })
     }
 
-    const groupedData = _groupBy(data.rows, (value) => value.role)
+    if (returnFlat) {
+      return data || []
+    }
+
+    const groupedData = _groupBy(data, (value) => value.role)
 
     return Object.keys(groupedData).reduce((acc, key) => {
       acc.push({
@@ -193,11 +237,15 @@ class User extends Model {
   }
 
   files() {
-    return this.hasMany('App/Models/File')
+    return this.hasMany(File, "_id", "userId")
   }
 
   apiTokens() {
-    return this.hasMany('App/Model/Token')
+    return this.hasMany('App/Models/Token')
+  }
+
+  fetchReferenceAgent() {
+    return this.hasOne(User, "referenceAgent", "_id")
   }
 
   get_id(value) {

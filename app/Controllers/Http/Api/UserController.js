@@ -7,6 +7,9 @@
 const User = use('App/Models/User')
 const Token = use('App/Models/Token')
 const File = use('App/Models/File')
+/** @type {import("./History")} */
+const HistoryModel = use('App/Models/History')
+
 const Persona = use('Persona')
 const Event = use('Event')
 const AccountStatuses = require("../../../../enums/AccountStatuses")
@@ -16,8 +19,14 @@ const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
 class UserController {
   async create({ request, response, auth }) {
     const incomingUser = request.only(User.updatableFields)
-    const user = await Persona.register(incomingUser)
 
+    if (+auth.user.role === UserRoles.AGENTE) {
+      incomingUser.referenceAgent = auth.user.id.toString()
+    }
+
+    incomingUser.lastChangedBy = auth.user.id
+
+    const user = await Persona.register(incomingUser)
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
@@ -40,8 +49,9 @@ class UserController {
 
     delete incomingUser.email
 
-    const result = await Persona.updateProfile(user, incomingUser)
+    incomingUser.lastChangedBy = auth.user.id
 
+    const result = await Persona.updateProfile(user, incomingUser)
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
@@ -58,7 +68,7 @@ class UserController {
     await user.delete()
   }
 
-  async approve({ params }) {
+  async approve({ params, auth }) {
     const user = await User.find(params.id)
 
     if (!user) {
@@ -71,6 +81,8 @@ class UserController {
     }
 
     user.account_status = AccountStatuses.APPROVED
+
+    user.lastChangedBy = auth.user.id
 
     await user.save()
 
@@ -105,7 +117,7 @@ class UserController {
     Event.emit("user::approved", { user, token: token.token })
   }
 
-  async changeStatus({ params, request }) {
+  async changeStatus({ params, request, auth }) {
     const userId = params.id
     const newStatus = request.input("status")
 
@@ -115,6 +127,7 @@ class UserController {
       throw new UserNotFoundException()
     }
 
+    user.lastChangedBy = auth.user.id
     user.account_status = newStatus
 
     await user.save()
@@ -131,20 +144,28 @@ class UserController {
 
   async getAll({ request, auth }) {
     const userRole = +auth.user.role
-    const filterRole = request.input("f")
+    const filterRole = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) ? request.input("f") : null
     let match = {}
     let returnFlat = false
+    let project = null
 
-    if (filter) {
-      match = { role: { $in: [filter.toString(), +filter] } }
+    // Filter used for fetching agents list
+    if (filterRole && +filterRole === UserRoles.AGENTE) {
+      match = { role: { $in: [filterRole.toString(), +filterRole] } }
       returnFlat = true
+      project = {
+        "firstName": 1,
+        "lastName": 1,
+        "role": 1,
+        "id": 1
+      }
     }
 
     if (userRole === UserRoles.AGENTE) {
       match = { "referenceAgent": auth.user.id.toString() }
     }
 
-    return await User.groupByRole(match, returnFlat)
+    return await User.groupByRole(match, returnFlat, project)
   }
 
   async getValidatedUsers() {

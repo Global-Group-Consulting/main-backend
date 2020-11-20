@@ -33,6 +33,7 @@
     "@adonisjs/session": "^1.0.27",
     "@adonisjs/shield": "^1.0.8",
     "@adonisjs/validator": "^5.0.6",
+    "@netilon/differify": "^3.3.2",
     "adonis-antl": "^1.0.5",
     "adonis-mail-provider": "^2.0.2",
     "adonis-validation-provider": "^3.0.5",
