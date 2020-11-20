@@ -26,7 +26,7 @@ class RequestController {
     const filter = adminUser ? {} : { userId: { $in: [auth.user.id.toString(), new MongoTypes.ObjectId(auth.user.id)] } }
 
     if (adminUser) {
-      return await RequestModel.allWithUser()
+      return await RequestModel.allWithUser(sorting)
     }
 
     const data = await RequestModel.where(filter).sort(sorting).fetch()

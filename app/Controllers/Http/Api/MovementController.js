@@ -77,8 +77,13 @@ class MovementController {
    * @param {{auth: {user: {id: string}}}} param0 
    * @returns {{deposit:number, interestAmount:number, interestPercentage:number}}
    */
-  async currentStatus({ auth }) {
-    const userId = auth.user.id
+  async currentStatus({ params, auth }) {
+    let userId = auth.user.id
+    let userRole = +auth.user.role
+
+    if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+      userId = params["id"]
+    }
 
     /** @type {IMovement} */
     const result = await MovementModel.getLast(userId)

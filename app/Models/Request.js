@@ -10,7 +10,7 @@ const { Types: MongoTypes } = require('mongoose');
 const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require("../../enums/RequestTypes")
 
-/** @type {import("./Movement")} */
+/** @type {typeof import("./Movement")} */
 const MovementModel = use("App/Models/Movement")
 
 const modelFields = {
@@ -37,6 +37,7 @@ class Request extends Model {
 
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
 
+      // Auto approve some types of requests
       if ([RequestTypes.RISC_INTERESSI, RequestTypes.INTERESSI].includes(data.type)) {
         const typeData = RequestTypes.get(data.type)
 
@@ -59,6 +60,30 @@ class Request extends Model {
 
     this.addHook("beforeSave", /** @param {IRequest} data */async (data) => {
       data.files = null
+
+      const lastMovement = await MovementModel.getLast(data.userId)
+
+      // Store the current available amount for future reference
+      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)) {
+        data.availableAmount = lastMovement.deposit
+      } else if (RequestTypes.RISC_INTERESSI === data.type) {
+        data.availableAmount = lastMovement.interestAmount
+      }
+
+      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
+        const typeData = RequestTypes.get(data.type)
+
+        try {
+          await MovementModel.create({
+            userId: data.userId,
+            movementType: typeData.movement,
+            amountChange: data.amount,
+          })
+        } catch (er) {
+          data.rejectReason = er.message
+          data.status = RequestStatus.RIFIUTATA
+        }
+      }
     })
 
     this.addHook("afterCreate", async (data) => {
@@ -92,8 +117,9 @@ class Request extends Model {
     return data
   }
 
-  static async allWithUser() {
+  static async allWithUser(sorting = {}) {
     return this.query().aggregate([
+      { "$sort": sorting },
       {
         '$addFields': {
           'uId': {

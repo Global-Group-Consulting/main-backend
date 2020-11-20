@@ -9,6 +9,7 @@ export interface Request {
   type: typeof RequestTypes
   wallet: typeof WalletTypes
   amount: number
+  availableAmount: number
   currency: typeof CurrencyType
   notes: string
 

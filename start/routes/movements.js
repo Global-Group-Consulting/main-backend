@@ -2,7 +2,7 @@ module.exports = function (Route) {
   Route.group(() => {
     Route.get('/', "MovementController.read")
 
-    Route.get('/status', "MovementController.currentStatus")
+    Route.get('/status/:id?', "MovementController.currentStatus")
 
     Route.get('/:id', "MovementController.read")
       .validator("Movements/Read")
@@ -14,5 +14,6 @@ module.exports = function (Route) {
       .validator("Movements/Cancel")
 
   }).prefix('/api/movements')
+    .middleware('auth')
     .namespace('Api')
 }

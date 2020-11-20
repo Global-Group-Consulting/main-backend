@@ -156,6 +156,11 @@ class Movement extends Model {
     return result
   }
 
+  /**
+   * 
+   * @param {} id 
+   * @returns {IMovement}
+   */
   static async getLast(id) {
     if (typeof id === "string") {
       id = new MongoTypes.ObjectId(id)
