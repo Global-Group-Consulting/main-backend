@@ -1,13 +1,17 @@
 'use strict'
 
-/** @typedef {import('../../@types/Request.d').Request} RequestModel */
+/** @typedef {import('../../@types/Request.d').Request} IRequest \ */
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
+const { Types: MongoTypes } = require('mongoose');
 
 const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require("../../enums/RequestTypes")
+
+/** @type {import("./Movement")} */
+const MovementModel = use("App/Models/Movement")
 
 const modelFields = {
   userId: "",
@@ -31,11 +35,29 @@ class Request extends Model {
   static boot() {
     super.boot()
 
-    this.addHook("beforeCreate", /** @param {RequestModel} data */async (data) => {
-      data.status = RequestStatus.NUOVA
+    this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
+
+      if ([RequestTypes.RISC_INTERESSI, RequestTypes.INTERESSI].includes(data.type)) {
+        const typeData = RequestTypes.get(data.type)
+
+        try {
+          await MovementModel.create({
+            userId: data.userId,
+            movementType: typeData.movement,
+            amountChange: data.amount,
+          })
+
+          data.status = RequestStatus.ACCETTATA
+        } catch (er) {
+          data.rejectReason = er.message
+          data.status = RequestStatus.RIFIUTATA
+        }
+      } else {
+        data.status = RequestStatus.NUOVA
+      }
     })
 
-    this.addHook("beforeSave", /** @param {RequestModel} data */async (data) => {
+    this.addHook("beforeSave", /** @param {IRequest} data */async (data) => {
       data.files = null
     })
 
@@ -150,6 +172,26 @@ class Request extends Model {
 
   getCurrency(value) {
     return +value
+  }
+
+  setAmount(value) {
+    return +value
+  }
+
+  setType(value) {
+    return +value
+  }
+
+  setStatus(value) {
+    return +value
+  }
+
+  setWallet(value) {
+    return +value
+  }
+
+  setUserId(value) {
+    return value ? new MongoTypes.ObjectId(value.toString()) : value
   }
 }
 

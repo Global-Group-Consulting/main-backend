@@ -19,4 +19,5 @@ export interface Request {
   email: string
   firstName: string
   lastName: string
+  rejectReason: string
 }

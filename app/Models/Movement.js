@@ -24,7 +24,7 @@ class Movement extends Model {
       async (data) => {
         const movementTypeId = MovementTypes.get(data.movementType).id
         /** @type {IMovement} */
-        const lastMovement = await Movement.getLast(data._id)
+        const lastMovement = await Movement.getLast(data.userId)
         const cancelType = [MovementTypes.CANCEL_COMMISSION_COLLECTED, MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED]
           .includes(data.movementType)
 

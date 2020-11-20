@@ -11,6 +11,8 @@ const UserNotFoundException = require("../../../Exceptions/UserNotFoundException
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
 
+const { Types: MongoTypes } = require('mongoose');
+
 
 /** @type {import("../../../Models/Request")} */
 const UserModel = use("App/Models/User")
@@ -21,7 +23,7 @@ class RequestController {
   async readAll({ auth }) {
     const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
     const sorting = { "created_at": -1, "updated_at": -1, "completed_at": -1, "firstName": 1, "lastname": 1 }
-    const filter = adminUser ? {} : { userId: auth.user.id.toString() }
+    const filter = adminUser ? {} : { userId: { $in: [auth.user.id.toString(), new MongoTypes.ObjectId(auth.user.id)] } }
 
     if (adminUser) {
       return await RequestModel.allWithUser()

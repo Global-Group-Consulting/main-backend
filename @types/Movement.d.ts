@@ -1,5 +1,5 @@
 
-export interface IMovement {
+export default interface IMovement {
   // Soldi attualmente disponibili già con tutto calcolato.
   deposit: number,
   depositOld: number,
