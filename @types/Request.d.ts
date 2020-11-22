@@ -9,6 +9,7 @@ export interface Request {
   type: typeof RequestTypes
   wallet: typeof WalletTypes
   amount: number
+  availableAmount: number
   currency: typeof CurrencyType
   notes: string
 
@@ -19,4 +20,5 @@ export interface Request {
   email: string
   firstName: string
   lastName: string
+  rejectReason: string
 }

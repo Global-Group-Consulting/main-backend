@@ -5,6 +5,7 @@ const User = use('App/Models/User')
 const Event = use('Event')
 const Persona = use('Persona')
 const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
+const AccountStatuses = require('../../../../enums/AccountStatuses')
 
 
 /**
@@ -30,22 +31,30 @@ class AuthController {
    */
   async login({ request, auth, response }) {
     const { email, password } = request.only(['email', 'password'])
+    let authResult = null
 
     try {
       /**
        * @type {AuthResult}
        */
-      const authResult = await auth
+      authResult = await auth
         .withRefreshToken()
         .attempt(email, password)
-
-      return response.json({
-        'token': authResult.token,
-        'refreshToken': authResult.refreshToken
-      })
     } catch (e) {
       throw new InvalidLoginException()
     }
+
+    const user = await User.where({ email }).first()
+
+    if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)) {
+      throw new InvalidLoginException("Invalid user.")
+    }
+
+    return response.json({
+      'token': authResult.token,
+      'refreshToken': authResult.refreshToken
+    })
+
   }
 
   async user({ request, auth, response }) {
