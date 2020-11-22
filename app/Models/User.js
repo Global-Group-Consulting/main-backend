@@ -13,9 +13,13 @@ const ContractCounter = use('App/Controllers/Http/CountersController')
 /** @type {import("./History")} */
 const HistoryModel = use('App/Models/History')
 
+/** @type {import("./Movement")} */
+const MovementModel = use('App/Models/Movement')
+
 const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
+const MovementTypes = require("../../enums/MovementTypes")
 
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require("lodash")
 
@@ -142,6 +146,19 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password)
       }
 
+      if (userInstance.account_status === AccountStatuses.APPROVED) {
+        try {
+          await MovementModel.create({
+            userId: userInstance,
+            movementType: MovementTypes.INITIAL_DEPOSIT,
+            amountChange: +userInstance.contractInitialInvestment,
+            interestPercentage: +userInstance.contractPercentage
+          })
+        } catch (er) {
+          throw new Error("Can't create initial deposit movement.", er.message)
+        }
+      }
+
       HistoryModel.addChanges(this, userInstance)
     })
 
@@ -236,9 +253,9 @@ class User extends Model {
     return this.hasMany('App/Models/Token')
   }
 
-  movements() {
-    return this.hasMany('App/Models/Movement', "_id", "userId")
-  }
+  // movements() {
+  //   return this.hasMany('App/Models/Movement', "_id", "userId")
+  // }
 
   files() {
     return this.hasMany(File, "_id", "userId")
@@ -262,6 +279,22 @@ class User extends Model {
 
   getPersonType(value) {
     return +value
+  }
+
+  getContractPercentage(value) {
+    return +value
+  }
+
+  setRole(value) {
+    return value ? +value : value
+  }
+
+  setPersonType(value) {
+    return value ? +value : value
+  }
+
+  setContractInitialInvestment(value) {
+    return value ? +value : value
   }
 }
 

@@ -3,20 +3,25 @@
 /** @typedef {import('@adonisjs/framework/src/Params')} Params */
 /** @typedef {import("../../../../@types/HttpResponse").AdonisHttpResponse} AdonisHttpResponse */
 
-/** @type {import("../../../Models/Request")} */
+const { Types: MongoTypes } = require('mongoose');
+
+/** @type {typeof import("../../../Models/Request")} */
 const RequestModel = use("App/Models/Request")
+
+/** @type {typeof import("../../../Models/Movement")} */
+const MovementModel = require('../../../Models/Movement')
+
+/** @type {import("../../../Models/Request")} */
+const UserModel = use("App/Models/User")
+const FileModel = use("App/Models/File")
 
 const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
 const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
+const MovementTypes = require("../../../../enums/MovementTypes")
 
-const { Types: MongoTypes } = require('mongoose');
 
-
-/** @type {import("../../../Models/Request")} */
-const UserModel = use("App/Models/User")
-const FileModel = use("App/Models/File")
 
 class RequestController {
 
@@ -29,9 +34,8 @@ class RequestController {
       return await RequestModel.allWithUser(sorting)
     }
 
-    const data = await RequestModel.where(filter).sort(sorting).fetch()
-
-    return data
+    // const data = await RequestModel.where(filter).sort(sorting).fetch()
+    return await RequestModel.allForUser(auth.user.id, sorting)
   }
 
   /**
@@ -164,6 +168,28 @@ class RequestController {
     foundedRequest.status = RequestStatus.RIFIUTATA
     foundedRequest.rejectReason = reason
     foundedRequest.completed_at = new Date()
+
+    await foundedRequest.save()
+
+    return foundedRequest
+  }
+
+  async cancel({ request, params, response }) {
+    const requestId = params.id
+    const reason = request.input("reason")
+    const foundedRequest = await RequestModel.find(requestId)
+
+    if (!foundedRequest) {
+      throw new RequestNotFoundException()
+    }
+
+    if (+foundedRequest.status !== RequestStatus.ACCETTATA) {
+      return response.badRequest("Can't cancel this request.")
+    }
+
+    foundedRequest.status = RequestStatus.ANNULLATA
+    foundedRequest.cancelReason = reason
+    foundedRequest.completed_at = new Date().toISOString()
 
     await foundedRequest.save()
 

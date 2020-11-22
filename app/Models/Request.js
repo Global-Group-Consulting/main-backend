@@ -1,17 +1,25 @@
 'use strict'
 
 /** @typedef {import('../../@types/Request.d').Request} IRequest \ */
+/** @typedef {import('../../@types/Movement.d').default} IMovement \ */
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
-const { Types: MongoTypes } = require('mongoose');
 
-const RequestStatus = require('../../enums/RequestStatus')
-const RequestTypes = require("../../enums/RequestTypes")
+/** @type {typeof import("./User")} */
+const UserModel = use('App/Models/User')
 
 /** @type {typeof import("./Movement")} */
 const MovementModel = use("App/Models/Movement")
+
+const { Types: MongoTypes } = require('mongoose');
+const moment = require("moment")
+
+const RequestStatus = require('../../enums/RequestStatus')
+const RequestTypes = require("../../enums/RequestTypes")
+const MovementTypes = require("../../enums/MovementTypes")
+const MovementErrorException = require('../Exceptions/MovementErrorException')
 
 const modelFields = {
   userId: "",
@@ -42,13 +50,18 @@ class Request extends Model {
         const typeData = RequestTypes.get(data.type)
 
         try {
-          await MovementModel.create({
+          const user = await UserModel.find(data.userId)
+
+          const movement = await MovementModel.create({
             userId: data.userId,
             movementType: typeData.movement,
             amountChange: data.amount,
+            interestPercentage: +user.contractPercentage,
           })
 
+          data.movementId = movement._id
           data.status = RequestStatus.ACCETTATA
+          data.completed_at = new Date().toISOString()
         } catch (er) {
           data.rejectReason = er.message
           data.status = RequestStatus.RIFIUTATA
@@ -74,15 +87,26 @@ class Request extends Model {
         const typeData = RequestTypes.get(data.type)
 
         try {
-          await MovementModel.create({
+          const user = await UserModel.find(data.userId)
+
+          const movement = await MovementModel.create({
             userId: data.userId,
             movementType: typeData.movement,
             amountChange: data.amount,
+            interestPercentage: +user.contractPercentage,
           })
+
+          data.movementId = movement._id
         } catch (er) {
-          data.rejectReason = er.message
-          data.status = RequestStatus.RIFIUTATA
+          // data.rejectReason = er.message
+          // data.status = RequestStatus.RIFIUTATA
+
+          throw new Error("Can't approve the request.", er.message)
         }
+      }
+
+      if (data.status === RequestStatus.ANNULLATA) {
+        await data.cancelRequest()
       }
     })
 
@@ -166,7 +190,21 @@ class Request extends Model {
           ],
           'as': 'files'
         }
-      }, {
+      }, /* {
+        '$lookup': {
+          'from': 'movements',
+          'let': {
+            "userId": { $toObjectId: "$userId" },
+            "completed_at": "$completed_at",
+          },
+          'pipeline': [
+            { "$match": { $expr: { $eq: ["$$userId", "$userId"] } } },
+            { "$match": { $expr: { $eq: ["$movementType", 3] } } },
+            { "$match": { $expr: { $gt: ["$created_at", "$$completed_at"] } } }
+          ],
+          'as': 'movement'
+        }
+      }, */ {
         '$unwind': '$user'
       }, {
         '$project': {
@@ -174,6 +212,86 @@ class Request extends Model {
         }
       }
     ])
+  }
+
+  /**
+   * @param {string | ObjectId} userId
+   * @param {{}} [sorting]
+   */
+  static async allForUser(userId, sorting) {
+    /** @type {IMovement} */
+    const lastRecapitalization = await MovementModel.getLastRecapitalization(userId)
+
+
+    /** @type {{rows: IRequest[]}} */
+    const data = await Request.with("movement")
+      .where({ userId: { $in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)] } })
+      .sort(sorting || { "completed_at": -1 }).fetch()
+
+    return data.rows.map(_entry => {
+      _entry.canCancel = false
+
+      const jsonData = _entry.toJSON()
+
+      if (_entry.status === RequestStatus.ACCETTATA && jsonData.movement && jsonData.completed_at
+        && [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.COMMISSION_COLLECTED].includes(+jsonData.movement.movementType)) {
+        _entry.canCancel = moment(_entry.completed_at).isAfter(moment(lastRecapitalization.created_at))
+      }
+
+      return _entry
+    })
+
+  }
+
+  async cancelRequest() {
+    /* const typeData = RequestTypes.get(data.type)
+    const movementData = MovementTypes.get(typeData.movement) */
+
+    const movementRef = await MovementModel.find(this.movementId)
+
+    if (!movementRef) {
+      throw new MovementErrorException("Movement not found.")
+    }
+
+    const movementCancelRef = await MovementModel.where({ cancelRef: movementRef._id }).first()
+
+    if (movementCancelRef) {
+      throw new MovementErrorException("Movement already canceled.")
+    }
+
+    const movementType = MovementTypes.get(movementRef.movementType).cancel
+    const jsonData = movementRef.toJSON()
+
+    if (!movementType) {
+      throw new MovementError("Can't cancel this type of movement.")
+    }
+
+    delete jsonData._id
+
+    try {
+      const user = await UserModel.find(this.userId)
+
+      const movement = await MovementModel.create({
+        ...jsonData,
+        movementType,
+        depositOld: jsonData.deposit,
+        cancelRef: movementRef._id,
+        cancelReason: this.cancelReason,
+        interestPercentage: +user.contractPercentage
+      })
+
+      this.movementId = movement._id
+    } catch (er) {
+      throw new Error("Can't cancel this request.", er.message)
+    }
+  }
+
+  user() {
+    return this.belongsTo('App/Models/User', "userId", "_id")
+  }
+
+  movement() {
+    return this.hasOne('App/Models/Movement', "movementId", "_id")
   }
 
   get_id(value) {

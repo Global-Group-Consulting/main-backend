@@ -17,6 +17,9 @@ export default interface IMovement {
   interestAmount: number,
   interestAmountOld: number,
 
+  requestId: string
+  userId: string
+
   // Riferimento al movimento che sta stornando
   cancelRef: string,
 

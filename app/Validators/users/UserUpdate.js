@@ -11,7 +11,7 @@ class UserUpdate {
       id: 'required|idExists',
       email: 'required',
       contractPercentage: "required|number",
-      contractInitialInvestment: "number"
+      contractInitialInvestment: "required|number"
     }
   }
 }

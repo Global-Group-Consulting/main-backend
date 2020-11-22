@@ -7,7 +7,7 @@
 
 /** @type {LucidModel} */
 const Model = use('Model')
-const UserModel = use("App/Models/User")
+
 const { Types: MongoTypes } = require('mongoose');
 const { camelCase: _camelCase, upperFirst: _upperFirst } = require("lodash")
 
@@ -22,6 +22,13 @@ class Movement extends Model {
     this.addHook("beforeCreate",
       /** @param { MovementInstance } data */
       async (data) => {
+        let user = null
+
+        if (data.userId.constructor.name === "User") {
+          user = data.userId
+          data.userId = user._id
+        }
+
         const movementTypeId = MovementTypes.get(data.movementType).id
         /** @type {IMovement} */
         const lastMovement = await Movement.getLast(data.userId)
@@ -40,10 +47,12 @@ class Movement extends Model {
           return
         }
 
-        const user = await data.user()
+        if (!data.interestPercentage) {
+          throw new MovementErrorException("Missing interest percentage.")
+        }
 
-        data.interestPercentage = user.contractPercentage || 0
         data.depositOld = 0
+        data.interestAmountOld = 0
 
         // if doesn't exist a last movement, then must be created an initial deposit.
         if (!lastMovement) {
@@ -157,6 +166,16 @@ class Movement extends Model {
   }
 
   /**
+   * @param {string | ObjectId} userId 
+   */
+  static async getLastRecapitalization(userId) {
+    if (typeof userId === "string") {
+      userId = new MongoTypes.ObjectId(userId)
+    }
+
+    return await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, userId }).sort({ created_at: -1 }).first()
+  }
+  /**
    * 
    * @param {} id 
    * @returns {IMovement}
@@ -178,8 +197,8 @@ class Movement extends Model {
   }
 
   async user() {
-    return await UserModel.where({ "_id": this.userId }).first()
-    // return this.belongsTo('App/Models/User', "userId", "_id")
+    // return await UserModel.where({ "_id": this.userId }).first()
+    return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
   async canCancel() {
@@ -191,6 +210,10 @@ class Movement extends Model {
 
 
   setUserId(value) {
+    if (!value || typeof value !== "string") {
+      return value
+    }
+
     return value ? new MongoTypes.ObjectId(value) : value
   }
 

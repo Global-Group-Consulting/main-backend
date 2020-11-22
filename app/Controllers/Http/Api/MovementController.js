@@ -3,6 +3,7 @@
 /** @typedef {import('../../../../@types/Movement.d').IMovement} IMovement*/
 
 const MovementModel = use("App/Models/Movement")
+const UserModel = use("App/Models/User")
 const MovementTypes = require("../../../../enums/MovementTypes")
 const UserRoles = require('../../../../enums/UserRoles')
 const MovementErrorException = require('../../../Exceptions/MovementErrorException')
@@ -28,7 +29,18 @@ class MovementController {
      */
     const data = request.all()
 
-    const newMovement = await MovementModel.create(data)
+    if ([MovementTypes.CANCEL_INTEREST_COLLECTED,
+    MovementTypes.CANCEL_DEPOSIT_COLLECTED,
+    MovementTypes.CANCEL_COMMISSION_COLLECTED].includes(+data.movementType)) {
+      throw new MovementErrorException("Can't add this type of movement.")
+    }
+
+    const user = await UserModel.find(data.userId)
+
+    const newMovement = await MovementModel.create({
+      ...data,
+      interestPercentage: +user.contractPercentage
+    })
 
     return newMovement
   }
@@ -58,6 +70,8 @@ class MovementController {
     if (!movementType) {
       throw new MovementError("Can't cancel this type of movement.")
     }
+    const user = await UserModel.find(data.userId)
+
 
     delete jsonData._id
 
@@ -66,7 +80,8 @@ class MovementController {
       movementType,
       depositOld: jsonData.deposit,
       cancelRef: movementId,
-      cancelReason: reason
+      cancelReason: reason,
+      interestPercentage: +user.contractPercentage
     })
 
     return newMovement
