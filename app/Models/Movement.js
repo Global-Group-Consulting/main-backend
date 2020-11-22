@@ -167,6 +167,7 @@ class Movement extends Model {
 
   /**
    * @param {string | ObjectId} userId 
+   * @returns {IMovement}
    */
   static async getLastRecapitalization(userId) {
     if (typeof userId === "string") {
@@ -175,6 +176,17 @@ class Movement extends Model {
 
     return await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, userId }).sort({ created_at: -1 }).first()
   }
+
+  static async getPastRecapitalizations(userId) {
+    if (typeof userId === "string") {
+      userId = new MongoTypes.ObjectId(userId)
+    }
+
+    const data = await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, userId }).sort({ created_at: -1 }).fetch()
+
+    return data.rows
+  }
+
   /**
    * 
    * @param {} id 
@@ -195,6 +207,45 @@ class Movement extends Model {
 
     return await Movement.where({ userId: id }).sort({ "created_at": -1 }).fetch()
   }
+
+  static async getMonthMovements(id) {
+    if (typeof id === "string") {
+      id = new MongoTypes.ObjectId(id)
+    }
+
+    const lastRecapitalization = await Movement.getLastRecapitalization(id)
+    const movements = await Movement.where({ userId: id, "created_at": { $gt: lastRecapitalization.created_at } }).fetch()
+
+    const toReturn = {
+      depositCollected: 0,
+      interestsCollected: 0,
+    }
+
+    for (const movement of movements.toJSON()) {
+
+      switch (+movement.movementType) {
+        case MovementTypes.DEPOSIT_COLLECTED:
+          toReturn.depositCollected += movement.amountChange
+
+          break;
+        case MovementTypes.CANCEL_DEPOSIT_COLLECTED:
+          toReturn.depositCollected -= movement.amountChange
+
+          break;
+        case MovementTypes.INTEREST_COLLECTED:
+          toReturn.interestsCollected += movement.amountChange
+
+          break;
+        case MovementTypes.CANCEL_INTEREST_COLLECTED:
+          toReturn.interestsCollected -= movement.amountChange
+
+          break;
+      }
+    }
+
+    return toReturn
+  }
+
 
   async user() {
     // return await UserModel.where({ "_id": this.userId }).first()
