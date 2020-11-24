@@ -113,6 +113,21 @@ class MovementController {
       interestPercentage: result.interestPercentage
     }
   }
+
+  /**
+   * 
+   * @param {{
+   *  response: import("../../../../@types/HttpResponse").AdonisHttpResponse
+   * }} param0 
+   */
+  async import({ request, auth, response }) {
+    if (!auh.user.superAdmin) {
+      response.unauthorized()
+    }
+
+    const file = request.file("fileToImport",)
+
+  }
 }
 
 module.exports = MovementController

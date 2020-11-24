@@ -13,6 +13,8 @@ module.exports = function (Route) {
     Route.post('/:id', 'MovementController.cancel')
       .validator("Movements/Cancel")
 
+    Route.post('/import', 'MovementController.import')
+
   }).prefix('/api/movements')
     .middleware('auth')
     .namespace('Api')

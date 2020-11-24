@@ -13,7 +13,7 @@ const ContractCounter = use('App/Controllers/Http/CountersController')
 /** @type {import("./History")} */
 const HistoryModel = use('App/Models/History')
 
-/** @type {import("./Movement")} */
+/** @type {typeof import("./Movement")} */
 const MovementModel = use('App/Models/Movement')
 
 const UserRoles = require("../../enums/UserRoles")
@@ -147,15 +147,19 @@ class User extends Model {
       }
 
       if (userInstance.account_status === AccountStatuses.APPROVED) {
-        try {
-          await MovementModel.create({
-            userId: userInstance,
-            movementType: MovementTypes.INITIAL_DEPOSIT,
-            amountChange: +userInstance.contractInitialInvestment,
-            interestPercentage: +userInstance.contractPercentage
-          })
-        } catch (er) {
-          throw new Error("Can't create initial deposit movement.", er.message)
+        const lastMovement = await MovementModel.getLast(userInstance.id)
+
+        if (!lastMovement) {
+          try {
+            await MovementModel.create({
+              userId: userInstance,
+              movementType: MovementTypes.INITIAL_DEPOSIT,
+              amountChange: +userInstance.contractInitialInvestment,
+              interestPercentage: +userInstance.contractPercentage
+            })
+          } catch (er) {
+            throw new Error("Can't create initial deposit movement. " + er.message)
+          }
         }
       }
 
