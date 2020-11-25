@@ -10,10 +10,10 @@ module.exports = function (Route) {
     Route.post('/', 'MovementController.add')
       .validator("Movements/Add")
 
+    Route.post('/import', 'MovementController.import')
+
     Route.post('/:id', 'MovementController.cancel')
       .validator("Movements/Cancel")
-
-    Route.post('/import', 'MovementController.import')
 
   }).prefix('/api/movements')
     .middleware('auth')

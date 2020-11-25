@@ -37,6 +37,7 @@
     "adonis-antl": "^1.0.5",
     "adonis-mail-provider": "^2.0.2",
     "adonis-validation-provider": "^3.0.5",
+    "csv": "^5.3.2",
     "http-status-codes": "^2.1.4",
     "lodash": "^4.17.20",
     "lucid-mongo": "^3.1.6",

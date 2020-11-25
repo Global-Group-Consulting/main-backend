@@ -9,6 +9,11 @@ const UserRoles = require('../../../../enums/UserRoles')
 const MovementErrorException = require('../../../Exceptions/MovementErrorException')
 const MovementError = require("../../../Exceptions/MovementErrorException")
 
+const { parse: parseCsv } = require("csv")
+const { readFileSync } = require("fs")
+const { Types: MongoTypes } = require("mongoose")
+const moment = require("moment")
+
 class MovementController {
 
   async read({ auth, params }) {
@@ -117,16 +122,115 @@ class MovementController {
   /**
    * 
    * @param {{
+   *  request: typeof import("@adonisjs/framework/src/Request")
    *  response: import("../../../../@types/HttpResponse").AdonisHttpResponse
    * }} param0 
    */
   async import({ request, auth, response }) {
-    if (!auh.user.superAdmin) {
+    if (!auth.user || !auth.user.superAdmin) {
       response.unauthorized()
     }
 
-    const file = request.file("fileToImport",)
+    /** @type {import("@adonisjs/bodyparser/src/Multipart/File.js")} */
+    const file = request.file("fileToImport")
 
+    if (!file || file.extname !== "csv") {
+      response.expectationFailed("The provided file must be a .csv")
+    }
+
+    const fileContent = readFileSync(file.tmpPath, "utf-8")
+    const csvData = this._parseCsvFile(fileContent)
+
+    return csvData
+  }
+
+  _castToNumber(rawValue) {
+    const valueRegEx = new RegExp("[^0-9,]", "g")
+
+    let value = (rawValue || "").replace(valueRegEx, "")
+
+    return +value.replace(",", ".")
+  }
+
+  _parseInterestPercentage(rawObj) {
+    const colKey = Object.keys(rawObj).find(_key => _key.startsWith("Int. Maturato"))
+
+    if (!colKey) {
+      throw new Error("Can't find column \"Int. Maturato\"")
+    }
+
+    return +colKey.replace(/[^0-9]/g, "")
+  }
+
+  _parseCsvFile(rawFileContent) {
+    const delimiter = ","
+    const userId = new MongoTypes.ObjectId(rawFileContent.slice(0, rawFileContent.indexOf(",")))
+    const fileContent = rawFileContent.slice(rawFileContent.indexOf("\n"))
+
+    /** @type {parseCsv.Options} */
+    const options = {
+      columns: true,
+      delimiter
+    }
+
+    return new Promise((resolve, reject) => {
+      parseCsv(fileContent, options, (err, result) => {
+        if (err || (err && err.length > 0)) {
+          reject(err)
+        } else {
+          moment.locale("it")
+
+          // the file may contain future data, so i must exclude them and return only the valid data.
+          const maxYear = moment().year()
+          const maxMonth = moment().date() > 15 ? moment().month() : moment().subtract(1, "month").month()
+          const dataToReturn = []
+          const interestPercentage = this._parseInterestPercentage(result[0])
+          let lastYear = 0
+
+          for (const _entry of result) {
+            const currMonth = moment().month(_entry["Mese"].toLowerCase()).month()
+
+            let capitaleVersato = this._castToNumber(_entry["Capitale Versato"])
+            let nuovoCapitale = this._castToNumber(_entry["Nuovo Cap. Affidato"])
+
+            if (_entry["Anno"]) {
+              lastYear = +_entry["Anno"]
+            }
+
+            // If there is no deposit or new Depoit, skip the row
+            if (!capitaleVersato && !nuovoCapitale) {
+              continue
+            }
+
+            // If the lastYear is greater then the currentYear or
+            // the year is the same as the current and the month is greater than the maxMonth,
+            // breaks the cycle because the other data are useless because refers to future dates.
+            if (lastYear > maxYear || (lastYear === maxYear && currMonth > maxMonth)) {
+              break
+            }
+
+            //TODO:: Manca da aggiungere i movimenti relativi ai prelievi e ai depositi.
+
+            dataToReturn.push({
+              userId,
+              movementType: 1,
+              amountChange: this._castToNumber(_entry["Int. Ricapitalizzato"]),
+              interestPercentage,
+              depositOld: dataToReturn.length > 1 ? dataToReturn[dataToReturn.length - 1].deposit : 0,
+              interestAmountOld: dataToReturn.length > 1 ? dataToReturn[dataToReturn.length - 1].interestAmount : 0,
+              deposit: !capitaleVersato ? nuovoCapitale : capitaleVersato,
+              interestAmount: this._castToNumber(_entry[`Int. Maturato ${interestPercentage}%`]),
+              created_at: moment(`${lastYear}-${currMonth + 1}-16 00:00:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+            })
+          }
+
+          resolve({
+            userId,
+            data: dataToReturn
+          })
+        }
+      })
+    })
   }
 }
 
