@@ -128,17 +128,19 @@ class MovementController {
    */
   async import({ request, auth, response }) {
     if (!auth.user || !auth.user.superAdmin) {
-      response.unauthorized()
+      return response.unauthorized()
     }
 
     /** @type {import("@adonisjs/bodyparser/src/Multipart/File.js")} */
     const file = request.file("fileToImport")
 
     if (!file || file.extname !== "csv") {
-      response.expectationFailed("The provided file must be a .csv")
+      return response.expectationFailed("The provided file must be a .csv")
     }
 
-    const fileContent = readFileSync(file.tmpPath, "utf-8")
+    // TODO:: Controllare che non ci siano altri movimenti esistenti.
+
+    const fileContent = readFileSync(file.tmpPath, "utf8")
     const csvData = this._parseCsvFile(fileContent)
 
     return csvData
@@ -163,6 +165,10 @@ class MovementController {
   }
 
   _parseCsvFile(rawFileContent) {
+    if (!rawFileContent) {
+      throw new Error("Empty CSV file.")
+    }
+
     const delimiter = ","
     const userId = new MongoTypes.ObjectId(rawFileContent.slice(0, rawFileContent.indexOf(",")))
     const fileContent = rawFileContent.slice(rawFileContent.indexOf("\n"))
@@ -191,7 +197,9 @@ class MovementController {
             const currMonth = moment().month(_entry["Mese"].toLowerCase()).month()
 
             let capitaleVersato = this._castToNumber(_entry["Capitale Versato"])
+            let capitalePrelevato = this._castToNumber(_entry["Cap. Prelevato"])
             let nuovoCapitale = this._castToNumber(_entry["Nuovo Cap. Affidato"])
+            let interestsCollected = this._castToNumber(_entry['Int. Riscosso'])
 
             if (_entry["Anno"]) {
               lastYear = +_entry["Anno"]
@@ -209,11 +217,9 @@ class MovementController {
               break
             }
 
-            //TODO:: Manca da aggiungere i movimenti relativi ai prelievi e ai depositi.
-
-            dataToReturn.push({
+            const recapitalization = {
               userId,
-              movementType: 1,
+              movementType: !capitaleVersato ? MovementTypes.INITIAL_DEPOSIT : MovementTypes.INTEREST_RECAPITALIZED,
               amountChange: this._castToNumber(_entry["Int. Ricapitalizzato"]),
               interestPercentage,
               depositOld: dataToReturn.length > 1 ? dataToReturn[dataToReturn.length - 1].deposit : 0,
@@ -221,7 +227,52 @@ class MovementController {
               deposit: !capitaleVersato ? nuovoCapitale : capitaleVersato,
               interestAmount: this._castToNumber(_entry[`Int. Maturato ${interestPercentage}%`]),
               created_at: moment(`${lastYear}-${currMonth + 1}-16 00:00:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
-            })
+            }
+
+            dataToReturn.push(recapitalization)
+
+            // if there is already capitale and has been added new one, create a new deposit movemnet
+            if (capitaleVersato && nuovoCapitale) {
+              dataToReturn.push({
+                userId,
+                movementType: MovementTypes.DEPOSIT_ADDED,
+                amountChange: nuovoCapitale,
+                interestPercentage,
+                depositOld: recapitalization.deposit,
+                interestAmountOld: recapitalization.interestAmount,
+                deposit: nuovoCapitale + capitaleVersato,
+                interestAmount: recapitalization.interestAmount,
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:10:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+              })
+            }
+
+            if (capitalePrelevato) {
+              dataToReturn.push({
+                userId,
+                movementType: MovementTypes.DEPOSIT_COLLECTED,
+                amountChange: capitalePrelevato,
+                interestPercentage,
+                depositOld: dataToReturn[dataToReturn.length - 1].deposit,
+                interestAmountOld: dataToReturn[dataToReturn.length - 1].interestAmount,
+                deposit: dataToReturn[dataToReturn.length - 1].deposit - capitalePrelevato,
+                interestAmount: rdataToReturn[dataToReturn.length - 1].interestAmount,
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:15:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+              })
+            }
+
+            if (interestsCollected) {
+              dataToReturn.push({
+                userId,
+                movementType: MovementTypes.INTEREST_COLLECTED,
+                amountChange: interestsCollected,
+                interestPercentage,
+                depositOld: dataToReturn[dataToReturn.length - 1].deposit,
+                interestAmountOld: dataToReturn[dataToReturn.length - 1].interestAmount,
+                deposit: dataToReturn[dataToReturn.length - 1].deposit,
+                interestAmount: dataToReturn[dataToReturn.length - 1].interestAmount - interestsCollected,
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:20:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+              })
+            }
           }
 
           resolve({
