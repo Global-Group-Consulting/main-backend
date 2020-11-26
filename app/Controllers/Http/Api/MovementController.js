@@ -19,6 +19,9 @@ const { readFileSync } = require("fs")
 const { Types: MongoTypes } = require("mongoose")
 const moment = require("moment")
 
+/** @type {typeof import("../../../Exceptions/ImportException")} */
+const ImportException = use("App/Exceptions/ImportException")
+
 class MovementController {
   async read({ auth, params }) {
     const userRole = +auth.user.role
@@ -137,45 +140,54 @@ class MovementController {
 
     /** @type {import("@adonisjs/bodyparser/src/Multipart/File.js")} */
     const file = request.file("fileToImport")
+    const userId = request.input("userId")
 
     if (!file || file.extname !== "csv") {
-      return response.expectationFailed("The provided file must be a .csv")
+      throw new ImportException("The provided file must be a .csv")
     }
 
     const fileContent = readFileSync(file.tmpPath, "utf8")
     const csvData = await this._parseCsvFile(fileContent)
 
+    if (userId.toString() !== csvData.userId.toString()) {
+      throw new ImportException("The content of the file refers to another user.")
+    }
+
     /** @type {import("../../../../@types/User.d").User} */
     const user = await UserModel.find(csvData.userId)
 
     if (!user) {
-      return response.badRequest("Can't find any user with the specified id.")
+      throw new ImportException("Can't find any user with the specified id.")
     }
 
-    if (![UserRoles.AGENTE, UserRoles.CLIENTE].includes(user.role)) {
-      return response.badRequest("User is not Agente or Cliente.")
+    if (![UserRoles.AGENTE, UserRoles.CLIENTE].includes(+user.role)) {
+      throw new ImportException("User is not Agente or Cliente.")
     }
 
     // Controlla che non ci siano altri movimenti esistenti.
     const existingMovements = await MovementModel.getAll(csvData.userId)
 
     if (existingMovements.rows.length > 0) {
-      return response.badRequest("User has already registered movements, so the new ones can't be imported.")
+      throw new ImportException("User has already registered movements, so the new ones can't be imported.")
     }
 
     // Controlla che il movimento iniziale impostato per l'utente corrisponda con quello dell'importazione.
-    if (user.contractInitialInvestment !== csvData.initialInvestment) {
-      return response.badRequest("Users contract initial investment doesn't match with the one you're trying to import.")
+    if (+user.contractInitialInvestment !== csvData.initialInvestment) {
+      throw new ImportException("Users contract initial investment doesn't match with the one you're trying to import.")
     }
 
     // Controlla che l'interesse specificato per l'tente corrisponda con quello del file di importazione
-    if (user.contractPercentage !== csvData.interestPercentage) {
-      return response.badRequest("Users contract percentage doesn't match with the one you're trying to import.")
+    if (+user.contractPercentage !== csvData.interestPercentage) {
+      throw new ImportException("Users contract percentage doesn't match with the one you're trying to import.")
     }
 
     const db = await Database.connect('mongodb')
 
-    return await db.collection("movements").insertMany(csvData.movementsList)
+    // I'm using mongoose insert many instead of lucidMongo createMany because
+    // the creation must not trigger the model's hooks.
+    const insertResult = await db.collection("movements").insertMany(csvData.movementsList)
+
+    return insertResult.ops
   }
 
   /**
@@ -200,7 +212,7 @@ class MovementController {
     const colKey = Object.keys(rawObj).find(_key => _key.startsWith("Int. Maturato"))
 
     if (!colKey) {
-      throw new Error("Can't find column \"Int. Maturato\"")
+      throw new ImportException("Can't find column \"Int. Maturato\"")
     }
 
     return +colKey.replace(/[^0-9]/g, "")
@@ -219,7 +231,7 @@ class MovementController {
    */
   async _parseCsvFile(rawFileContent) {
     if (!rawFileContent) {
-      throw new Error("Empty CSV file.")
+      throw new ImportException("Empty CSV file.")
     }
 
     const delimiter = rawFileContent.match(/[;,]/)[0]
@@ -395,7 +407,7 @@ class MovementController {
     }
 
     if (errors.length > 0) {
-      return Promise.reject(errors.join(";\n "))
+      new ImportException(errors.join(";\n "))
     }
   }
 }
