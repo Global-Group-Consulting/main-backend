@@ -1,13 +1,16 @@
 'use strict'
 
+const UseRoles = require("../../../enums/UserRoles")
+
+const requiredForUsers = `required_when:role,${UseRoles.CLIENTE}|required_when:role,${UseRoles.CLIENTE}`
 class UserCreate {
   get rules() {
     return {
       email: 'required|email|unique:users',
       firstName: 'required',
       lastName: 'required',
-      contractPercentage: "required|number",
-      contractInitialInvestment: "required|number",
+      contractPercentage: `${requiredForUsers}|number`,
+      contractInitialInvestment: `${requiredForUsers}|number`,
       role: 'number',
     }
   }
