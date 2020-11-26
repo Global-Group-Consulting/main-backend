@@ -212,9 +212,19 @@ class Movement extends Model {
     if (typeof id === "string") {
       id = new MongoTypes.ObjectId(id)
     }
+    let minDate = null
 
     const lastRecapitalization = await Movement.getLastRecapitalization(id)
-    const movements = await Movement.where({ userId: id, "created_at": { $gt: lastRecapitalization.created_at } }).fetch()
+
+    if (!lastRecapitalization) {
+      const initialInvestment = await Movement.getInitialInvestment(id)
+
+      minDate = initialInvestment.created_at
+    } else {
+      minDate = lastRecapitalization.created_at
+    }
+
+    const movements = await Movement.where({ userId: id, "created_at": { $gt: minDate } }).fetch()
 
     const toReturn = {
       depositCollected: 0,

@@ -1,4 +1,5 @@
-export interface User {
+import UserModel from "../app/Models/User"
+export interface User extends UserModel {
   'personType': string,
   'businessName': string,
   'vatNumber': string,
