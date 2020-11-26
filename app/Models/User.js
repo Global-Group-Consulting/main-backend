@@ -55,6 +55,7 @@ class User extends Model {
     'mobile': '',
     'phone': '',
     'contractNumber': '',
+    'contractNumberLegacy': '',
     'contractDate': '',
     'contractPercentage': '',
     'contractInitialInvestment': 0,
@@ -299,6 +300,10 @@ class User extends Model {
 
   setContractInitialInvestment(value) {
     return value ? +value : value
+  }
+
+  setContractNumberLegacy(value) {
+    return value ? value.toString() : value
   }
 }
 
