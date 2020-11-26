@@ -2,8 +2,13 @@
 
 /** @typedef {import('../../../../@types/Movement.d').IMovement} IMovement*/
 
+/**
+ * @type {typeof import("../../../Models/Movement")}
+ */
 const MovementModel = use("App/Models/Movement")
 const UserModel = use("App/Models/User")
+const Database = use('Database')
+
 const MovementTypes = require("../../../../enums/MovementTypes")
 const UserRoles = require('../../../../enums/UserRoles')
 const MovementErrorException = require('../../../Exceptions/MovementErrorException')
@@ -15,7 +20,6 @@ const { Types: MongoTypes } = require("mongoose")
 const moment = require("moment")
 
 class MovementController {
-
   async read({ auth, params }) {
     const userRole = +auth.user.role
     const forId = params["id"]
@@ -138,14 +142,47 @@ class MovementController {
       return response.expectationFailed("The provided file must be a .csv")
     }
 
-    // TODO:: Controllare che non ci siano altri movimenti esistenti.
-
     const fileContent = readFileSync(file.tmpPath, "utf8")
-    const csvData = this._parseCsvFile(fileContent)
+    const csvData = await this._parseCsvFile(fileContent)
 
-    return csvData
+    /** @type {import("../../../../@types/User.d").User} */
+    const user = await UserModel.find(csvData.userId)
+
+    if (!user) {
+      return response.badRequest("Can't find any user with the specified id.")
+    }
+
+    if (![UserRoles.AGENTE, UserRoles.CLIENTE].includes(user.role)) {
+      return response.badRequest("User is not Agente or Cliente.")
+    }
+
+    // Controlla che non ci siano altri movimenti esistenti.
+    const existingMovements = await MovementModel.getAll(csvData.userId)
+
+    if (existingMovements.rows.length > 0) {
+      return response.badRequest("User has already registered movements, so the new ones can't be imported.")
+    }
+
+    // Controlla che il movimento iniziale impostato per l'utente corrisponda con quello dell'importazione.
+    if (user.contractInitialInvestment !== csvData.initialInvestment) {
+      return response.badRequest("Users contract initial investment doesn't match with the one you're trying to import.")
+    }
+
+    // Controlla che l'interesse specificato per l'tente corrisponda con quello del file di importazione
+    if (user.contractPercentage !== csvData.interestPercentage) {
+      return response.badRequest("Users contract percentage doesn't match with the one you're trying to import.")
+    }
+
+    const db = await Database.connect('mongodb')
+
+    return await db.collection("movements").insertMany(csvData.movementsList)
   }
 
+  /**
+   * Cast a string to a valid number
+   * 
+   * @param {string} rawValue
+   */
   _castToNumber(rawValue) {
     const valueRegEx = new RegExp("[^0-9,]", "g")
 
@@ -154,6 +191,11 @@ class MovementController {
     return +value.replace(",", ".")
   }
 
+  /**
+   * From a row object, get the interests column and extracts the percentage
+   * 
+   * @param {{}} rawObj 
+   */
   _parseInterestPercentage(rawObj) {
     const colKey = Object.keys(rawObj).find(_key => _key.startsWith("Int. Maturato"))
 
@@ -164,13 +206,24 @@ class MovementController {
     return +colKey.replace(/[^0-9]/g, "")
   }
 
-  _parseCsvFile(rawFileContent) {
+  /**
+   * Parse the content of the css file and return ad array of movements.
+   * 
+   * @param {string} rawFileContent 
+   * @returns {Promise<{
+   *  userId: string
+   *  interestPercentage: number
+   *  initialInvestment: number
+   *  movementsList: {}[]
+   * }>}
+   */
+  async _parseCsvFile(rawFileContent) {
     if (!rawFileContent) {
       throw new Error("Empty CSV file.")
     }
 
-    const delimiter = ","
-    const userId = new MongoTypes.ObjectId(rawFileContent.slice(0, rawFileContent.indexOf(",")))
+    const delimiter = rawFileContent.match(/[;,]/)[0]
+    const userId = new MongoTypes.ObjectId(rawFileContent.slice(0, rawFileContent.indexOf(delimiter)))
     const fileContent = rawFileContent.slice(rawFileContent.indexOf("\n"))
 
     /** @type {parseCsv.Options} */
@@ -180,11 +233,14 @@ class MovementController {
     }
 
     return new Promise((resolve, reject) => {
-      parseCsv(fileContent, options, (err, result) => {
+      parseCsv(fileContent, options, async (err, result) => {
         if (err || (err && err.length > 0)) {
           reject(err)
         } else {
           moment.locale("it")
+
+          // extract the last row that represents the totals row
+          const totalsRow = result.pop()
 
           // the file may contain future data, so i must exclude them and return only the valid data.
           const maxYear = moment().year()
@@ -217,21 +273,22 @@ class MovementController {
               break
             }
 
+            // create the recapitalization movement
             const recapitalization = {
               userId,
               movementType: !capitaleVersato ? MovementTypes.INITIAL_DEPOSIT : MovementTypes.INTEREST_RECAPITALIZED,
-              amountChange: this._castToNumber(_entry["Int. Ricapitalizzato"]),
+              amountChange: !capitaleVersato ? nuovoCapitale : this._castToNumber(_entry["Int. Ricapitalizzato"]),
               interestPercentage,
               depositOld: dataToReturn.length > 1 ? dataToReturn[dataToReturn.length - 1].deposit : 0,
               interestAmountOld: dataToReturn.length > 1 ? dataToReturn[dataToReturn.length - 1].interestAmount : 0,
               deposit: !capitaleVersato ? nuovoCapitale : capitaleVersato,
               interestAmount: this._castToNumber(_entry[`Int. Maturato ${interestPercentage}%`]),
-              created_at: moment(`${lastYear}-${currMonth + 1}-16 00:00:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+              created_at: moment(`${lastYear}-${currMonth + 1}-16 00:00:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
             }
 
             dataToReturn.push(recapitalization)
 
-            // if there is already capitale and has been added new one, create a new deposit movemnet
+            // if there is already capitale and has been added new one, create a new deposit movement
             if (capitaleVersato && nuovoCapitale) {
               dataToReturn.push({
                 userId,
@@ -242,10 +299,11 @@ class MovementController {
                 interestAmountOld: recapitalization.interestAmount,
                 deposit: nuovoCapitale + capitaleVersato,
                 interestAmount: recapitalization.interestAmount,
-                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:10:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:10:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
               })
             }
 
+            // if there is some capitale prelevato, creates a DEPOSIT_COLLECTED movement
             if (capitalePrelevato) {
               dataToReturn.push({
                 userId,
@@ -256,10 +314,11 @@ class MovementController {
                 interestAmountOld: dataToReturn[dataToReturn.length - 1].interestAmount,
                 deposit: dataToReturn[dataToReturn.length - 1].deposit - capitalePrelevato,
                 interestAmount: rdataToReturn[dataToReturn.length - 1].interestAmount,
-                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:15:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:15:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
               })
             }
 
+            // if there is some collected interests, create a INTEREST_COLLECTED movement
             if (interestsCollected) {
               dataToReturn.push({
                 userId,
@@ -270,18 +329,74 @@ class MovementController {
                 interestAmountOld: dataToReturn[dataToReturn.length - 1].interestAmount,
                 deposit: dataToReturn[dataToReturn.length - 1].deposit,
                 interestAmount: dataToReturn[dataToReturn.length - 1].interestAmount - interestsCollected,
-                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:20:00`, "YYYY-MM-DD HH:mm:ss").toISOString(),
+                created_at: moment(`${lastYear}-${currMonth + 1}-16 00:20:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
               })
             }
           }
 
+          await this._matchCsvTotals(dataToReturn, totalsRow)
+
           resolve({
             userId,
-            data: dataToReturn
+            interestPercentage,
+            initialInvestment: dataToReturn[0].amountChange,
+            movementsList: dataToReturn
           })
         }
       })
     })
+  }
+
+  /**
+   * Checks if the totals written in the file matches the totals calculated on the generated movements list.
+   * 
+   * @param {{}[]} movementsList 
+   * @param {{}} totalsRow 
+   */
+  async _matchCsvTotals(movementsList, totalsRow) {
+    const errors = []
+    const totalAddedDeposit = this._castToNumber(totalsRow["Nuovo Cap. Affidato"])
+    const totalCollectedInterest = this._castToNumber(totalsRow["Int. Riscosso"])
+    const totalCollectedDeposit = this._castToNumber(totalsRow["Cap. Prelevato"])
+
+    let movementsAddedDeposit = 0
+    let movementsCollectedDeposit = 0
+    let movementsCollectedInterest = 0
+
+    for (const movement of movementsList) {
+      switch (movement.movementType) {
+        case MovementTypes.INITIAL_DEPOSIT:
+          movementsAddedDeposit += movement.amountChange
+          break;
+        // case MovementTypes.INTEREST_RECAPITALIZED:
+        //   break;
+        case MovementTypes.INTEREST_COLLECTED:
+          movementsCollectedInterest += movement.amountChange
+          break;
+        case MovementTypes.DEPOSIT_ADDED:
+          movementsAddedDeposit += movement.amountChange
+          break;
+        case MovementTypes.DEPOSIT_COLLECTED:
+          movementsCollectedDeposit += movement.amountChange
+          break;
+      }
+    }
+
+    if (movementsAddedDeposit !== totalAddedDeposit) {
+      errors.push(`Added deposit doesn't match. Expected: ${totalAddedDeposit}, Found: ${movementsAddedDeposit}`)
+    }
+
+    if (movementsCollectedDeposit !== totalCollectedDeposit) {
+      errors.push(`Collected deposit doesn't match. Expected: ${totalCollectedDeposit}, Found: ${totalCollectedDeposit}`)
+    }
+
+    if (movementsCollectedInterest !== totalCollectedInterest) {
+      errors.push(`Collected interest doesn't match. Expected: ${totalCollectedInterest}, Found: ${movementsCollectedInterest}`)
+    }
+
+    if (errors.length > 0) {
+      return Promise.reject(errors.join(";\n "))
+    }
   }
 }
 
