@@ -134,7 +134,7 @@ class MovementController {
    * }} param0 
    */
   async import({ request, auth, response }) {
-    if (!auth.user || !auth.user.superAdmin) {
+    if (!auth.user || ![UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)) {
       return response.unauthorized()
     }
 
