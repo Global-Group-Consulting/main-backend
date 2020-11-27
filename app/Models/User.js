@@ -147,7 +147,7 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password)
       }
 
-      if (userInstance.account_status === AccountStatuses.APPROVED) {
+      if (userInstance.account_status === AccountStatuses.APPROVED && ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+userInstance.role)) {
         const lastMovement = await MovementModel.getLast(userInstance.id)
 
         if (!lastMovement) {
