@@ -1,13 +1,16 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
 
+const MovementTypes = require("./MovementTypes")
 class RequestTypes extends BasicEnum {
-  constructor () {
+  constructor() {
     super('RequestTypes')
 
     // this.ADMIN = 1
     this.VERSAMENTO = 2
     this.RISC_CAPITALE = 3
     this.RISC_INTERESSI = 4
+
+    /**  Riscossione delle provvigioni dell'agente */
     this.INTERESSI = 5
 
     this.data = {
@@ -17,22 +20,26 @@ class RequestTypes extends BasicEnum {
         },*/
       [this.VERSAMENTO]: {
         id: 'versamento',
-        text: 'Versamento'
+        text: 'Versamento',
+        movement: MovementTypes.DEPOSIT_ADDED
       },
       [this.RISC_CAPITALE]: {
         id: 'risc_capitale',
-        text: 'Riscossione capitale'
+        text: 'Riscossione capitale',
+        movement: MovementTypes.DEPOSIT_COLLECTED
       },
       [this.RISC_INTERESSI]: {
         id: 'risc_interessi',
-        text: 'Riscossione interessi'
+        text: 'Riscossione interessi',
+        movement: MovementTypes.INTEREST_COLLECTED
       },
       // interessi maturati mensilmente
       [this.INTERESSI]: {
         id: 'interessi',
+        movement: MovementTypes.COMMISSION_COLLECTED
       }
     }
   }
 }
 
-export default new RequestTypes()
+module.exports = new RequestTypes()

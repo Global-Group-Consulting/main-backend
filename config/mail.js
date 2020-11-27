@@ -37,6 +37,10 @@ module.exports = {
     rateLimit: 10
   },
 
+  postmark: {
+    apiKey: Env.get("MAIL_API_KEY")
+  },
+
   /*
   |--------------------------------------------------------------------------
   | SparkPost

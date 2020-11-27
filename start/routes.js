@@ -15,15 +15,23 @@
 
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
-const UserRoutes = require('./routes/users.js')
-const AuthRoutes = require('./routes/auth.js')
+const AuthRoutes = require('./routes/auth')
+const FilesRoutes = require('./routes/files')
+const DashboardsRoutes = require('./routes/dashboards.js')
 const EmailRoutes = require('./routes/emails.js')
+const MovementsRoutes = require('./routes/movements.js')
+const RequestsRoutes = require('./routes/requests.js')
+const UserRoutes = require('./routes/users.js')
 
 Route.on('/').render('welcome')
 
-UserRoutes(Route)
 AuthRoutes(Route)
+FilesRoutes(Route)
+DashboardsRoutes(Route)
 EmailRoutes(Route)
+MovementsRoutes(Route)
+RequestsRoutes(Route)
+UserRoutes(Route)
 
 
 

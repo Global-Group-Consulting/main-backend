@@ -1,8 +1,12 @@
 'use strict'
+'use strict'
 
 const User = use('App/Models/User')
 const Event = use('Event')
 const Persona = use('Persona')
+const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
+const AccountStatuses = require('../../../../enums/AccountStatuses')
+
 
 /**
  * @typedef AuthResult
@@ -12,7 +16,7 @@ const Persona = use('Persona')
  */
 
 class AuthController {
-  _formatToken (token) {
+  _formatToken(token) {
     return token.replace(/ /g, '+')
   }
 
@@ -25,34 +29,39 @@ class AuthController {
    * @param response
    * @return {Promise<void|*>}
    */
-  async login ({ request, auth, response }) {
+  async login({ request, auth, response }) {
     const { email, password } = request.only(['email', 'password'])
+    let authResult = null
 
     try {
       /**
        * @type {AuthResult}
        */
-      const authResult = await auth
+      authResult = await auth
         .withRefreshToken()
         .attempt(email, password)
-
-      // const user = await User.findBy({ 'email': email })
-      // 'user': user.toJSON(),
-
-      return response.json({
-        'token': authResult.token,
-        'refreshToken': authResult.refreshToken
-      })
     } catch (e) {
-      console.log(e)
-      return response.badRequest({ message: 'You first need to register!', error: e })
+      throw new InvalidLoginException()
     }
+
+    const user = await User.where({ email }).first()
+
+    if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)) {
+      throw new InvalidLoginException("Invalid user.")
+    }
+
+    return response.json({
+      'token': authResult.token,
+      'refreshToken': authResult.refreshToken
+    })
+
   }
 
-  async user ({ request, auth, response }) {
+  async user({ request, auth, response }) {
     try {
       return await auth.getUser()
     } catch (error) {
+      throw new Error('Missing or invalid jwt token')
       response.send('Missing or invalid jwt token')
     }
   }
@@ -64,14 +73,14 @@ class AuthController {
    * @param auth
    * @return {Promise<void>}
    */
-  async logout ({ auth }) {
+  async logout({ auth }) {
     const user = await auth.getUser()
     const tokens = await auth.listTokensForUser(user)
 
     await auth.revokeTokens(tokens.map(token => token.token), true)
   }
 
-  async refresh ({ request, auth }) {
+  async refresh({ request, auth }) {
     const refreshToken = request.input('refresh_token')
 
     const newToken = await auth.generateForRefreshToken(refreshToken.split(' ')[1], true)
@@ -90,7 +99,7 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async activate ({ request, response }) {
+  async activate({ request, response, auth }) {
     const token = this._formatToken(request.input('token'))
     const password = request.input('password')
 
@@ -98,11 +107,18 @@ class AuthController {
 
     // Imposto la password iniziale
     user.password = password
-    user.save()
+    await user.save()
 
     //TODO:: Maybe send a second email informing that the account is now ready to be used
 
-    response.ok()
+    const authResult = await auth
+      .withRefreshToken()
+      .attempt(user.email, password)
+
+    return response.json({
+      'token': authResult.token,
+      'refreshToken': authResult.refreshToken
+    })
   }
 
   /**
@@ -114,8 +130,10 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async forgot ({ request, response }) {
+  async forgot({ request, response }) {
     const email = request.input('email')
+
+    await User.checkExists("email", email)
 
     await Persona.forgotPassword(email)
 
@@ -132,13 +150,24 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async resetPassword ({ request, response }) {
+  async resetPassword({ request, response, auth }) {
     const inputData = request.only(['token', 'password', 'password_confirmation'])
+    const token = inputData.token.replace(/ /g, "+").replace(/%3D/g, "=")
 
-    await Persona.updatePasswordByToken(inputData.token, {
+    const user = await Persona.updatePasswordByToken(token, {
       password: inputData.password,
       password_confirmation: inputData.password_confirmation,
     })
+
+    const authResult = await auth
+      .withRefreshToken()
+      .attempt(user.email, inputData.password)
+
+    return response.json({
+      'token': authResult.token,
+      'refreshToken': authResult.refreshToken
+    })
+
   }
 }
 

@@ -1,14 +1,21 @@
 'use strict'
 
+const UseRoles = require("../../../enums/UserRoles")
+
+const requiredForUsers = `required_when:role,${UseRoles.CLIENTE}|required_when:role,${UseRoles.CLIENTE}`
+
 class UserUpdate {
-  get data () {
+  get data() {
+
     return Object.assign({}, this.ctx.request.body, this.ctx.params)
   }
 
-  get rules () {
+  get rules() {
     return {
-      'id': 'required|idExists',
-      'email': 'required'
+      id: 'required|idExists',
+      email: 'required',
+      contractPercentage: `${requiredForUsers}|number`,
+      contractInitialInvestment: `${requiredForUsers}|number`,
     }
   }
 }

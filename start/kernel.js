@@ -45,6 +45,7 @@ const globalMiddleware = [
 */
 const namedMiddleware = {
   auth: 'App/Middleware/AuthJwt',
+  authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
   guest: 'Adonis/Middleware/AllowGuestOnly'
 }
 
@@ -95,6 +96,27 @@ Persona.getUserByUids = async function (value) {
         validation: 'exists'
       }
     ])
+  }
+
+  return user
+}
+
+Persona.verifyEmail = async function (token) {
+  const AccountStatuses = require("../enums/AccountStatuses")
+  const tokenRow = await this.getToken(token, 'email')
+  if (!tokenRow) {
+    throw new Error('The token is invalid or expired')
+  }
+
+  const user = tokenRow.getRelated('user')
+
+  /**
+   * Update user account only when in the newAccountState
+   */
+  if ([AccountStatuses.APPROVED].includes(user.account_status)) {
+    user.account_status = this.config.verifiedAccountState
+    this.removeToken(token, 'email')
+    await user.save()
   }
 
   return user

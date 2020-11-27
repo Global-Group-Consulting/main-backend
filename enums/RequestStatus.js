@@ -1,13 +1,17 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
 
 class RequestStatus extends BasicEnum {
-  constructor () {
+  /**
+   * @enum
+   */
+  constructor() {
     super('RequestStatus')
 
     this.NUOVA = 1
     this.LAVORAZIONE = 2
     this.ACCETTATA = 3
     this.RIFIUTATA = 4
+    this.ANNULLATA = 5
 
     this.data = {
       [this.NUOVA]: {
@@ -25,9 +29,12 @@ class RequestStatus extends BasicEnum {
       [this.RIFIUTATA]: {
         id: 'rifiutata',
         text: 'Rifiutata'
+      },
+      [this.ANNULLATA]: {
+        id: 'annullata',
       }
     }
   }
 }
 
-export default new RequestStatus()
+module.exports = new RequestStatus()

@@ -14,7 +14,7 @@ const path = require('path')
 */
 const providers = [
   '@adonisjs/antl/providers/AntlProvider',
-  '@adonisjs/Auth/providers/AuthProvider',
+  '@adonisjs/auth/providers/AuthProvider',
   '@adonisjs/bodyparser/providers/BodyParserProvider',
   '@adonisjs/cors/providers/CorsProvider',
   '@adonisjs/framework/providers/AppProvider',
@@ -25,6 +25,7 @@ const providers = [
   '@adonisjs/session/providers/SessionProvider',
   '@adonisjs/shield/providers/ShieldProvider',
   '@adonisjs/validator/providers/ValidatorProvider',
+  '@adonisjs/drive/providers/DriveProvider',
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
   path.join(__dirname, '..', 'providers', 'CustomValidatorProvider')

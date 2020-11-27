@@ -1,4 +1,5 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const { BasicEnum } = require('../classes/BasicEnum')
+
 
 class PersonTypes extends BasicEnum {
   /**
@@ -23,4 +24,4 @@ class PersonTypes extends BasicEnum {
   }
 }
 
-export default new PersonTypes()
+module.exports = new PersonTypes()
