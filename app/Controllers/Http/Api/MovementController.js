@@ -251,8 +251,12 @@ class MovementController {
         } else {
           moment.locale("it")
 
+          const totalsRowIndex = result.findIndex(_row => _row["Anno"].toString() === "Totale")
+
           // extract the last row that represents the totals row
-          const totalsRow = result.pop()
+          const totalsRow = result.slice(totalsRowIndex, totalsRowIndex + 1)
+
+          result = result.slice(0, totalsRowIndex)
 
           // the file may contain future data, so i must exclude them and return only the valid data.
           const maxYear = moment().year()
@@ -306,6 +310,10 @@ class MovementController {
             }
 
             dataToReturn.push(recapitalization)
+
+            if (recapitalization.movementType === MovementTypes.INITIAL_DEPOSIT) {
+              console
+            }
 
             // if there is already capitale and has been added new one, create a new deposit movement
             if (capitaleVersato && nuovoCapitale) {
