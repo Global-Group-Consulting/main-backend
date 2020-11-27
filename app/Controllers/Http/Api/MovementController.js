@@ -260,18 +260,25 @@ class MovementController {
           const dataToReturn = []
           const interestPercentage = this._parseInterestPercentage(result[0])
           let lastYear = 0
+          let correctLastYear = 0
 
           for (const _entry of result) {
-            const currMonth = moment().month(_entry["Mese"].toLowerCase()).month()
+            if (_entry["Anno"]) {
+              lastYear = +_entry["Anno"]
+              correctLastYear = +_entry["Anno"]
+            }
+
+            const currDate = moment().month(_entry["Mese"].toLowerCase()).year(correctLastYear).subtract(1, "month")
+            const currMonth = currDate.month()
+
+            if (currDate.year() !== lastYear) {
+              lastYear = currDate.year()
+            }
 
             let capitaleVersato = this._castToNumber(_entry["Capitale Versato"])
             let capitalePrelevato = this._castToNumber(_entry["Cap. Prelevato"])
             let nuovoCapitale = this._castToNumber(_entry["Nuovo Cap. Affidato"])
             let interestsCollected = this._castToNumber(_entry['Int. Riscosso'])
-
-            if (_entry["Anno"]) {
-              lastYear = +_entry["Anno"]
-            }
 
             // If there is no deposit or new Depoit, skip the row
             if (!capitaleVersato && !nuovoCapitale) {
