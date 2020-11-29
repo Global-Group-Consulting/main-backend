@@ -251,8 +251,12 @@ class MovementController {
         } else {
           moment.locale("it")
 
+          const totalsRowIndex = result.findIndex(_row => _row["Anno"].toString() === "Totale")
+
           // extract the last row that represents the totals row
-          const totalsRow = result.pop()
+          const totalsRow = result.slice(totalsRowIndex, totalsRowIndex + 1)
+
+          result = result.slice(0, totalsRowIndex)
 
           // the file may contain future data, so i must exclude them and return only the valid data.
           const maxYear = moment().year()
@@ -260,18 +264,25 @@ class MovementController {
           const dataToReturn = []
           const interestPercentage = this._parseInterestPercentage(result[0])
           let lastYear = 0
+          let correctLastYear = 0
 
           for (const _entry of result) {
-            const currMonth = moment().month(_entry["Mese"].toLowerCase()).month()
+            if (_entry["Anno"]) {
+              lastYear = +_entry["Anno"]
+              correctLastYear = +_entry["Anno"]
+            }
+
+            const currDate = moment().month(_entry["Mese"].toLowerCase()).year(correctLastYear).subtract(1, "month")
+            const currMonth = currDate.month()
+
+            if (currDate.year() !== lastYear) {
+              lastYear = currDate.year()
+            }
 
             let capitaleVersato = this._castToNumber(_entry["Capitale Versato"])
             let capitalePrelevato = this._castToNumber(_entry["Cap. Prelevato"])
             let nuovoCapitale = this._castToNumber(_entry["Nuovo Cap. Affidato"])
             let interestsCollected = this._castToNumber(_entry['Int. Riscosso'])
-
-            if (_entry["Anno"]) {
-              lastYear = +_entry["Anno"]
-            }
 
             // If there is no deposit or new Depoit, skip the row
             if (!capitaleVersato && !nuovoCapitale) {
@@ -299,6 +310,10 @@ class MovementController {
             }
 
             dataToReturn.push(recapitalization)
+
+            if (recapitalization.movementType === MovementTypes.INITIAL_DEPOSIT) {
+              console
+            }
 
             // if there is already capitale and has been added new one, create a new deposit movement
             if (capitaleVersato && nuovoCapitale) {
