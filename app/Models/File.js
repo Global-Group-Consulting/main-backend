@@ -10,6 +10,13 @@ const { existsSync, unlinkSync } = require("fs")
 
 
 class File extends Model {
+  static get computed() {
+    return ["id"]
+  }
+
+  static get hidden() {
+    return ['tmpPath', 'headers']
+  }
 
   static boot() {
     super.boot()
@@ -28,8 +35,11 @@ class File extends Model {
    * @param {{[key:string]: File}} files
    * @param {string} userId // user id
    * @param {string} loadedBy // loaded by id
+   * @returns {Promise<Model[]>}
    */
   static async store(files, userId, loadedBy, extraData = {}) {
+    const storedFiles = []
+
     for (const key of Object.keys(files)) {
       const file = files[key]
 
@@ -41,13 +51,17 @@ class File extends Model {
         return file.error()
       }
 
-      await File.create({
+      const newFile = await File.create({
         ...file.toJSON(),
         userId,
         loadedBy,
         ...extraData
       })
+
+      storedFiles.push(newFile)
     }
+
+    return storedFiles
   }
 
   static async remove(field, value) {
@@ -56,8 +70,8 @@ class File extends Model {
     return files
   }
 
-  static get hidden() {
-    return ['tmpPath', 'headers']
+  getId({ _id }) {
+    return _id.toString()
   }
 
   user() {

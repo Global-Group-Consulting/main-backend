@@ -21,6 +21,8 @@ const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 
+const { castToObjectId, castToNumber } = require("../Helpers/ModelFormatters.js")
+
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require("lodash")
 
 class User extends Model {
@@ -235,6 +237,34 @@ class User extends Model {
 
       return acc
     }, [])
+  }
+
+  /**
+   *  Return a list of all users that can be mentioned inside a conversation chat.
+   */
+  static async getQuotableUsers(userId) {
+    return await User.query()
+      .where({
+        role: { $in: [UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE] },
+        _id: { $not: { $eq: castToObjectId(userId) } }
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .fetch()
+  }
+
+  /**
+   * Return a list of all users, used by the "new communication" dialog for suggesting receivers.
+   */
+  static async getReceiversUsers(userId) {
+    return await User.query()
+      .where({
+        account_status: { $in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED] },
+        _id: { $not: { $eq: castToObjectId(userId) } }
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .fetch()
   }
 
   /**
