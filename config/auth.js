@@ -75,7 +75,7 @@ module.exports = {
     // expiry: '20m',
     options: {
       secret: Env.get('APP_KEY'),
-      expiresIn: '90m'
+      expiresIn: Env.get('NODE_ENV') === "development" ? '365d' : '90m'
     }
   },
 
