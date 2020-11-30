@@ -23,7 +23,7 @@ class DashboardController {
       return response.badRequest("Role not handled.")
     }
 
-    const data = this[`getFor${methodName}`](auth.user)
+    const data = this[`getFor${methodName}`](auth.user.toJSON())
 
     return data
   }
