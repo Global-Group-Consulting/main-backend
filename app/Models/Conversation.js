@@ -55,6 +55,17 @@ class Conversation extends Model {
           read_at: { $exists: false }
         })
       })
+      .with("request", query => {
+        query.with("user", query => {
+          query.setVisible([
+            'id',
+            'firstName',
+            'lastName',
+            'email',
+            'contractNumber'
+          ])
+        })
+      })
       .sort({ "updated_at": -1, "subject": -1 })
       .fetch()
 
@@ -135,6 +146,28 @@ class Conversation extends Model {
     return result
   }
 
+  static async _createConversation(sender, receiver, message, _id) {
+    const conversationData = {
+      createdById: sender,
+      directedToId: receiver,
+      // Default to one because if the conversation is created is due to a message that has to be created
+      messages: 1,
+      subject: message.subject,
+      watchersIds: [sender, receiver], // Immediately add as watchers the sender and the receiver
+    }
+
+    if (message.requestId) {
+      conversationData.requestId = message.requestId
+    }
+
+    if (_id) {
+      conversationData._id = _id
+    }
+
+    // If there is no conversation id provided, creates a new one.
+    return await Conversation.create(conversationData)
+  }
+
   /**
    * 
    * @param {IMessage} message 
@@ -160,7 +193,8 @@ class Conversation extends Model {
       conversation = await Conversation.find(message.conversationId)
 
       if (!conversation) {
-        throw new CommunicationException("Can't find any conversation with the provided id.")
+        return await this._createConversation(sender, receiver, message, message.conversationId)
+        // throw new CommunicationException("Can't find any conversation with the provided id.")
       }
 
       conversation.messagesCount += 1
@@ -172,15 +206,7 @@ class Conversation extends Model {
 
       await conversation.save()
     } else {
-      // If there is no conversation id provided, creates a new one.
-      conversation = await Conversation.create({
-        createdById: sender,
-        directedToId: receiver,
-        // Default to one because if the conversation is created is due to a message that has to be created
-        messages: 1,
-        subject: message.subject,
-        watchersIds: [sender, receiver], // Immediately add as watchers the sender and the receiver
-      })
+      this._createConversation(sender, receiver, message)
     }
 
     return conversation
@@ -192,6 +218,10 @@ class Conversation extends Model {
 
   unreadMessages() {
     return this.hasMany("App/Models/Message", "_id", "conversationId")
+  }
+
+  request() {
+    return this.hasOne("App/Models/Request", "requestId", "_id")
   }
 
   getId({ _id }) {

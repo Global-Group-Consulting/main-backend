@@ -72,6 +72,10 @@ class User extends Model {
     'account_status': ''
   }
 
+  static get computed() {
+    return ["id"]
+  }
+
   static get allUserFields() {
     return Object.keys(User.userFields)
   }
@@ -132,7 +136,6 @@ class User extends Model {
     })
 
     this.addHook("afterCreate", async (userData) => {
-      userData.id = userData._id.toString()
       await this.includeFiles(userData)
     })
 
@@ -141,8 +144,6 @@ class User extends Model {
      * it to the database.
      */
     this.addHook('beforeSave', async (userInstance) => {
-      userInstance.id && (delete userInstance.id)
-
       userInstance.files = []
 
       if (userInstance.dirty.password) {
@@ -174,8 +175,6 @@ class User extends Model {
     })
 
     this.addHook('afterFind', async (userInstance) => {
-      userInstance.id = userInstance._id
-
       await this.includeFiles(userInstance)
 
       if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userInstance.role) &&
@@ -184,7 +183,6 @@ class User extends Model {
       }
     })
     this.addHook('afterFetch', async (userInstances) => {
-      userInstances.map(inst => inst.id = inst._id)
     })
   }
 
@@ -306,6 +304,10 @@ class User extends Model {
 
   get_id(value) {
     return value.toString()
+  }
+
+  getId({ _id }) {
+    return _id.toString()
   }
 
   getRole(value) {

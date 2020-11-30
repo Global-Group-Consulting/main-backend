@@ -15,6 +15,8 @@ const MovementTypes = require("../../enums/MovementTypes")
 const InvalidMovementException = require("../Exceptions/InvalidMovementException")
 const MovementErrorException = require("../Exceptions/MovementErrorException")
 
+const { castToObjectId } = require("../Helpers/ModelFormatters")
+
 class Movement extends Model {
   static boot() {
     super.boot()
@@ -271,15 +273,11 @@ class Movement extends Model {
 
 
   setUserId(value) {
-    if (!value || typeof value !== "string") {
-      return value
-    }
-
-    return value ? new MongoTypes.ObjectId(value) : value
+    return castToObjectId(value)
   }
 
   setCancelRef(value) {
-    return value ? new MongoTypes.ObjectId(value) : value
+    return castToObjectId(value)
   }
 }
 
