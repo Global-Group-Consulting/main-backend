@@ -220,6 +220,10 @@ class Conversation extends Model {
     return this.hasMany("App/Models/Message", "_id", "conversationId")
   }
 
+  creator() {
+    return this.hasOne("App/Models/User", "createdById", "_id")
+  }
+
   request() {
     return this.hasOne("App/Models/Request", "requestId", "_id")
   }

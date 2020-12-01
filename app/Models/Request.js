@@ -154,7 +154,11 @@ class Request extends Model {
           'contractNumber'
         ])
       })
-      .with("conversation")
+      .with("conversation", query => {
+        query.with("creator",
+          _creatorQuery => _creatorQuery.setVisible(["firstName", "lastName", "id"])
+        )
+      })
       // .with("files")
       .sort(sorting)
       .fetch()
