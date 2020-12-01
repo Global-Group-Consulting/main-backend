@@ -12,15 +12,11 @@ const path = require("path")
 const { existsSync } = require("fs")
 
 class FileController {
-  _getFilePath(file) {
-    return path.resolve(Helpers.appRoot(), "_fileSystem", file.fileName)
-  }
-
   async download({ params, response }) {
     const { id } = params
 
     const file = await File.find(id)
-    const filePath = this._getFilePath(file)
+    const filePath = file.getFilePath()
     const isExist = await existsSync(filePath);
 
     if (isExist) {

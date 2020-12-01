@@ -22,7 +22,7 @@ class File extends Model {
     super.boot()
 
     this.addHook('afterDelete', async (file) => {
-      const filePath = this._getFilePath(file)
+      const filePath = file.getFilePath()
 
       if (existsSync(filePath)) {
         unlinkSync(filePath)
@@ -68,6 +68,10 @@ class File extends Model {
     const files = await File.where({ [field]: value }).delete()
 
     return files
+  }
+
+  getFilePath() {
+    return resolve(Helpers.appRoot(), "_fileSystem", this.fileName)
   }
 
   getId({ _id }) {
