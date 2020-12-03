@@ -30,7 +30,7 @@ class UserController {
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
-      await File.store(files, user.id, auth.user._id)
+      await File.store(files, user._id, auth.user._id)
       await User.includeFiles(user)
     }
 
@@ -38,9 +38,7 @@ class UserController {
   }
 
   async read({ params }) {
-    const user = await User.find(params.id)
-
-    return user.toJSON()
+    return await User.getUserData(params.id)
   }
 
   async update({ request, params, auth }) {
@@ -55,11 +53,10 @@ class UserController {
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
-      await File.store(files, user.id, auth.user._id)
-      await User.includeFiles(result)
+      await File.store(files, user._id, auth.user._id)
     }
 
-    return result
+    return User.getUserData(params.id)
   }
 
   async delete({ params }) {
@@ -162,7 +159,7 @@ class UserController {
     }
 
     if (userRole === UserRoles.AGENTE) {
-      match = { "referenceAgent": auth.user._id.toString() }
+      match = { "referenceAgent": { $in: [auth.user._id.toString(), auth.user._id] } }
     }
 
     return await User.groupByRole(match, returnFlat, project)

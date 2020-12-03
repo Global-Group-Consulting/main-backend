@@ -1,5 +1,6 @@
 const { values } = require("lodash")
 const { Types: MongoTypes } = require("mongoose")
+const moment = require("moment")
 
 exports.castToObjectId = function (value) {
   if (!value) {
@@ -21,4 +22,18 @@ exports.castToNumber = function (value) {
   }
 
   return value
+}
+
+exports.castToIsoDate = function (value) {
+  if (!value) {
+    return value
+  }
+
+  const castedDate = moment(value, true)
+
+  if (!castedDate.isValid()) {
+    return value
+  }
+
+  return castedDate.toDate()
 }
