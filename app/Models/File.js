@@ -3,11 +3,14 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const Helpers = use('Helpers')
+const Drive = use('Drive')
 
 const fs = require("fs")
-const { resolve, basename } = require("path")
-const { existsSync, unlinkSync } = require("fs")
+const {resolve, basename} = require("path")
+const {existsSync, unlinkSync} = require("fs")
 
+const {Types: MongoTypes} = require("mongoose")
+const {castToObjectId} = require("../Helpers/ModelFormatters")
 
 class File extends Model {
   static get computed() {
@@ -20,19 +23,11 @@ class File extends Model {
 
   static boot() {
     super.boot()
-
-    this.addHook('afterDelete', async (file) => {
-      const filePath = file.getFilePath()
-
-      if (existsSync(filePath)) {
-        unlinkSync(filePath)
-      }
-    })
   }
 
   /**
    *
-   * @param {{[key:string]: File}} files
+   * @param {{ [key:string]: File }} files
    * @param {string} userId // user id
    * @param {string} loadedBy // loaded by id
    * @returns {Promise<Model[]>}
@@ -42,17 +37,22 @@ class File extends Model {
 
     for (const key of Object.keys(files)) {
       const file = files[key]
+      const fileId = new MongoTypes.ObjectId()
 
-      await file.move(resolve(__dirname, "../../_fileSystem"), {
-        name: basename(file.tmpPath, ".tmp")
-      })
+      let readableStream = file.stream
 
-      if (!file.moved()) {
-        return file.error()
+      // when the file is parsed bu the "bodyParser", the stream is not readable,
+      // so first must create a readable stream, so that the upload to aws can succeed.
+      if (!file.stream.readable) {
+        readableStream = fs.createReadStream(file.tmpPath)
       }
 
+      const fileUrl = await Drive.put(fileId.toString(), readableStream)
+
       const newFile = await File.create({
+        _id: fileId,
         ...file.toJSON(),
+        fileUrl,
         userId,
         loadedBy,
         ...extraData
@@ -64,17 +64,24 @@ class File extends Model {
     return storedFiles
   }
 
-  static async remove(field, value) {
-    const files = await File.where({ [field]: value }).delete()
 
-    return files
+  static async deleteAllWith(value, field = "_id") {
+    const filesToRemove = await File.where({[field]: castToObjectId(value)}).fetch()
+    const removedFiles = []
+
+    if (!filesToRemove) {
+      return
+    }
+
+    for (const file of filesToRemove.rows) {
+      await Drive.delete(value)
+      removedFiles.push(await file.delete())
+    }
+
+    return removedFiles
   }
 
-  getFilePath() {
-    return resolve(Helpers.appRoot(), "_fileSystem", this.fileName)
-  }
-
-  getId({ _id }) {
+  getId({_id}) {
     return _id.toString()
   }
 
