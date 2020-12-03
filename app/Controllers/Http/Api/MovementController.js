@@ -26,7 +26,7 @@ class MovementController {
   async read({ auth, params }) {
     const userRole = +auth.user.role
     const forId = params["id"]
-    let userId = auth.user.id
+    let userId = auth.user._id
 
     if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) && forId) {
       userId = forId
@@ -105,7 +105,7 @@ class MovementController {
    * @returns {{deposit:number, interestAmount:number, interestPercentage:number}}
    */
   async currentStatus({ params, auth }) {
-    let userId = auth.user.id
+    let userId = auth.user._id
     let userRole = +auth.user.role
 
     if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {

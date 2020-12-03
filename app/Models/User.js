@@ -21,7 +21,7 @@ const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 
-const { castToObjectId, castToNumber } = require("../Helpers/ModelFormatters.js")
+const { castToObjectId, castToNumber, castToIsoDate } = require("../Helpers/ModelFormatters.js")
 
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require("lodash")
 
@@ -72,6 +72,17 @@ class User extends Model {
     'account_status': ''
   }
 
+  static get computed() {
+    return ["id"]
+  }
+
+  /**
+ * Hides the fields in the array that returns
+ */
+  static get hidden() {
+    return ['password', '_id', '__v']
+  }
+
   static get allUserFields() {
     return Object.keys(User.userFields)
   }
@@ -90,26 +101,14 @@ class User extends Model {
     }, [])
   }
 
-  static async includeFiles(data) {
-    // const files = await File.where({ userId: { $in: [data.id.toString(), data.id] } }).fetch()
-    const files = await data.files().fetch()
 
-    data.files = files.rows ? files.rows : files
+
+  static async includeFiles(data) {
+    data.files = await data.files().fetch()
   }
 
   static async includeReferenceAgent(data) {
-    const agent = await data.fetchReferenceAgent().fetch()
-
-    if (agent) {
-      const jsonData = agent.toJSON()
-
-      data.referenceAgentData = {
-        id: jsonData.id,
-        firstName: jsonData.firstName,
-        lastName: jsonData.lastName,
-        email: jsonData.email,
-      }
-    }
+    data.referenceAgentData = await data.referenceAgentData().fetch()
   }
 
   static boot() {
@@ -132,8 +131,6 @@ class User extends Model {
     })
 
     this.addHook("afterCreate", async (userData) => {
-      userData.id = userData._id.toString()
-      await this.includeFiles(userData)
     })
 
     /**
@@ -141,8 +138,6 @@ class User extends Model {
      * it to the database.
      */
     this.addHook('beforeSave', async (userInstance) => {
-      userInstance.id && (delete userInstance.id)
-
       userInstance.files = []
 
       if (userInstance.dirty.password) {
@@ -171,20 +166,12 @@ class User extends Model {
 
     this.addHook('afterSave', async (userData) => {
       await this.includeFiles(userData)
+      await this.includeReferenceAgent(userData)
     })
 
     this.addHook('afterFind', async (userInstance) => {
-      userInstance.id = userInstance._id
-
-      await this.includeFiles(userInstance)
-
-      if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userInstance.role) &&
-        userInstance.referenceAgent) {
-        await this.includeReferenceAgent(userInstance)
-      }
     })
     this.addHook('afterFetch', async (userInstances) => {
-      userInstances.map(inst => inst.id = inst._id)
     })
   }
 
@@ -267,11 +254,13 @@ class User extends Model {
       .fetch()
   }
 
-  /**
-   * Hides the fields in the array that returns
-   */
-  static get hidden() {
-    return ['password', '_id', '__v']
+  static async getUserData(userId) {
+    return await this.where("_id", userId)
+      .with("referenceAgentData")
+      .with("files", query => {
+        query.where({ "fieldName": { $in: ["docAttachment", "contractInvestmentAttachment"] } })
+      })
+      .first()
   }
 
   /**
@@ -293,19 +282,29 @@ class User extends Model {
   // }
 
   files() {
-    return this.hasMany(File, "_id", "userId")
+    return this.hasMany('App/Models/File', "_id", "userId")
   }
 
   apiTokens() {
     return this.hasMany('App/Models/Token')
   }
 
-  fetchReferenceAgent() {
-    return this.hasOne(User, "referenceAgent", "_id")
+  referenceAgentData() {
+    return this.hasOne('App/Models/User', "referenceAgent", "_id").setVisible([
+      "id",
+      "firstName",
+      "lastName",
+      "email",
+    ])
   }
+
 
   get_id(value) {
     return value.toString()
+  }
+
+  getId({ _id }) {
+    return _id.toString()
   }
 
   getRole(value) {
@@ -320,20 +319,46 @@ class User extends Model {
     return +value
   }
 
+  // SETTERS
+
   setRole(value) {
-    return value ? +value : value
+    return castToNumber(value)
   }
 
   setPersonType(value) {
-    return value ? +value : value
+    return castToNumber(value)
+  }
+
+  setDocType(value) {
+    return castToNumber(value)
+  }
+
+  setContractPercentage(value) {
+    return castToNumber(value)
   }
 
   setContractInitialInvestment(value) {
-    return value ? +value : value
+    return castToNumber(value)
   }
 
   setContractNumberLegacy(value) {
     return value ? value.toString() : value
+  }
+
+  setBirthCountry(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  setReferenceAgent(value) {
+    return castToObjectId(value)
+  }
+
+  setBirthDate(value) {
+    return castToIsoDate(value)
+  }
+
+  setDocExpiration(value) {
+    return castToIsoDate(value)
   }
 }
 

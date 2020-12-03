@@ -6,6 +6,10 @@ const { upperFirst, camelCase } = require("lodash")
 
 /** @type {typeof import("../../../Models/Movement")} */
 const MovementsModel = use("App/Models/Movement")
+
+/** @type {typeof import("../../../Models/Request")} */
+const RequestsModel = use("App/Models/Request")
+
 const UserRoles = require("../../../../enums/UserRoles")
 
 class DashboardController {
@@ -19,9 +23,17 @@ class DashboardController {
       return response.badRequest("Role not handled.")
     }
 
-    const data = this[`getFor${methodName}`](auth.user)
+    const data = this[`getFor${methodName}`](auth.user.toJSON())
 
     return data
+  }
+
+  async getForAdmin(user) {
+    const pendingRequests = await RequestsModel.getPendingOnes(user.role)
+
+    return {
+      pendingRequests
+    }
   }
 
   async getForCliente(user) {

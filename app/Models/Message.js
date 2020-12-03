@@ -186,6 +186,10 @@ class Message extends Model {
   setType(value) {
     return castToNumber(value)
   }
+
+  setRequestId(value) {
+    return castToObjectId(value)
+  }
 }
 
 module.exports = Message

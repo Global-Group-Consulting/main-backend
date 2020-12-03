@@ -20,6 +20,7 @@ const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require("../../enums/RequestTypes")
 const MovementTypes = require("../../enums/MovementTypes")
 const MovementErrorException = require('../Exceptions/MovementErrorException')
+const { query } = require('@adonisjs/lucid/src/Lucid/Model')
 
 const modelFields = {
   userId: "",
@@ -142,7 +143,26 @@ class Request extends Model {
   }
 
   static async allWithUser(sorting = {}) {
-    return this.query().aggregate([
+
+    return this.query()
+      .with("user", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+      })
+      .with("conversation", query => {
+        query.with("creator",
+          _creatorQuery => _creatorQuery.setVisible(["firstName", "lastName", "id"])
+        )
+      })
+      // .with("files")
+      .sort(sorting)
+      .fetch()
+    /* return this.query().aggregate([
       { "$sort": sorting },
       {
         '$addFields': {
@@ -170,6 +190,8 @@ class Request extends Model {
               }
             }, {
               '$project': {
+                'uId': 1,
+                'id': 1,
                 'firstName': 1,
                 'lastName': 1,
                 'email': 1,
@@ -190,28 +212,14 @@ class Request extends Model {
           ],
           'as': 'files'
         }
-      }, /* {
-        '$lookup': {
-          'from': 'movements',
-          'let': {
-            "userId": { $toObjectId: "$userId" },
-            "completed_at": "$completed_at",
-          },
-          'pipeline': [
-            { "$match": { $expr: { $eq: ["$$userId", "$userId"] } } },
-            { "$match": { $expr: { $eq: ["$movementType", 3] } } },
-            { "$match": { $expr: { $gt: ["$created_at", "$$completed_at"] } } }
-          ],
-          'as': 'movement'
-        }
-      }, */ {
+      }, {
         '$unwind': '$user'
       }, {
         '$project': {
           '_id': 0,
         }
       }
-    ])
+    ]) */
   }
 
   /**
@@ -224,8 +232,10 @@ class Request extends Model {
 
 
     /** @type {{rows: IRequest[]}} */
-    const data = await Request.with("movement")
+    const data = await Request
       .where({ userId: { $in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)] } })
+      .with("movement")
+      .with("conversation")
       .sort(sorting || { "completed_at": -1 }).fetch()
 
     return data.rows.map(_entry => {
@@ -241,6 +251,28 @@ class Request extends Model {
       return _entry
     })
 
+  }
+
+  /**
+   * Fetches all the pending requests, useful for the admin dashboard
+   * 
+   * @param {number} userRole 
+   */
+  static async getPendingOnes(userRole) {
+    return await Request.where({
+      status: RequestStatus.NUOVA
+    })
+      .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
+      .sort({ created_at: -1, type: 1 })
+      .fetch()
+  }
+
+  static async setToWorkingState(id) {
+    const request = await this.find(id)
+
+    request.status = RequestStatus.LAVORAZIONE
+
+    await request.save()
   }
 
   async cancelRequest() {
@@ -290,8 +322,16 @@ class Request extends Model {
     return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
+  files() {
+    return this.belongsTo('App/Models/User', "requestId", "_id")
+  }
+
   movement() {
     return this.hasOne('App/Models/Movement', "movementId", "_id")
+  }
+
+  conversation() {
+    return this.hasOne('App/Models/Conversation', "_id", "requestId")
   }
 
   get_id(value) {

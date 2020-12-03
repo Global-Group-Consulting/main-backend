@@ -28,14 +28,14 @@ class RequestController {
   async readAll({ auth }) {
     const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
     const sorting = { "created_at": -1, "updated_at": -1, "completed_at": -1, "firstName": 1, "lastname": 1 }
-    const filter = adminUser ? {} : { userId: { $in: [auth.user.id.toString(), new MongoTypes.ObjectId(auth.user.id)] } }
+    const filter = adminUser ? {} : { userId: { $in: [auth.user._id.toString(), new MongoTypes.ObjectId(auth.user._id)] } }
 
     if (adminUser) {
       return await RequestModel.allWithUser(sorting)
     }
 
     // const data = await RequestModel.where(filter).sort(sorting).fetch()
-    return await RequestModel.allForUser(auth.user.id, sorting)
+    return await RequestModel.allForUser(auth.user._id, sorting)
   }
 
   /**
@@ -75,7 +75,7 @@ class RequestController {
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
-      await FileModel.store(files, associatedUser.id, auth.user.id, {
+      await FileModel.store(files, associatedUser.id, auth.user._id, {
         requestId: newRequest.id
       })
     }
@@ -119,7 +119,7 @@ class RequestController {
     }
 
     if (+foundedRequest.status !== RequestStatus.NUOVA
-      || auth.user.id.toString() !== foundedRequest.userId.toString()) {
+      || auth.user._id.toString() !== foundedRequest.userId.toString()) {
       return response.badRequest("Can't delete request.")
     }
 
@@ -140,7 +140,7 @@ class RequestController {
       throw new RequestNotFoundException()
     }
 
-    if (+foundedRequest.status !== RequestStatus.NUOVA) {
+    if (![RequestStatus.NUOVA, RequestStatus.LAVORAZIONE].includes(+foundedRequest.status)) {
       return response.badRequest("Can't change request status.")
     }
 

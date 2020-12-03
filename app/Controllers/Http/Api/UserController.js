@@ -21,16 +21,16 @@ class UserController {
     const incomingUser = request.only(User.updatableFields)
 
     if (+auth.user.role === UserRoles.AGENTE) {
-      incomingUser.referenceAgent = auth.user.id.toString()
+      incomingUser.referenceAgent = auth.user._id.toString()
     }
 
-    incomingUser.lastChangedBy = auth.user.id
+    incomingUser.lastChangedBy = auth.user._id
 
     const user = await Persona.register(incomingUser)
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
-      await File.store(files, user.id, auth.user.id)
+      await File.store(files, user._id, auth.user._id)
       await User.includeFiles(user)
     }
 
@@ -38,9 +38,7 @@ class UserController {
   }
 
   async read({ params }) {
-    const user = await User.find(params.id)
-
-    return user.toJSON()
+    return await User.getUserData(params.id)
   }
 
   async update({ request, params, auth }) {
@@ -49,17 +47,16 @@ class UserController {
 
     delete incomingUser.email
 
-    incomingUser.lastChangedBy = auth.user.id
+    incomingUser.lastChangedBy = auth.user._id
 
     const result = await Persona.updateProfile(user, incomingUser)
     const files = request.files()
 
     if (Object.keys(files).length > 0) {
-      await File.store(files, user.id, auth.user.id)
-      await User.includeFiles(result)
+      await File.store(files, user._id, auth.user._id)
     }
 
-    return result
+    return User.getUserData(params.id)
   }
 
   async delete({ params }) {
@@ -82,7 +79,7 @@ class UserController {
 
     user.account_status = AccountStatuses.APPROVED
 
-    user.lastChangedBy = auth.user.id
+    user.lastChangedBy = auth.user._id
 
     await user.save()
 
@@ -127,7 +124,7 @@ class UserController {
       throw new UserNotFoundException()
     }
 
-    user.lastChangedBy = auth.user.id
+    user.lastChangedBy = auth.user._id
     user.account_status = newStatus
 
     await user.save()
@@ -136,7 +133,7 @@ class UserController {
   }
 
   me({ auth, params }) {
-    /*if (Auth.user.id !== Number(params.id)) {
+    /*if (auth.user._id !== Number(params.id)) {
       return "You cannot see someone else's profile"
     }*/
     return auth.user
@@ -162,7 +159,7 @@ class UserController {
     }
 
     if (userRole === UserRoles.AGENTE) {
-      match = { "referenceAgent": auth.user.id.toString() }
+      match = { "referenceAgent": { $in: [auth.user._id.toString(), auth.user._id] } }
     }
 
     return await User.groupByRole(match, returnFlat, project)
