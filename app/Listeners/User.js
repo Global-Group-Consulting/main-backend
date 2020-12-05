@@ -2,8 +2,7 @@
 
 const User = exports = module.exports = {}
 
-User.onAskSignature = async () => {
+User.onDraftUserConfirmed = async () => {
 
-  // contact the signature service api
-  // use the queue, so that the request won't be lost.
+  // send notification to all servClienti users.
 }

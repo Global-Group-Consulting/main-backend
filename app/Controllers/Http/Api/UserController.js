@@ -94,8 +94,8 @@ class UserController {
   }
 
   /**
-   * 
-   * @param {{response: AdonisHttpResponse}} param0 
+   *
+   * @param {{response: AdonisHttpResponse}} param0
    */
   async sendEmailActivation({ params, response }) {
     const user = await User.find(params.id)
@@ -132,14 +132,36 @@ class UserController {
     return user.toJSON()
   }
 
-  me({ auth, params }) {
+  async confirmDraft({params, auth, response}) {
+    const userId = params.id
+    const authUser = auth.user.toJSON()
+
+    const user = await User.find(userId)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    if (user.referenceAgent !== authUser.id) {
+      return response.badRequest("Permissions denied.")
+    }
+
+    user.account_status = AccountStatuses.CREATED
+    await user.save()
+
+    Event.emit("user::draftConfirmed", user)
+
+    return user.toJSON()
+  }
+
+  me({auth, params}) {
     /*if (auth.user._id !== Number(params.id)) {
       return "You cannot see someone else's profile"
     }*/
     return auth.user
   }
 
-  async getAll({ request, auth }) {
+  async getAll({request, auth}) {
     const userRole = +auth.user.role
     const filterRole = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) ? request.input("f") : null
     let match = {}
@@ -148,7 +170,7 @@ class UserController {
 
     // Filter used for fetching agents list
     if (filterRole && +filterRole === UserRoles.AGENTE) {
-      match = { role: { $in: [filterRole.toString(), +filterRole] } }
+      match = {role: {$in: [filterRole.toString(), +filterRole]}}
       returnFlat = true
       project = {
         "firstName": 1,

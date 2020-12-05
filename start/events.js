@@ -47,3 +47,4 @@ Event.on('password::recovered', async ({ user }) => {
   })
 })
 
+Event.on("user::draftConfirmed", "User.onDraftUserConfirmed")

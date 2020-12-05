@@ -27,7 +27,7 @@ module.exports = function (Route) {
     Route.post('/:id/sendEmailActivation', 'UserController.sendEmailActivation')
     // .validator('users/UserApprove')
 
-    Route.post('/:id/signature', 'UserController.askSignature')
+    Route.post('/:id/confirmDraft', 'UserController.confirmDraft')
 
     Route.post('/:id/status', 'UserController.changeStatus')
       .validator('users/UserChangeStatus')
