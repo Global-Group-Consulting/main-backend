@@ -28,7 +28,8 @@ const providers = [
   '@adonisjs/drive/providers/DriveProvider',
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
-  path.join(__dirname, '..', 'providers', 'CustomValidatorProvider')
+  path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
+  path.join(__dirname, '..', 'providers', 'DocSignerProvider', "provider")
 ]
 
 /*

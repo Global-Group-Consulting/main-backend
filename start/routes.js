@@ -36,6 +36,11 @@ RequestsRoutes(Route)
 UserRoutes(Route)
 
 
+Route.get("/docs/templates", "DocSignController.readTemplates")
+Route.get("/docs/docs", "DocSignController.readDocuments")
+Route.post("/docs/docs", "DocSignController.sendDocument")
+Route.delete("/docs/docs/:uuid", "DocSignController.deleteDocument")
+
 
 
 
