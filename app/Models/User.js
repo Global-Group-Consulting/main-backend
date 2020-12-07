@@ -14,13 +14,15 @@ const ContractCounter = use('App/Controllers/Http/CountersController')
 /** @type {import("./History")} */
 const HistoryModel = use('App/Models/History')
 
-/** @type {typeof import("./Movement")} */
+/** @type {typeof import("./SignRequest")} */
 const MovementModel = use('App/Models/Movement')
+const SignRequestModel = use('App/Models/SignRequest')
 
 const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
+const arraySort = require('array-sort');
 
 const { castToObjectId, castToNumber, castToIsoDate } = require("../Helpers/ModelFormatters.js")
 
@@ -326,8 +328,30 @@ class User extends Model {
     ])
   }
 
+  async fetchSigningLogs() {
+    const logs = await SignRequestModel.where("userId", this._id).fetch()
 
-  async full() {
+    if (logs.rows.length === 0) {
+      return []
+    }
+
+    return logs.rows[logs.rows.length - 1].hooks.reduce(
+      /**
+       * @param {[]} acc
+       * @param {import("../../@types/SignRequest/Webhooks.d").WebhooksCall} curr
+       */
+      (acc, curr) => {
+        acc.push({
+          event: curr.event_type,
+          timestamp: curr.timestamp,
+          user: curr.signer ? `${curr.signer.first_name} ${curr.signer.last_name}` : null
+        })
+
+        return acc
+      }, [])
+  }
+
+  async full(includeSignLogs = false) {
     const files = await this.accountFiles().fetch()
     const referenceAgentData = await this.referenceAgentData().fetch()
     const contractFiles = await this.contractFiles().fetch()
@@ -336,6 +360,10 @@ class User extends Model {
     result.files = files.toJSON()
     result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
     result.contractFiles = contractFiles.toJSON()
+
+    if (includeSignLogs) {
+      result.signinLogs = await this.fetchSigningLogs()
+    }
 
     return result
   }

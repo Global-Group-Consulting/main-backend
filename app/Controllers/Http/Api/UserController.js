@@ -47,7 +47,7 @@ class UserController {
 
   async read({ params }) {
     // return await User.getUserData(params.id)
-    return (await User.find(params.id)).full()
+    return (await User.find(params.id)).full(true)
   }
 
   async update({ request, params, auth }) {
@@ -135,7 +135,7 @@ class UserController {
       throw new UserNotFoundException()
     }
 
-    if (user.referenceAgent !== authUser.id) {
+    if (user.referenceAgent.toString() !== authUser.id) {
       return response.badRequest("Permissions denied.")
     }
 
@@ -211,7 +211,7 @@ class UserController {
     const signRequest = await DocSigner.sendSignRequest(docsConfig.templates.mainContract, user.toJSON())
 
     // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
-    signRequest.userId = user.id
+    signRequest.userId = user._id
     await SignRequestModel.create(signRequest)
 
     // Update the user status account to VALIDATED

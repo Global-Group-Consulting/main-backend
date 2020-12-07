@@ -39,6 +39,7 @@
     "adonis-mail-provider": "^2.0.2",
     "adonis-validation-provider": "^3.0.5",
     "agenda": "^3.1.0",
+    "array-sort": "^1.0.0",
     "aws-sdk": "^2.802.0",
     "axios": "^0.21.0",
     "cross-blob": "^2.0.0",
