@@ -308,7 +308,13 @@ class User extends Model {
       return []
     }
 
-    return logs.rows[logs.rows.length - 1].hooks.reduce(
+    const lastRows = logs.rows[logs.rows.length - 1]
+
+    if (!lastRows.hooks) {
+      return []
+    }
+
+    return lastRows.hooks.reduce(
       /**
        * @param {[]} acc
        * @param {import("../../@types/SignRequest/Webhooks.d").WebhooksCall} curr
