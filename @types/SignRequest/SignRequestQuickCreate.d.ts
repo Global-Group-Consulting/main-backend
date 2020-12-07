@@ -36,7 +36,7 @@ export interface SignRequestQuickCreate {
   file_from_content?: string
   file_from_content_name?: string
   template: string
-  prefill_tags?: InlinePrefillTags[]
+  prefill_tags?: InlinePrefillTags<any>[]
   integrations?: string
   file_from_sf?: string
   auto_delete_days?: string

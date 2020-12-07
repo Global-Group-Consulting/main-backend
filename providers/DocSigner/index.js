@@ -1,6 +1,6 @@
 const {ApiClient, DocumentsApi, TemplatesApi, SignrequestQuickCreateApi, Signer} = require('signrequest-client');
 const {SignRequestQuickCreate} = require('signrequest-client');
-const {template: _template} = require("lodash")
+const {template: _template, snakeCase} = require("lodash")
 
 const Env = use("Env")
 
@@ -49,8 +49,12 @@ class DocSigner {
    * @private
    */
   _prepareSigners(data) {
+    if (!data.mobile) {
+      throw new Error("Missing user mobile phone. Is required for user authentication when signing.")
+    }
+
     const toReturn = []
-    const userPhone = !data.phone.toString().startsWith("+") ? "+39" + data.phone : data.phone
+    const userPhone = !data.mobile.toString().startsWith("+") ? "+39" + data.phone : data.phone
 
     /** @type {Signer} */
     const firstSigner = {
@@ -117,7 +121,9 @@ class DocSigner {
       /** @type {ISigner[]} */
       signers: this._prepareSigners(incomingData),
       template: this._config.publicUrl + `/templates/${templateConfig.uuid}/`,
-      prefill_tags: this._prepareTagsData(incomingData, templateConfig)
+      prefill_tags: this._prepareTagsData(incomingData, templateConfig),
+      name: `contratto-ggc-${snakeCase(incomingData.firstName)}_${snakeCase(incomingData.lastName)}.pdf`,
+      events_callback_url: this._config.signRequestData.events_callback_url + `?uid=${incomingData.id}`
       // message: "Messaggio del documento",
       // subject: "Richiesta di firma contratto per Mario Rossi",
     }

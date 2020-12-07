@@ -1,6 +1,6 @@
 'use strict'
 
-/** @type {typeof import("../../../providers/DocSignerProvider")} */
+/** @type {typeof import("../../../providers/DocSigner")} */
 const DocSigner = use("DocSigner")
 const Config = use("Config")
 

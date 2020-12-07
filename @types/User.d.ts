@@ -1,4 +1,6 @@
 import UserModel from "../app/Models/User"
+import {SignRequestQuickCreate} from "./SignRequest";
+
 export interface User extends UserModel {
   'personType': string,
   'businessName': string,
@@ -33,6 +35,7 @@ export interface User extends UserModel {
   'contractDate': string,
   'contractPercentage': string,
   'contractInitialInvestment': string,
+  'contractSignRequest': SignRequestQuickCreate,
   'contractIban': string,
   'contractBic': string,
   'role': string,
@@ -41,5 +44,6 @@ export interface User extends UserModel {
   'updated_at': string,
   'activated_at': string,
   'verified_at': string,
-  'account_status': string
+  'account_status': string,
+  'hooks': Exclude<WebhooksCall, "document.signrequest">[]
 }

@@ -7,9 +7,9 @@ module.exports = {
   apiKey: Env.get("DOC_SIGN_KEY"),
   publicUrl: Env.get("DOC_PUBLIC_URL") + "/api/v1",
   signRequestData: {
-    redirectUrl: Env.get("DOC_REDIRECT_SIGNED"),
-    redirectUrlDeclined: Env.get("DOC_REDIRECT_DECLINED"),
-    eventsCallbackUrl: Env.get("DOC_EVENTS_CALLBACK"),
+    redirect_url: Env.get("DOC_REDIRECT_SIGNED"),
+    redirect_url_declined: Env.get("DOC_REDIRECT_DECLINED"),
+    events_callback_url: Env.get("DOC_EVENTS_CALLBACK"),
     disable_attachments: true,
     disable_text_signatures: false,
     disable_text: true,

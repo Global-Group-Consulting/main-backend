@@ -24,10 +24,12 @@ module.exports = function (Route) {
     Route.put('/:id/approve', 'UserController.approve')
       .validator('users/UserApprove')
 
-    Route.post('/:id/sendEmailActivation', 'UserController.sendEmailActivation')
+    Route.post('/:id/sendEmailActivation', 'UserController.sendActivationEmail')
     // .validator('users/UserApprove')
 
     Route.post('/:id/confirmDraft', 'UserController.confirmDraft')
+    Route.post('/:id/incomplete', 'UserController.incomplete')
+    Route.post('/:id/validate', 'UserController.validate')
 
     Route.post('/:id/status', 'UserController.changeStatus')
       .validator('users/UserChangeStatus')

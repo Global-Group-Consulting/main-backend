@@ -29,7 +29,8 @@ const providers = [
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
   path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
-  path.join(__dirname, '..', 'providers', 'DocSignerProvider', "provider")
+  path.join(__dirname, '..', 'providers', 'DocSigner', "provider"),
+  path.join(__dirname, '..', 'providers', 'Queue', "provider")
 ]
 
 /*

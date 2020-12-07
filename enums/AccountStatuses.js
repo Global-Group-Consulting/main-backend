@@ -14,10 +14,12 @@ ACTIVE - Utente accede la prima volta ed inserisce il codice ricevuto per email.
 
 
 */
+
+
+/**
+ * @enum
+ */
 class AccountStatuses extends BasicEnum {
-  /**
-   * @enum
-   */
   constructor() {
     super('AccountStatuses')
 
@@ -42,7 +44,7 @@ class AccountStatuses extends BasicEnum {
     /** Data completed and must revalidate */
     this.MUST_REVALIDATE = "must_revalidate"
 
-    /** Account approved by the administration */
+    /** Account approved by signing the contract */
     this.APPROVED = "approved"
 
     /** Account activated by the user after the otp has been inserted */
@@ -86,8 +88,6 @@ class AccountStatuses extends BasicEnum {
       },
     }
   }
-
-
 }
 
 module.exports = new AccountStatuses()

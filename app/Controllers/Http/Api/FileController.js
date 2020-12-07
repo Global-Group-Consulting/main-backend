@@ -26,7 +26,7 @@ class FileController {
     const file = await Drive.getStream(id)
 
     response.response.writeHead(200, {
-      'Content-Type': dbFile.headers["content-type"],
+      'Content-Type': dbFile.type + "/" + dbFile.subtype,
       'Content-Disposition': 'inline; filename="' + dbFile.clientName + '"'
     })
 

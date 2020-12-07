@@ -1,5 +1,8 @@
 const { BasicEnum } = require('../classes/BasicEnum')
 
+/**
+ * @enum
+ */
 class MovementTypes extends BasicEnum {
 
   constructor() {
@@ -51,4 +54,5 @@ class MovementTypes extends BasicEnum {
     }
   }
 }
+
 module.exports = new MovementTypes()
