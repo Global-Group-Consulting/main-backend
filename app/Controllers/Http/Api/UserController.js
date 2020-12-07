@@ -262,6 +262,7 @@ class UserController {
 
     // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
     signRequest.userId = user._id
+
     await SignRequestModel.create(signRequest)
 
     // Update the user status account to VALIDATED
