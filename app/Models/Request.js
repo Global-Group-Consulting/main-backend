@@ -126,7 +126,7 @@ class Request extends Model {
     })
 
     this.addHook('afterDelete', async (data) => {
-      await File.remove("requestId", data.id)
+      await File.deleteAllWith(data.id, "requestId")
     })
   }
 
@@ -255,8 +255,8 @@ class Request extends Model {
 
   /**
    * Fetches all the pending requests, useful for the admin dashboard
-   * 
-   * @param {number} userRole 
+   *
+   * @param {number} userRole
    */
   static async getPendingOnes(userRole) {
     return await Request.where({

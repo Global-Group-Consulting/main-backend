@@ -81,7 +81,13 @@ class EmailSender {
     })
   }
 
-  async _send(tmpl, data) {
+  /**
+   *
+   * @param {string} tmpl
+   * @param {{}} data
+   * @returns {Promise<*>}
+   */
+  async send(tmpl, data) {
     const locale = data.locale || 'it'
 
     if (data.toObject) {
@@ -94,7 +100,7 @@ class EmailSender {
     const emailBody = await this._renderTemplate(tmpl, locale, data)
 
     if (this.provider === "postmark") {
-      this.postmarkClient.sendEmail({
+      return this.postmarkClient.sendEmail({
         "From": Env.get('MAIL_FROM'),
         "To": data.email,
         "Subject": Antl.compile(locale, `emails.${tmpl}.subject`, data),
@@ -102,7 +108,7 @@ class EmailSender {
         "MessageStream": "outbound"
       })
     } else {
-      return await Mail.raw(emailBody, (message) => {
+      return Mail.raw(emailBody, (message) => {
         message.to(data.email)
         message.from(Env.get('MAIL_FROM'))
         message.subject(Antl.compile(locale, `emails.${tmpl}.subject`, data))
@@ -110,24 +116,9 @@ class EmailSender {
     }
   }
 
-  async onAccountCreated(user) {
-    return await this._send('account_created', {
-      ...user,
-      formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${user.token}`
-    })
-  }
-
-  async onPasswordRecovered(user) {
-    return await this._send('password_recovered', user)
-  }
-
-  async onPasswordForgot(user) {
-    return await this._send('password_forgot', {
-      ...user,
-      formLink: `${Env.get('PUBLIC_URL')}/auth/recover?t=${user.token}`
-    })
-  }
-
 }
 
+/**
+ * @type {EmailSender}
+ */
 module.exports = EmailSender

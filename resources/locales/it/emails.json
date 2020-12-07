@@ -1,6 +1,6 @@
 {
   "signature": "Cordiali saluti,<br>Global Group Consulting",
-  "account_created": {
+  "account_approved": {
     "subject": "Benvenuto in Global Group Consulting!",
     "content": {
       "row1": "Gentile { firstName } { lastName } , ",

@@ -8,9 +8,14 @@ const Drive = use('Drive')
 const fs = require("fs")
 const {resolve, basename} = require("path")
 const {existsSync, unlinkSync} = require("fs")
+const tmp = require('tmp');
+const {Readable} = require('stream');
+
 
 const {Types: MongoTypes} = require("mongoose")
 const {castToObjectId} = require("../Helpers/ModelFormatters")
+
+const axios = require("axios")
 
 class File extends Model {
   static get computed() {
@@ -25,6 +30,18 @@ class File extends Model {
     super.boot()
   }
 
+  static async fetchFile(filePath) {
+    try {
+      const fileResp = await axios.get(filePath, {
+        responseType: 'arraybuffer'
+      })
+
+      return fileResp.data
+    } catch (er) {
+      throw er
+    }
+  }
+
   /**
    *
    * @param {{ [key:string]: File }} files
@@ -36,22 +53,30 @@ class File extends Model {
     const storedFiles = []
 
     for (const key of Object.keys(files)) {
-      const file = files[key]
       const fileId = new MongoTypes.ObjectId()
+      let file = files[key]
+      let readableStream
 
-      let readableStream = file.stream
+      if (typeof file === "string" && file.startsWith("http")) {
+        readableStream = await this.fetchFile(file)
 
-      // when the file is parsed bu the "bodyParser", the stream is not readable,
-      // so first must create a readable stream, so that the upload to aws can succeed.
-      if (!file.stream.readable) {
-        readableStream = fs.createReadStream(file.tmpPath)
+        // create a fake file
+        file = {}
+      } else {
+        readableStream = file.stream
+
+        // when the file is parsed bu the "bodyParser", the stream is not readable,
+        // so first must create a readable stream, so that the upload to aws can succeed.
+        if (!readableStream.readable) {
+          readableStream = fs.createReadStream(file.tmpPath)
+        }
       }
 
       const fileUrl = await Drive.put(fileId.toString(), readableStream)
 
       const newFile = await File.create({
         _id: fileId,
-        ...file.toJSON(),
+        ...(file.toJSON ? file.toJSON() : file),
         fileUrl,
         userId,
         loadedBy,
