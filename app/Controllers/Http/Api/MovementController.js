@@ -100,8 +100,8 @@ class MovementController {
   }
 
   /**
-   * 
-   * @param {{auth: {user: {id: string}}}} param0 
+   *
+   * @param {{auth: {user: {id: string}}}} param0
    * @returns {{deposit:number, interestAmount:number, interestPercentage:number}}
    */
   async currentStatus({ params, auth }) {
@@ -127,11 +127,11 @@ class MovementController {
   }
 
   /**
-   * 
+   *
    * @param {{
    *  request: typeof import("@adonisjs/framework/src/Request")
    *  response: import("../../../../@types/HttpResponse").AdonisHttpResponse
-   * }} param0 
+   * }} param0
    */
   async import({ request, auth, response }) {
     if (!auth.user || ![UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)) {
@@ -192,7 +192,7 @@ class MovementController {
 
   /**
    * Cast a string to a valid number
-   * 
+   *
    * @param {string} rawValue
    */
   _castToNumber(rawValue) {
@@ -205,8 +205,8 @@ class MovementController {
 
   /**
    * From a row object, get the interests column and extracts the percentage
-   * 
-   * @param {{}} rawObj 
+   *
+   * @param {{}} rawObj
    */
   _parseInterestPercentage(rawObj) {
     const colKey = Object.keys(rawObj).find(_key => _key.startsWith("Int. Maturato"))
@@ -220,8 +220,8 @@ class MovementController {
 
   /**
    * Parse the content of the css file and return ad array of movements.
-   * 
-   * @param {string} rawFileContent 
+   *
+   * @param {string} rawFileContent
    * @returns {Promise<{
    *  userId: string
    *  interestPercentage: number
@@ -235,7 +235,8 @@ class MovementController {
     }
 
     const delimiter = rawFileContent.match(/[;,]/)[0]
-    const userId = new MongoTypes.ObjectId(rawFileContent.slice(0, rawFileContent.indexOf(delimiter)))
+    const userIdString = rawFileContent.slice(0, rawFileContent.indexOf(delimiter)).trim()
+    const userId = new MongoTypes.ObjectId(userIdString)
     const fileContent = rawFileContent.slice(rawFileContent.indexOf("\n"))
 
     /** @type {parseCsv.Options} */
@@ -376,9 +377,9 @@ class MovementController {
 
   /**
    * Checks if the totals written in the file matches the totals calculated on the generated movements list.
-   * 
-   * @param {{}[]} movementsList 
-   * @param {{}} totalsRow 
+   *
+   * @param {{}[]} movementsList
+   * @param {{}} totalsRow
    */
   async _matchCsvTotals(movementsList, totalsRow) {
     const errors = []
