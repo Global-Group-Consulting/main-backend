@@ -24,7 +24,26 @@ const AccountStatuses = require("../../../../enums/AccountStatuses")
 const UserRoles = require("../../../../enums/UserRoles")
 const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
 
+/** @type {import("../../../Exceptions/UserException")} */
+const UserException = use("App/Exceptions/UserException")
+
 class UserController {
+  /**
+   *
+   * @param userId
+   * @returns {Promise<typeof import("../../../Models/User")>}
+   * @private
+   */
+  async _checkIncomingUser(userId) {
+    const user = await User.find(userId)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    return user
+  }
+
   async create({request, response, auth}) {
     const incomingUser = request.only(User.updatableFields)
 
@@ -96,7 +115,7 @@ class UserController {
     const token = await Token.where({user_id: user.id, type: "email"}).first()
 
     if (!token) {
-      return response.badRequest("Invalid user status.")
+      throw new UserException("Invalid user status.")
     }
 
     // add this data only to pass them to the triggered event
@@ -125,21 +144,52 @@ class UserController {
     return user.full()
   }
 
+  async approve({params, auth, response}) {
+    const user = await this._checkIncomingUser(params.id)
+
+    if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(+user.role)) {
+      if (!auth.user.superAdmin) {
+        throw new UserException("You can't perform this action.", UserException.statusCodes.FORBIDDEN)
+      }
+
+      const userContract = await user.contractFiles().fetch()
+
+      if (userContract.rows.length === 0) {
+        throw new UserException("User must first have a contract.")
+      }
+    }
+
+    // Force the user to approved state.
+    // For ADMIN and SERV_CLIENTI, this is normal.
+    // For other roles, this is used to force the status by superadmin
+    user.account_status = AccountStatuses.APPROVED
+    user.lastChangedBy = auth.user._id
+
+    await user.save()
+
+    Event.emit("user::approved", user)
+
+    return user.full()
+  }
+
+
   async confirmDraft({params, auth, response}) {
     const userId = params.id
     const authUser = auth.user.toJSON()
 
-    const user = await User.find(userId)
+    const user = await this._checkIncomingUser(userId)
 
-    if (!user) {
-      throw new UserNotFoundException()
+    // If user is cliente, then check the reference agent. Only he can change the status.
+    if (user.role === UserRoles.CLIENTE) {
+      if (user.referenceAgent.toString() !== authUser.id) {
+        return response.badRequest("Permissions denied.")
+      }
+
+      user.account_status = AccountStatuses.CREATED
+    } else {
+      return response.badRequest("User is not CLIENTE.")
     }
 
-    if (user.referenceAgent.toString() !== authUser.id) {
-      return response.badRequest("Permissions denied.")
-    }
-
-    user.account_status = AccountStatuses.CREATED
     await user.save()
 
     Event.emit("user::draftConfirmed", user)
@@ -225,26 +275,6 @@ class UserController {
     return user.full()
   }
 
-  async approve({params, auth}) {
-    const user = await User.find(params.id)
-
-    if (!user) {
-      throw new UserNotFoundException()
-    }
-
-    // If the status is DRAFT but the user is not a Admin or servCLienti, block it
-    if (AccountStatuses.DRAFT === user.account_status &&
-      ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)) {
-      throw new Error("Invalid user role.")
-    }
-
-    user.account_status = AccountStatuses.APPROVED
-    user.lastChangedBy = auth.user._id
-
-    await user.save()
-
-    return user.full()
-  }
 
   me({auth, params}) {
     /*if (auth.user._id !== Number(params.id)) {
