@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "start:dev": "adonis serve --dev",
+    "start:dev:remove": "heroku local",
     "watch": "nodemon --watch app server.js",
     "test": "node ace test"
   },

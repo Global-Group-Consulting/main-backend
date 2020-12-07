@@ -17,9 +17,12 @@ class WebhookController {
     /** @type {User} */
     const user = await signRequest.user().fetch()
 
-
     if (!user) {
       throw new Error("Can't find any user")
+    }
+
+    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt) {
+      return
     }
 
     user.account_status = AccountStatuses.APPROVED
@@ -52,6 +55,8 @@ class WebhookController {
     } catch (er) {
       throw er
     }
+
+    Event.emit("user::approved", user)
   }
 
   async onSignRequest({request, response}) {

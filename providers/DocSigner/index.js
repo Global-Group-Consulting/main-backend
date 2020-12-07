@@ -54,7 +54,7 @@ class DocSigner {
     }
 
     const toReturn = []
-    const userPhone = !data.mobile.toString().startsWith("+") ? "+39" + data.phone : data.phone
+    const userPhone = !data.mobile.toString().startsWith("+") ? "+39" + data.mobile : data.mobile
 
     /** @type {Signer} */
     const firstSigner = {
@@ -131,9 +131,12 @@ class DocSigner {
     /**
      * @type {ISignRequestQuickCreate}
      */
-    const signRequestResult = SignRequestQuickCreate.constructFromObject(signRequestData);
+    const signRequestObj = SignRequestQuickCreate.constructFromObject(signRequestData);
+    const result = await this._call(this.SignrequestQuickCreateApi, "signrequestQuickCreateCreate", signRequestObj)
 
-    return this._call(this.SignrequestQuickCreateApi, "signrequestQuickCreateCreate", signRequestResult)
+    result.sentRequest = signRequestObj
+
+    return result
   }
 }
 
