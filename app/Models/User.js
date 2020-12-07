@@ -113,13 +113,6 @@ class User extends Model {
 
       userData.files = null
 
-      /* if (!userData.account_status) {
-        // If the account type is admin or serv cliente, skip the normal user procedure
-        if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userData.role)) {
-          userData.account_status = AccountStatuses.APPROVED
-        }
-      } */
-
       userData.contractNumber = await (new ContractCounter()).incrementContract()
     })
 
@@ -135,26 +128,6 @@ class User extends Model {
 
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
-      }
-
-      if (userInstance.account_status === AccountStatuses.APPROVED &&
-        ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+userInstance.role)) {
-
-        Event.emit("user::approved", userInstance)
-        /*const lastMovement = await MovementModel.getLast(userInstance.id)
-
-        if (!lastMovement) {
-          try {
-            await MovementModel.create({
-              userId: userInstance,
-              movementType: MovementTypes.INITIAL_DEPOSIT,
-              amountChange: +userInstance.contractInitialInvestment,
-              interestPercentage: +userInstance.contractPercentage
-            })
-          } catch (er) {
-            throw new Error("Can't create initial deposit movement. " + er.message)
-          }
-        }*/
       }
 
       HistoryModel.addChanges(this, userInstance)
@@ -373,8 +346,12 @@ class User extends Model {
     return value.toString()
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId(value) {
+    try {
+      return this._id.toString()
+    } catch (er) {
+      return value
+    }
   }
 
   getRole(value) {

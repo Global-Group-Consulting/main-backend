@@ -31,9 +31,9 @@ module.exports = function (Route) {
     Route.post('/:id/incomplete', 'UserController.incomplete')
     Route.post('/:id/validate', 'UserController.validate')
 
-    Route.post('/:id/status', 'UserController.changeStatus')
+   /* Route.post('/:id/status', 'UserController.changeStatus')
       .validator('users/UserChangeStatus')
-      .middleware("authSuperAdmin")
+      .middleware("authSuperAdmin")*/
 
 
   }).prefix('/api/users')

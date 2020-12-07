@@ -31,18 +31,11 @@ User.onValidated = async () => {
 }
 
 User.onApproved = async (user) => {
-  /*
-   const userRole = +user.role
-
-   // Dont' send any email for normal users
-   if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
-     return
-   }*/
-
   // read the existing token or generate a new one
   const token = user.token || await Persona.generateToken(user, 'email')
+  const userType = [UserRoles.AGENTE, UserRoles.SERV_CLIENTI].includes(+user.role) ? "admin" : "user"
 
-  if (!user.sendOnlyEmail) {
+  if (!user.sendOnlyEmail && userType !== "admin") {
     await Queue.add("user_initialize_movements", {
       userId: user._id.toString()
     })
