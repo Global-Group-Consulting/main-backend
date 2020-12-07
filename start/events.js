@@ -1,49 +1,19 @@
 const Event = use('Event')
-
-/**
- * @type {import("../providers/EmailSender").default}
- */
+/** @type {import("../providers/EmailSender").default} */
 const EmailSender = use('EmailSender')
-
 const UserRoles = require("../enums/UserRoles")
 
-Event.on('user::created', async ({ user, token }) => {
-  // const userRole = +user.role
-
-  // if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(userRole)) {
-  //   return
-  // }
-
-  // await EmailSender.onAccountCreated({
-  //   ...user.toObject(),
-  //   token
-  // })
+// Auth events triggered by Persona
+Event.on('user::created', async ({user, token}) => {
+  // Won't do nothing because my user activation is different
+  // from the one of Persona
 })
+Event.on('forgot::password', "Auth.onPasswordForgot")
+Event.on('password::recovered', "Auth.onPasswordRecovered")
 
-Event.on('user::approved', async ({ user, token }) => {
-  const userRole = +user.role
-
-  // Dont' send any email for normal users
-  if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
-    return
-  }
-
-  await EmailSender.onAccountCreated({
-    ...user.toObject(),
-    token
-  })
-})
-
-Event.on('forgot::password', async ({ user, token }) => {
-  await EmailSender.onPasswordForgot({
-    ...user.toObject(),
-    token
-  })
-})
-
-Event.on('password::recovered', async ({ user }) => {
-  await EmailSender.onPasswordRecovered({
-    ...user.toObject()
-  })
-})
-
+// User STATUS events
+Event.on("user::draftConfirmed", "User.onDraftUserConfirmed")
+Event.on("user::incomplete", "User.onIncompleteData")
+Event.on("user::mustRevalidate", "User.onMustRevalidate")
+Event.on("user::validated", "User.onValidated")
+Event.on("user::approved", "User.onApproved")

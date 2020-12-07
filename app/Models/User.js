@@ -6,6 +6,7 @@ const Hash = use('Hash')
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
+const Event = use('Event')
 const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
 
 const ContractCounter = use('App/Controllers/Http/CountersController')
@@ -13,13 +14,15 @@ const ContractCounter = use('App/Controllers/Http/CountersController')
 /** @type {import("./History")} */
 const HistoryModel = use('App/Models/History')
 
-/** @type {typeof import("./Movement")} */
+/** @type {typeof import("./SignRequest")} */
 const MovementModel = use('App/Models/Movement')
+const SignRequestModel = use('App/Models/SignRequest')
 
 const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
+const arraySort = require('array-sort');
 
 const { castToObjectId, castToNumber, castToIsoDate } = require("../Helpers/ModelFormatters.js")
 
@@ -101,16 +104,6 @@ class User extends Model {
     }, [])
   }
 
-
-
-  static async includeFiles(data) {
-    data.files = await data.files().fetch()
-  }
-
-  static async includeReferenceAgent(data) {
-    data.referenceAgentData = await data.referenceAgentData().fetch()
-  }
-
   static boot() {
     super.boot()
 
@@ -144,8 +137,11 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password)
       }
 
-      if (userInstance.account_status === AccountStatuses.APPROVED && ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+userInstance.role)) {
-        const lastMovement = await MovementModel.getLast(userInstance.id)
+      if (userInstance.account_status === AccountStatuses.APPROVED &&
+        ![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+userInstance.role)) {
+
+        Event.emit("user::approved", userInstance)
+        /*const lastMovement = await MovementModel.getLast(userInstance.id)
 
         if (!lastMovement) {
           try {
@@ -158,21 +154,28 @@ class User extends Model {
           } catch (er) {
             throw new Error("Can't create initial deposit movement. " + er.message)
           }
-        }
+        }*/
       }
 
       HistoryModel.addChanges(this, userInstance)
     })
 
     this.addHook('afterSave', async (userData) => {
-      await this.includeFiles(userData)
-      await this.includeReferenceAgent(userData)
+
     })
 
     this.addHook('afterFind', async (userInstance) => {
     })
     this.addHook('afterFetch', async (userInstances) => {
     })
+  }
+
+  static async includeFiles(data) {
+    data.files = await data.files().fetch()
+  }
+
+  static async includeReferenceAgent(data) {
+    data.referenceAgentData = await data.referenceAgentData().fetch()
   }
 
   /**
@@ -258,9 +261,26 @@ class User extends Model {
     return await this.where("_id", userId)
       .with("referenceAgentData")
       .with("files", query => {
-        query.where({ "fieldName": { $in: ["docAttachment", "contractInvestmentAttachment"] } })
+        query.where({"fieldName": {$in: ["docAttachment", "contractInvestmentAttachment"]}})
       })
+      .with("contractFiles")
       .first()
+  }
+
+  static async getUsersToValidate() {
+    return User.query()
+      .where({
+        account_status: {$in: [AccountStatuses.CREATED, AccountStatuses.MUST_REVALIDATE]}
+      })
+      .fetch()
+  }
+
+  /**
+   * @param signRequestId
+   * @returns {Promise<User>}
+   */
+  static async findFromSignRequest(signRequestId) {
+    return User.where({"contractSignRequest.uuid": signRequestId}).first()
   }
 
   /**
@@ -285,6 +305,16 @@ class User extends Model {
     return this.hasMany('App/Models/File', "_id", "userId")
   }
 
+  accountFiles() {
+    return this.hasMany('App/Models/File', "_id", "userId")
+      .where({"fieldName": {$in: ["docAttachment", "contractInvestmentAttachment"]}})
+  }
+
+  contractFiles() {
+    return this.hasMany('App/Models/File', "_id", "userId")
+      .where({"fieldName": {$in: ["contractDoc", "contractDocSignLog"]}})
+  }
+
   apiTokens() {
     return this.hasMany('App/Models/Token')
   }
@@ -298,12 +328,52 @@ class User extends Model {
     ])
   }
 
+  async fetchSigningLogs() {
+    const logs = await SignRequestModel.where("userId", this._id).fetch()
+
+    if (logs.rows.length === 0) {
+      return []
+    }
+
+    return logs.rows[logs.rows.length - 1].hooks.reduce(
+      /**
+       * @param {[]} acc
+       * @param {import("../../@types/SignRequest/Webhooks.d").WebhooksCall} curr
+       */
+      (acc, curr) => {
+        acc.push({
+          event: curr.event_type,
+          timestamp: curr.timestamp,
+          user: curr.signer ? `${curr.signer.first_name} ${curr.signer.last_name}` : null
+        })
+
+        return acc
+      }, [])
+  }
+
+  async full(includeSignLogs = false) {
+    const files = await this.accountFiles().fetch()
+    const referenceAgentData = await this.referenceAgentData().fetch()
+    const contractFiles = await this.contractFiles().fetch()
+
+    const result = this.toJSON()
+    result.files = files.toJSON()
+    result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
+    result.contractFiles = contractFiles.toJSON()
+
+    if (includeSignLogs) {
+      result.signinLogs = await this.fetchSigningLogs()
+    }
+
+    return result
+  }
+
 
   get_id(value) {
     return value.toString()
   }
 
-  getId({ _id }) {
+  getId({_id}) {
     return _id.toString()
   }
 

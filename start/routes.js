@@ -19,10 +19,10 @@ const AuthRoutes = require('./routes/auth')
 const CommunicationsRoutes = require('./routes/communications')
 const FilesRoutes = require('./routes/files')
 const DashboardsRoutes = require('./routes/dashboards.js')
-const EmailRoutes = require('./routes/emails.js')
 const MovementsRoutes = require('./routes/movements.js')
 const RequestsRoutes = require('./routes/requests.js')
 const UserRoutes = require('./routes/users.js')
+const WebhooksRoutes = require('./routes/webhooks.js')
 
 Route.on('/').render('welcome')
 
@@ -30,11 +30,16 @@ AuthRoutes(Route)
 CommunicationsRoutes(Route)
 FilesRoutes(Route)
 DashboardsRoutes(Route)
-EmailRoutes(Route)
 MovementsRoutes(Route)
 RequestsRoutes(Route)
 UserRoutes(Route)
+WebhooksRoutes(Route)
 
+
+Route.get("/docs/templates", "DocSignController.readTemplates")
+Route.get("/docs/docs", "DocSignController.readDocuments")
+Route.post("/docs/docs", "DocSignController.sendDocument")
+Route.delete("/docs/docs/:uuid", "DocSignController.deleteDocument")
 
 
 
