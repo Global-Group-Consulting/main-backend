@@ -15,7 +15,7 @@ const MovementTypes = require("../../enums/MovementTypes")
 const InvalidMovementException = require("../Exceptions/InvalidMovementException")
 const MovementErrorException = require("../Exceptions/MovementErrorException")
 
-const { castToObjectId } = require("../Helpers/ModelFormatters")
+const {castToObjectId, castToIsoDate} = require("../Helpers/ModelFormatters")
 
 class Movement extends Model {
   static boot() {
@@ -73,7 +73,7 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
+   * @param {MovementInstance} data
    */
   static async _handleInitialDeposit(data) {
     if (data.movementType !== MovementTypes.INITIAL_DEPOSIT) {
@@ -87,8 +87,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleDepositAdded(data, lastMovement) {
     if (data.amountChange <= 0) {
@@ -100,8 +100,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleInterestRecapitalized(data, lastMovement) {
     data.amountChange = lastMovement.interestAmount
@@ -110,8 +110,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleInterestCollected(data, lastMovement) {
     if (data.amountChange <= 0) {
@@ -127,8 +127,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleDepositCollected(data, lastMovement) {
     if (data.amountChange <= 0) {
@@ -144,8 +144,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleCancelInterestCollected(data, lastMovement) {
     data.deposit = lastMovement.deposit
@@ -153,8 +153,8 @@ class Movement extends Model {
   }
 
   /**
-   * @param {MovementInstance} data 
-   * @param {MovementInstance} lastMovement 
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
    */
   static async _handleCancelDepositCollected(data, lastMovement) {
     data.deposit = lastMovement.deposit + data.amountChange
@@ -168,7 +168,7 @@ class Movement extends Model {
   }
 
   /**
-   * @param {string | ObjectId} userId 
+   * @param {string | ObjectId} userId
    * @returns {IMovement}
    */
   static async getLastRecapitalization(userId) {
@@ -190,8 +190,8 @@ class Movement extends Model {
   }
 
   /**
-   * 
-   * @param {} id 
+   *
+   * @param {} id
    * @returns {IMovement}
    */
   static async getLast(id) {
@@ -264,9 +264,16 @@ class Movement extends Model {
     return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
+  async relativeUser() {
+    return this.hasOne('App/Models/User', "userId", "_id")
+  }
+
   async canCancel() {
-    const lastRecapitalization = await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, created_at: { $gt: this.created_at } })
-      .sort({ created_at: -1 }).first()
+    const lastRecapitalization = await Movement.where({
+      movementType: MovementTypes.INTEREST_RECAPITALIZED,
+      created_at: {$gt: this.created_at}
+    })
+      .sort({created_at: -1}).first()
 
     return !lastRecapitalization
   }
@@ -279,6 +286,11 @@ class Movement extends Model {
   setCancelRef(value) {
     return castToObjectId(value)
   }
+
+  setPaymentDocDate(value) {
+    return castToIsoDate(value)
+  }
+
 }
 
 module.exports = Movement

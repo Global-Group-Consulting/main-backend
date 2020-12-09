@@ -13,14 +13,17 @@ const UserModel = use('App/Models/User')
 /** @type {typeof import("./Movement")} */
 const MovementModel = use("App/Models/Movement")
 
-const { Types: MongoTypes } = require('mongoose');
+const {Types: MongoTypes} = require('mongoose');
 const moment = require("moment")
 
 const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require("../../enums/RequestTypes")
 const MovementTypes = require("../../enums/MovementTypes")
 const MovementErrorException = require('../Exceptions/MovementErrorException')
-const { query } = require('@adonisjs/lucid/src/Lucid/Model')
+const {query} = require('@adonisjs/lucid/src/Lucid/Model')
+
+
+const {castToIsoDate} = require("../Helpers/ModelFormatters")
 
 const modelFields = {
   userId: "",
@@ -95,6 +98,7 @@ class Request extends Model {
             movementType: typeData.movement,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
+            paymentDocDate: data.paymentDocDate
           })
 
           data.movementId = movement._id
@@ -376,6 +380,10 @@ class Request extends Model {
 
   setUserId(value) {
     return value ? new MongoTypes.ObjectId(value.toString()) : value
+  }
+
+  setPaymentDocDate(value) {
+    return castToIsoDate(value)
   }
 }
 

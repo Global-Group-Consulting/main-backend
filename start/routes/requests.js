@@ -20,7 +20,7 @@ module.exports = function (Route) {
 
     Route
       .put('/:id/approve', 'RequestController.approve')
-      .validator("requests/delete")
+      .validator("requests/approve")
 
     Route
       .put('/:id/reject', 'RequestController.reject')

@@ -1,6 +1,10 @@
-const { BasicEnum } = require('../classes/BasicEnum')
+const {BasicEnum} = require('../classes/BasicEnum')
 
 const MovementTypes = require("./MovementTypes")
+
+/**
+ * @enum
+ */
 class RequestTypes extends BasicEnum {
   constructor() {
     super('RequestTypes')

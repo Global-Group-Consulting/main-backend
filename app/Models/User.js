@@ -66,6 +66,7 @@ class User extends Model {
     'contractInitialInvestment': 0,
     'contractIban': '',
     'contractBic': '',
+    'commissionsAssigned': {},
     'role': '',
     'referenceAgent': '',
     'created_at': '',
@@ -370,6 +371,10 @@ class User extends Model {
 
   getContractPercentage(value) {
     return +value
+  }
+
+  getCommissionsAssigned(value) {
+    return value ? value.map(_entry => JSON.parse(_entry)) : []
   }
 
   // SETTERS

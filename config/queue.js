@@ -15,6 +15,12 @@ const queueConfig = {
         concurrency: 5,
         lockLimit: 5
       }
+    },
+    agent_new_deposit_commission: {
+      options: {
+        concurrency: 1,
+        lockLimit: 5
+      }
     }
   }
 }
