@@ -113,6 +113,16 @@ class Movement extends Model {
    * @param {MovementInstance} data
    * @param {MovementInstance} lastMovement
    */
+  static async _handleCommissionsReinvestment(data, lastMovement) {
+    data.deposit = lastMovement.deposit + data.amountChange
+    data.interestAmount = lastMovement.interestAmount
+  }
+
+
+  /**
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
+   */
   static async _handleInterestCollected(data, lastMovement) {
     if (data.amountChange <= 0) {
       throw new InvalidMovementException("The amount of the interest must be greater than 0.")

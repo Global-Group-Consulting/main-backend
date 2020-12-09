@@ -7,6 +7,7 @@ const Env = use("Env")
 const UserModel = use("App/Models/User")
 const UserRoles = require("../../enums/UserRoles")
 const RequestTypes = require("../../enums/RequestTypes")
+const CommissionType = require("../../enums/CommissionType")
 
 const User = exports = module.exports = {}
 
@@ -20,7 +21,11 @@ User.onApproved = async (approvedRequest) => {
       return
     }
 
-    // TODO:: create a unique method that, by passing a param knows what type of commission must be added.
-    await Queue.add("agent_new_deposit_commission", approvedRequest.movementId)
+    // when a request is approved the type is always "NEW_DEPOSIT" because only
+    // deposit request get approved.
+    await Queue.add("agent_commission", {
+      type: CommissionType.NEW_DEPOSIT,
+      movementId: approvedRequest.movementId
+    })
   }
 }

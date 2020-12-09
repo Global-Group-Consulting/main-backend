@@ -5,9 +5,7 @@ export {QueueJob} from "./QueueJob"
 export type QueuesList =
   "send_email"
   | "user_initialize_movements"
-  | "agent_new_deposit_commission"
-  | "agent_monthly_commission"
-  | "agent_annual_commission"
+  | "agent_commission"
 
 export type QueueConfig = {
   name?: string,

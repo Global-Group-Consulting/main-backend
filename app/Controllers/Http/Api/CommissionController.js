@@ -3,6 +3,8 @@
 /** @type {typeof import('../../../Models/Commission')} */
 const CommissionModel = use('App/Models/Commission')
 
+const UserRoles = require("../../../../enums/UserRoles")
+
 class CommissionController {
   async read() {
     return CommissionModel.fetchAll()
@@ -23,7 +25,9 @@ class CommissionController {
    * @returns {Promise<void>}
    */
   async addExistingDepositCommission() {
-    return CommissionModel.addExistingDepositCommission()
+    const movementId = "5fba3ec52a2eb021bba1059c"
+
+    return CommissionModel.addExistingDepositCommission(movementId)
   }
 
   /**
@@ -33,6 +37,37 @@ class CommissionController {
    */
   async addAnnualCommission() {
     return CommissionModel.addAnnualCommission()
+  }
+
+  async reinvestCommissions() {
+    return CommissionModel.reinvestCommissions("5fb13bb31466c51e1d036f3c")
+  }
+
+  async collectCommissions() {
+    return CommissionModel.collectCommissions("5fb13bb31466c51e1d036f3c", 100)
+  }
+
+
+  async getStatus({params, auth}) {
+    const userRole = auth.user.role
+    let userId = auth.user._id
+
+    if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+      userId = params["id"]
+    }
+
+    const result = await CommissionModel.getLast(userId)
+    const list = await CommissionModel.getAll(userId)
+
+    return {
+      blocks: {
+        monthTotalCommissions: 0,
+        agentTotalCommissions: 0,
+        monthCollectedCommissions: 0,
+        agentTotalReinvestedCommissions: 0
+      },
+      list
+    }
   }
 }
 
