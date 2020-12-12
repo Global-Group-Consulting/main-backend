@@ -249,6 +249,17 @@ class User extends Model {
       .fetch()
   }
 
+  static async getAgents() {
+    return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
+  }
+
+  static async getUsersToRecapitalize() {
+    return User.where({
+      role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
+      account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+    }).fetch()
+  }
+
   /**
    * @param signRequestId
    * @returns {Promise<User>}

@@ -62,6 +62,20 @@ class Commission extends Model {
     return this.where({userId: castToObjectId(userId)}).sort({created_at: -1}).first()
   }
 
+  static async _getCommissionsToReinvest(userId) {
+    const commission = await this.where({
+      userId: castToObjectId(userId),
+      commissionType: CommissionType.COMMISSIONS_TO_REINVEST
+    })
+      .sort({created_at: -1}).first()
+
+    if (commission && commission.processed) {
+      return null
+    }
+
+    return commission
+  }
+
   static async _getLastReinvestment(userId) {
     return this.where({
       userId: castToObjectId(userId),
@@ -89,21 +103,78 @@ class Commission extends Model {
   }
 
   /**
+   *
+   * @param {{
+   *   movementId: string,
+   *   userId: string,
+   *   clientId: string,
+   *   commissionType: CommissionType,
+   *   dateReference: Date,
+   *   amountChange: number,
+   *   commissionOnValue: number,
+   *   commissionPercentage: number
+   * }} data
+   * @param lastCommission
+   * @private
+   */
+  static _create(data, lastCommission) {
+    if (!lastCommission) {
+      lastCommission = {}
+    }
+
+    const dataToCreate = {
+      ...data,
+      currMonthCommissions: (lastCommission.currMonthCommissions || 0),
+      currMonthCommissionsOld: lastCommission.currMonthCommissions || 0,
+    }
+
+    switch (data.commissionType) {
+      case CommissionType.ANNUAL_DEPOSIT:
+      case CommissionType.NEW_DEPOSIT:
+      case CommissionType.TOTAL_DEPOSIT:
+        dataToCreate.currMonthCommissions += data.amountChange
+
+        break
+      case CommissionType.COMMISSIONS_TO_REINVEST:
+      case CommissionType.COMMISSIONS_COLLECTED:
+        dataToCreate.currMonthCommissions -= dataToCreate.amountChange
+
+        break;
+    }
+
+    return Commission.create(dataToCreate)
+  }
+
+  /**
+   * Check if the user has the specified type of commission active, otherwise won't do nothing.
+   *
+   * @param agent
+   * @param requiredType
+   * @private
+   */
+  static _checkAgentActiveCommission(agent, requiredType) {
+    // get the agent active commissions
+    const agentCommissions = agent.commissionsAssigned ? agent.commissionsAssigned.map(_obj => JSON.parse(_obj)) : null
+
+    /** @type {{name: CommissionType, percent: number}} */
+    const currentCommissionSettings = agentCommissions.find(_entry => _entry.name === requiredType)
+
+    if (!agentCommissions || !currentCommissionSettings) {
+      throw new CommissionException("This type of commission is not activated for this agent.")
+    }
+
+    return currentCommissionSettings
+  }
+
+  /**
    * Commission that occurs each time a client of an agent invest new money
    * @returns {Promise<void>}
    */
   static async addNewDepositCommission(movementId) {
     const {movement, agent, user} = await this._getMovementRelatedDate(movementId)
 
-    // get the agent percentage
-    const agentCommissions = agent.commissionsAssigned ? agent.commissionsAssigned.map(_obj => JSON.parse(_obj)) : null
-
-    /** @type {{name: CommissionType, percent: number}} */
-    const currentCommissionSettings = agentCommissions.find(_entry => _entry.name === CommissionType.NEW_DEPOSIT)
-
-    if (!agentCommissions || !currentCommissionSettings) {
-      throw new CommissionException("This type of commission is not activated for this agent.")
-    }
+    // Check if the user has the specified type of commission active, otherwise won't do nothing.
+    const currentCommissionSettings = await this._checkAgentActiveCommission(agent, CommissionType.NEW_DEPOSIT)
 
     // get the user new deposit
     const newDeposit = movement.amountChange
@@ -119,7 +190,7 @@ class Commission extends Model {
 
     // create the movement in the database
     // use that date as the date of the commission movement, so that when reinvesting it, will figure in the right month.
-    const newCommissionMovement = await Commission.create({
+    const newCommissionMovement = await this._create({
       movementId: movementId,
       userId: agent._id,
       clientId: user._id,
@@ -128,9 +199,7 @@ class Commission extends Model {
       amountChange: commissionValue,
       commissionOnValue: newDeposit,
       commissionPercentage: agentCommissionPercentage,
-      totalCommissions: (lastCommission ? (lastCommission.totalCommissions || 0) : 0) + commissionValue,
-      totalCommissionsOld: lastCommission ? (lastCommission.totalCommissions || 0) : 0
-    })
+    }, lastCommission)
 
     return newCommissionMovement
   }
@@ -146,6 +215,9 @@ class Commission extends Model {
       throw new CommissionException("The user percentage is higher that 4, so there is nothing left for the agent.")
     }
 
+    // Check if the user has the specified type of commission active, otherwise won't do nothing.
+    await this._checkAgentActiveCommission(agent, CommissionType.TOTAL_DEPOSIT)
+
     // calc the diff between 4 and the client's percentage.
     const agentLeftPercentage = 4 - movement.interestPercentage
 
@@ -155,7 +227,7 @@ class Commission extends Model {
     const lastCommission = await this._getLastCommission(agent._id)
 
     // create the movement in the database
-    const newCommissionMovement = await Commission.create({
+    const newCommissionMovement = await this._create({
       movementId: movementId,
       userId: agent._id,
       clientId: user._id,
@@ -165,9 +237,7 @@ class Commission extends Model {
       commissionOnValue: movement.deposit,
       commissionOnPercentage: movement.interestPercentage,
       commissionPercentage: agentLeftPercentage,
-      totalCommissions: (lastCommission ? (lastCommission.totalCommissions || 0) : 0) + commissionValue,
-      totalCommissionsOld: lastCommission ? (lastCommission.totalCommissions || 0) : 0
-    })
+    }, lastCommission)
 
     return newCommissionMovement
   }
@@ -181,7 +251,13 @@ class Commission extends Model {
     // TBD
   }
 
-  static async reinvestCommissions(userId) {
+  /**
+   * Once the month ends, i must block the earned commissions, waiting for the reinvestment that will happen
+   * in a future date.
+   *
+   * @returns {Promise<void>}
+   */
+  static async blockCommissionsToReinvest(userId) {
     const agent = await UserModel.find(userId)
 
     if (!agent) {
@@ -195,43 +271,49 @@ class Commission extends Model {
     }
 
     // get the amount that need to be reinvested
-    const reinvestmentAmount = lastCommission.totalCommissions
+    const reinvestmentAmount = lastCommission.currMonthCommissions
 
-    let movement
+    const newCommissionMovement = await this._create({
+      userId: agent._id,
+      commissionType: CommissionType.COMMISSIONS_TO_REINVEST,
+      amountChange: reinvestmentAmount
+    }, lastCommission)
+
+    return newCommissionMovement
+  }
+
+  static async reinvestCommissions(userId) {
+    const agent = await UserModel.find(userId)
+
+    if (!agent) {
+      throw new CommissionException("No agent was found for the provided id.")
+    }
+
+    const commissionsToReinvest = await this._getCommissionsToReinvest(agent._id)
+
+    if (!commissionsToReinvest) {
+      throw new CommissionException("Can't find the last commission to reinvest movement, so no reinvestment will be added.")
+    }
+
+    // get the amount that need to be reinvested
+    const reinvestmentAmount = commissionsToReinvest.amountChange
 
     // create the movement for the reinvestment if the reinvestment amount is > 0
     if (reinvestmentAmount > 0) {
-      movement = await MovementModel.create({
+      const movement = await MovementModel.create({
         userId: userId,
         movementType: MovementTypes.COMMISSIONS_REINVESTMENT,
         amountChange: reinvestmentAmount,
         interestPercentage: +agent.contractPercentage,
       })
+
+      commissionsToReinvest.movementId = movement._id
+      commissionsToReinvest.processed = true
+
+      await commissionsToReinvest.save()
     }
 
-    try {
-      const newCommissionMovement = await Commission.create({
-        movementId: movement ? movement._id : null,
-        userId: agent._id,
-        commissionType: CommissionType.COMMISSIONS_REINVESTMENT,
-        amountChange: reinvestmentAmount,
-        totalCommissions: lastCommission.totalCommissions - reinvestmentAmount,
-        totalCommissionsOld: lastCommission.totalCommissions || 0
-      })
-
-      // There can be no movement if the reinvestment is 0
-      if (movement) {
-        // Save the commission id inside the movement that has been generated
-        movement.commissionId = newCommissionMovement._id
-        await movement.save()
-      }
-
-      return newCommissionMovement
-    } catch (er) {
-      await movement.delete()
-
-      throw er
-    }
+    return commissionsToReinvest
   }
 
   static async collectCommissions(userId, collectAmount) {
@@ -252,17 +334,15 @@ class Commission extends Model {
     }
 
     // Check if the requested amount is available
-    if (lastCommission.totalCommissions < collectAmount) {
+    if (lastCommission.currMonthCommissions < collectAmount) {
       throw new CommissionException("There requested amount is higher than the available amount.")
     }
 
-    const newCommissionMovement = await Commission.create({
+    const newCommissionMovement = await this._create({
       userId: agent._id,
       commissionType: CommissionType.COMMISSIONS_COLLECTED,
       amountChange: collectAmount,
-      totalCommissions: lastCommission.totalCommissions - collectAmount,
-      totalCommissionsOld: lastCommission.totalCommissions
-    })
+    }, lastCommission)
 
     return newCommissionMovement
   }

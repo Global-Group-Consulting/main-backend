@@ -3,9 +3,11 @@ module.exports = function (Route) {
     Route.get('/', "CommissionController.read")
 
     Route.post('/newDeposit', "CommissionController.addNewDepositCommission")
-    Route.post('/onDeposit', "CommissionController.addExistingDepositCommission")
-    Route.post('/reinvest', "CommissionController.reinvestCommissions")
+    Route.post('/totalDeposit', "CommissionController.addExistingDepositCommission")
+
     Route.post('/collect', "CommissionController.collectCommissions")
+    Route.post('/reinvest', "CommissionController.reinvestCommissions")
+    Route.post('/blockCommissionsToReinvest', "CommissionController.blockCommissionsToReinvest")
 
     Route.get('/status/:id?', "CommissionController.getStatus")
 

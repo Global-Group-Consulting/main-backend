@@ -18,6 +18,10 @@ const MovementErrorException = require("../Exceptions/MovementErrorException")
 const {castToObjectId, castToIsoDate} = require("../Helpers/ModelFormatters")
 
 class Movement extends Model {
+  static get computed() {
+    return ["id"]
+  }
+
   static boot() {
     super.boot()
 
@@ -117,7 +121,6 @@ class Movement extends Model {
     data.deposit = lastMovement.deposit + data.amountChange
     data.interestAmount = lastMovement.interestAmount
   }
-
 
   /**
    * @param {MovementInstance} data
@@ -288,6 +291,9 @@ class Movement extends Model {
     return !lastRecapitalization
   }
 
+  getId() {
+    return this._id.toString()
+  }
 
   setUserId(value) {
     return castToObjectId(value)

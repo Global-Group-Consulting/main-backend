@@ -13,19 +13,19 @@ const User = exports = module.exports = {}
 
 User.onApproved = async (approvedRequest) => {
   if (approvedRequest.type === RequestTypes.VERSAMENTO) {
-    const referenceAgent = await UserModel.find(approvedRequest.userId).referenceAgentData().first()
+    const user = await UserModel.find(approvedRequest.userId)
 
     // if the user doesn't have a referenceAgent, is useless to call
     // agent new deposit commission.
-    if (!referenceAgent || !referenceAgent._id) {
+    if (!user.referenceAgent) {
       return
     }
 
     // when a request is approved the type is always "NEW_DEPOSIT" because only
     // deposit request get approved.
-    await Queue.add("agent_commission", {
+    await Queue.add("agent_commissions_on_new_deposit", {
       type: CommissionType.NEW_DEPOSIT,
-      movementId: approvedRequest.movementId
+      movementId: approvedRequest.movementId.toString()
     })
   }
 }

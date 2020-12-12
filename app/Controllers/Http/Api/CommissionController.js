@@ -39,14 +39,36 @@ class CommissionController {
     return CommissionModel.addAnnualCommission()
   }
 
+  /**
+   * Once the month ends, the commissions must be reinvested and reset, but the real investment must
+   * wait the 16th of the month.
+   * So first we create a blockCommission movement and reset the commissions.
+   * Thi movement will later be used to know what amount bust be reinvested.
+   *
+   * @returns {Promise<void>}
+   */
+  async blockCommissionsToReinvest() {
+    return CommissionModel.blockCommissionsToReinvest("5fb13bb31466c51e1d036f3c")
+  }
+
+  /**
+   * Search for the last COMMISSION_TO_REINVEST movement and add the amount of that movement
+   * to the user's deposit, by generating a deposit movement.
+   *
+   * @returns {Promise<*>}
+   */
   async reinvestCommissions() {
     return CommissionModel.reinvestCommissions("5fb13bb31466c51e1d036f3c")
   }
 
+  /**
+   * The user decides to collect a part of the current available commissions.
+   *
+   * @returns {Promise<*>}
+   */
   async collectCommissions() {
     return CommissionModel.collectCommissions("5fb13bb31466c51e1d036f3c", 100)
   }
-
 
   async getStatus({params, auth}) {
     const userRole = auth.user.role

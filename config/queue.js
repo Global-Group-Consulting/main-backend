@@ -16,13 +16,50 @@ const queueConfig = {
         lockLimit: 5
       }
     },
-    agent_commission: {
+    user_recapitalization: {
       options: {
         concurrency: 5,
         lockLimit: 5
       }
+    },
+    agent_commissions_on_new_deposit: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+    agent_commissions_on_total_deposit: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+    agent_commissions_block: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+    agent_commissions_reinvest: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+
+    trigger_commissions_block_month: {},
+    trigger_users_recapitalization: {}
+  },
+  recursiveJobs: [
+    {
+      queue: "trigger_commissions_block_month",
+      recursion: "* 10 0 1 * *"
+    },
+    {
+      queue: "trigger_users_recapitalization",
+      recursion: "* 10 0 16 * *"
     }
-  }
+  ]
 }
 
 module.exports = queueConfig

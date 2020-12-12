@@ -32,7 +32,9 @@ class QueueProvider extends ServiceProvider {
      *
      * @type {import("./index")}
      * */
-    this.app.use("QueueProvider")
+    const QueueProvider = this.app.use("QueueProvider")
+
+    QueueProvider.initRecursiveJobs()
   }
 }
 
