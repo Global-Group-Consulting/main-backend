@@ -9,7 +9,8 @@
     "start:dev": "adonis serve --dev",
     "start:dev:remove": "heroku local",
     "watch": "nodemon --watch app server.js",
-    "test": "node ace test"
+    "test": "node ace test",
+    "jobRunner": "adonis job-runner --job-name=trigger_users_recapitalization"
   },
   "keywords": [
     "adonisjs",

@@ -30,7 +30,7 @@ class ConversationController {
     const conversationId = params.id
 
     const toReturn = {
-      conversation: await ConversationModel.getMessages(conversationId, auth.user._id),
+      conversation: await ConversationModel.getMessages(conversationId, auth.user),
     }
 
     if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE].includes(userRole)) {
@@ -70,11 +70,74 @@ class ConversationController {
     return toReturn
   }
 
-  async readAllReceivers({ auth }) {
-    return await UserModel.getReceiversUsers(auth.user._id)
+  async readAllReceivers({auth, request}) {
+    const messageType = request.get()["m"]
+    const userRole = auth.user.role
+    const toReturn = []
+
+    switch (userRole) {
+      case UserRoles.CLIENTE:
+        if (auth.user.referenceAgent) {
+          const referenceAgent = await UserModel.find(auth.user.referenceAgent)
+
+          toReturn.push({
+            id: referenceAgent._id.toString(),
+            firstName: referenceAgent.firstName,
+            lastName: referenceAgent.lastName,
+            role: referenceAgent.role
+          })
+        }
+
+        toReturn.unshift({
+          id: null,
+          firstName: null,
+          lastName: null,
+          role: UserRoles.SERV_CLIENTI
+        })
+
+        break;
+      case UserRoles.AGENTE:
+        const agentUsers = await UserModel.getReceiversForAgent(auth.user._id)
+
+        toReturn.push(...agentUsers.toJSON())
+
+        toReturn.unshift({
+          id: null,
+          firstName: null,
+          lastName: null,
+          role: UserRoles.SERV_CLIENTI
+        })
+
+        break;
+      case UserRoles.SERV_CLIENTI:
+        const users = await UserModel.getReceiversUsers(auth.user._id)
+        toReturn.push(users.toJSON())
+
+        break;
+      case UserRoles.ADMIN:
+        if (messageType && +messageType === MessageTypes.CONVERSATION) {
+          const users = await UserModel.getReceiversUsers(auth.user._id)
+          toReturn.push(users.toJSON())
+        } else {
+          UserRoles.iterable.forEach(role => {
+            toReturn.push({
+              id: null,
+              firstName: null,
+              lastName: null,
+              role: role.value
+            })
+          })
+        }
+
+        break;
+    }
+    // distinguere il ruolo dell'utente e quindi ritornare
+    // una lista diversa per ogni ruolo
+    // return await UserModel.getReceiversUsers(auth.user._id)
+    return toReturn.flat()
   }
 
-  async create({ request, auth }) {
+  async create({request, auth}) {
     const user = auth.user.toJSON()
     const incomingData = request.only(["type", "subject", "content", "receiver", "requestId"])
     const files = request.file("communicationAttachments")
@@ -130,6 +193,25 @@ class ConversationController {
       toReturn = incomingData.receiver
     }
 
+
+    for (let i = 0; i < toReturn.length; i++) {
+      const receiver = incomingData.receiver[i]
+
+      if (!isNaN(receiver)) {
+        const receiversByRole = (await UserModel.getReceiversByRole(+receiver))
+          .toJSON()
+          .reduce((acc, user) => {
+            acc.push(user.id.toString())
+
+            return acc
+          }, [])
+
+        toReturn.splice(i, 1, receiversByRole)
+      }
+    }
+
+    toReturn = toReturn.flat()
+
     const set = new Set([...toReturn.map(_id => _id.toString()), ...conversationWatchers.map(_id => _id.toString())])
 
     return [...set].filter(_id => _id !== userId.toString())
@@ -152,7 +234,7 @@ class ConversationController {
      * @type {IMessage}
      */
     const newMessage = {
-      // Assign a custom id that identificate a message. 
+      // Assign a custom id that identificate a message.
       // This can have twins sent to other watchers, but the message must remain the same.
       messageId,
       type: incomingData.type,

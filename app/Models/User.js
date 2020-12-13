@@ -66,6 +66,7 @@ class User extends Model {
     'contractInitialInvestment': 0,
     'contractIban': '',
     'contractBic': '',
+    'commissionsAssigned': {},
     'role': '',
     'referenceAgent': '',
     'created_at': '',
@@ -222,11 +223,34 @@ class User extends Model {
   static async getReceiversUsers(userId) {
     return await User.query()
       .where({
-        account_status: { $in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED] },
-        _id: { $not: { $eq: castToObjectId(userId) } }
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]},
+        _id: {$not: {$eq: castToObjectId(userId)}}
       })
       .setVisible(["id", "firstName", "lastName", "role"])
-      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .sort({role: 1, firstName: 1, lastName: 1})
+      .fetch()
+  }
+
+  static async getReceiversByRole(role) {
+    return await User.query()
+      .where({
+        role: +role,
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({role: 1, firstName: 1, lastName: 1})
+      .fetch()
+  }
+
+  static async getReceiversForAgent(userId) {
+    return await User.query()
+      .where({
+        referenceAgent: castToObjectId(userId),
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]},
+        _id: {$not: {$eq: castToObjectId(userId)}}
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({role: 1, firstName: 1, lastName: 1})
       .fetch()
   }
 
@@ -246,6 +270,17 @@ class User extends Model {
         account_status: {$in: [AccountStatuses.CREATED, AccountStatuses.MUST_REVALIDATE]}
       })
       .fetch()
+  }
+
+  static async getAgents() {
+    return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
+  }
+
+  static async getUsersToRecapitalize() {
+    return User.where({
+      role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
+      account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+    }).fetch()
   }
 
   /**
@@ -370,6 +405,10 @@ class User extends Model {
 
   getContractPercentage(value) {
     return +value
+  }
+
+  getCommissionsAssigned(value) {
+    return value ? value.map(_entry => JSON.parse(_entry)) : []
   }
 
   // SETTERS

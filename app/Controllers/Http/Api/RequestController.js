@@ -14,13 +14,15 @@ const MovementModel = require('../../../Models/Movement')
 /** @type {import("../../../Models/Request")} */
 const UserModel = use("App/Models/User")
 const FileModel = use("App/Models/File")
+const Event = use("Event")
 
 const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
+const RequestException = require("../../../Exceptions/RequestException")
 const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
 const MovementTypes = require("../../../../enums/MovementTypes")
-
+const moment = require("moment")
 
 
 class RequestController {
@@ -85,7 +87,7 @@ class RequestController {
 
   /**
    * I disabled the update so that the requests can't be changed. If necessary thy can be deleted and recreated.
-   * 
+   *
    * @param {object} ctx
    * @param {Params} ctx.params
    * @param {Request} ctx.request
@@ -132,9 +134,10 @@ class RequestController {
     }
   }
 
-  async approve({ params, response }) {
+  async approve({params, response, request}) {
     const requestId = params.id
     const foundedRequest = await RequestModel.find(requestId)
+    const incomingDate = request.input("paymentDocDate")
 
     if (!foundedRequest) {
       throw new RequestNotFoundException()
@@ -144,10 +147,45 @@ class RequestController {
       return response.badRequest("Can't change request status.")
     }
 
+    const minMonthDate = moment().subtract(1, "months")
+      .set({
+        'date': 1,
+        'hour': 0,
+        "minute": 0,
+        "second": 0,
+        "millisecond": 0
+      })
+
+    // Assure that the date is not older then 1st of previous month
+    if ((minMonthDate.isAfter(incomingDate))) {
+      throw new RequestException("The provided date is older the the 1st of the previous month.")
+    }
+
+    const minCurrentMonthDate = moment().set({
+      'date': 1,
+      'hour': 0,
+      "minute": 0,
+      "second": 0,
+      "millisecond": 0
+    })
+    /*
+    If the current date is > 15, and the date refers to the precious month,
+    then it means that the recapitalization has
+    already occurred and also the agents commission calculation, so we can't add
+    a movement on the previous month.
+     */
+    if (moment().date() > 15 && minCurrentMonthDate.isAfter(incomingDate)) {
+      throw new RequestException("The provided date can't be precedent to the 1st of the current month because the recapitalization has already occurred.")
+    }
+
+
     foundedRequest.status = RequestStatus.ACCETTATA
+    foundedRequest.paymentDocDate = incomingDate
     foundedRequest.completed_at = new Date()
 
     await foundedRequest.save()
+
+    Event.emit("request::approved", foundedRequest)
 
     return foundedRequest
   }

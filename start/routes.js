@@ -16,6 +16,7 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
 const AuthRoutes = require('./routes/auth')
+const CommissionsRoutes = require('./routes/commissions')
 const CommunicationsRoutes = require('./routes/communications')
 const FilesRoutes = require('./routes/files')
 const DashboardsRoutes = require('./routes/dashboards.js')
@@ -27,6 +28,7 @@ const WebhooksRoutes = require('./routes/webhooks.js')
 Route.on('/').render('welcome')
 
 AuthRoutes(Route)
+CommissionsRoutes(Route)
 CommunicationsRoutes(Route)
 FilesRoutes(Route)
 DashboardsRoutes(Route)
@@ -36,10 +38,12 @@ UserRoutes(Route)
 WebhooksRoutes(Route)
 
 
+/*
 Route.get("/docs/templates", "DocSignController.readTemplates")
 Route.get("/docs/docs", "DocSignController.readDocuments")
 Route.post("/docs/docs", "DocSignController.sendDocument")
 Route.delete("/docs/docs/:uuid", "DocSignController.deleteDocument")
+*/
 
 
 
