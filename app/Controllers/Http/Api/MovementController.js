@@ -124,7 +124,7 @@ class MovementController {
       deposit: result.deposit,
       interestAmount: result.interestAmount,
       interestPercentage: result.interestPercentage,
-      currMonthCommissions: currMonthCommissions.currMonthCommissions
+      currMonthCommissions: currMonthCommissions ? currMonthCommissions.currMonthCommissions : 0
     }
   }
 
