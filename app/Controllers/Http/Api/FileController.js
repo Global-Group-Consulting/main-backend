@@ -43,8 +43,10 @@ class FileController {
       return response.badRequest('File not found');
     }
 
-    const path = Helpers.tmpPath(``);
+    const filePath = Helpers.tmpPath(``);
     const file = await Drive.getObject(id)
+
+    fs.mkdirSync(filePath, {recursive: true})
 
     const readableInstanceStream = new Readable({
       read() {
@@ -53,7 +55,9 @@ class FileController {
       },
     });
 
-    const pathname = `${path}/${dbFile.clientName}`;
+    const pathname = `${filePath}/${dbFile.clientName}`;
+
+    console.log(filePath)
 
     await this._saveStreamToFile(readableInstanceStream, pathname);
 
