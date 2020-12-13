@@ -12,6 +12,8 @@ const UserModel = use('App/Models/User')
 
 /** @type {typeof import("./Movement")} */
 const MovementModel = use("App/Models/Movement")
+/** @type {typeof import("./Commission")} */
+const CommissionModel = use("App/Models/Commission")
 
 const {Types: MongoTypes} = require('mongoose');
 const moment = require("moment")
@@ -50,20 +52,25 @@ class Request extends Model {
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
 
       // Auto approve some types of requests
-      if ([RequestTypes.RISC_INTERESSI, RequestTypes.INTERESSI].includes(data.type)) {
+      if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
         const typeData = RequestTypes.get(data.type)
 
         try {
           const user = await UserModel.find(data.userId)
+          let generatedMovement
 
-          const movement = await MovementModel.create({
-            userId: data.userId,
-            movementType: typeData.movement,
-            amountChange: data.amount,
-            interestPercentage: +user.contractPercentage,
-          })
+          if (RequestTypes.RISC_PROVVIGIONI === data.type) {
+            generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
+          } else {
+            generatedMovement = await MovementModel.create({
+              userId: data.userId,
+              movementType: typeData.movement,
+              amountChange: data.amount,
+              interestPercentage: +user.contractPercentage,
+            })
+          }
 
-          data.movementId = movement._id
+          data.movementId = generatedMovement._id
           data.status = RequestStatus.ACCETTATA
           data.completed_at = new Date().toISOString()
         } catch (er) {
@@ -84,7 +91,10 @@ class Request extends Model {
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
       } else if (RequestTypes.RISC_INTERESSI === data.type) {
-        data.availableAmount = lastMovement.interestAmount
+        data.availableAmount = lastMovement.interestAmountOld
+      } else if (RequestTypes.RISC_PROVVIGIONI === data.type) {
+        const commissionMovement = await CommissionModel.find(data.movementId)
+        data.availableAmount = commissionMovement.currMonthCommissionsOld
       }
 
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
@@ -331,7 +341,11 @@ class Request extends Model {
   }
 
   movement() {
-    return this.hasOne('App/Models/Movement', "movementId", "_id")
+    if (this.type === RequestTypes.RISC_PROVVIGIONI) {
+      return this.hasOne('App/Models/Commission', "movementId", "_id")
+    } else {
+      return this.hasOne('App/Models/Movement', "movementId", "_id")
+    }
   }
 
   conversation() {

@@ -1,9 +1,9 @@
 const { BasicEnum } = require('../classes/BasicEnum')
-
+/**
+ * @enum
+ */
 class MessageTypes extends BasicEnum {
-  /**
-   * @enum
-   */
+
   constructor() {
     super('UserRoles')
 

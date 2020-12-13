@@ -78,16 +78,19 @@ class CommissionController {
       userId = params["id"]
     }
 
-    const result = await CommissionModel.getLast(userId)
+    /*
+      Must return:
+        - current month commissions
+        - Reinvested commissions from the last block movement
+        - Collected Commissions in the last month
+        - Total amount of users new deposit for the last year
+     */
+
+    const result = await CommissionModel.getStatistics(userId)
     const list = await CommissionModel.getAll(userId)
 
     return {
-      blocks: {
-        monthTotalCommissions: 0,
-        agentTotalCommissions: 0,
-        monthCollectedCommissions: 0,
-        agentTotalReinvestedCommissions: 0
-      },
+      blocks: result,
       list
     }
   }

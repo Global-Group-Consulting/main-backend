@@ -15,7 +15,7 @@ class RequestTypes extends BasicEnum {
     this.RISC_INTERESSI = 4
 
     /**  Riscossione delle provvigioni dell'agente */
-    this.INTERESSI = 5
+    this.RISC_PROVVIGIONI = 5
 
     this.data = {
       /*  [this.ADMIN]: {
@@ -38,8 +38,8 @@ class RequestTypes extends BasicEnum {
         movement: MovementTypes.INTEREST_COLLECTED
       },
       // interessi maturati mensilmente
-      [this.INTERESSI]: {
-        id: 'interessi',
+      [this.RISC_PROVVIGIONI]: {
+        id: 'risc_provvigioni',
         movement: MovementTypes.COMMISSION_COLLECTED
       }
     }

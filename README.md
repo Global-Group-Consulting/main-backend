@@ -42,7 +42,3 @@ migration:run
       calculate the commissions for the agent based on the user's new deposit.
     - If the user is an agent, trigger `agent_commissions_reinvest` which will reinvest the commissions of the previous
       month
-
-// TODO:: Connect commissions with various events like recapitalizations and others.
-
-// Create frontend request dialog for commissions

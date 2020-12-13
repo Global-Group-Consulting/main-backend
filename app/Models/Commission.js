@@ -62,14 +62,14 @@ class Commission extends Model {
     return this.where({userId: castToObjectId(userId)}).sort({created_at: -1}).first()
   }
 
-  static async _getCommissionsToReinvest(userId) {
+  static async _getCommissionsToReinvest(userId, includeProcessed) {
     const commission = await this.where({
       userId: castToObjectId(userId),
       commissionType: CommissionType.COMMISSIONS_TO_REINVEST
     })
       .sort({created_at: -1}).first()
 
-    if (commission && commission.processed) {
+    if (commission && commission.processed && !includeProcessed) {
       return null
     }
 
@@ -84,9 +84,17 @@ class Commission extends Model {
       .sort({created_at: -1}).first()
   }
 
-  static _getMomentDate(date) {
+  /**
+   *
+   * @param {number} date
+   * @param {number} [month]
+   * @returns {moment}
+   * @private
+   */
+  static _getMomentDate(date, month) {
     return moment().set({
       'date': date || 1,
+      'month': month || moment().month(),
       'hour': 0,
       "minute": 0,
       "second": 0,
@@ -94,12 +102,32 @@ class Commission extends Model {
     })
   }
 
-  static _getMonthCollections(userId) {
+  static _getLastMonthCollectedCommissions(userId, lastReinvestedCommissions) {
     userId = castToObjectId(userId)
 
-    const lastReinvestment = this._getLastReinvestment(userId)
-    const startFromDate = lastReinvestment ? lastReinvestment.created_at : this._getMomentDate()
-    // const collectMovements = this.where({userId, created_at: })
+    const startDate = moment(lastReinvestedCommissions.created_at)// this._getMomentDate(1).subtract(1, "months")
+    const endDate = moment(lastReinvestedCommissions.created_at).endOf("month")
+
+    return this.where({
+      userId,
+      commissionType: CommissionType.COMMISSIONS_COLLECTED,
+      created_at: {
+        $gte: startDate.toDate(),
+        $lt: endDate.toDate()
+      }
+    }).fetch()
+  }
+
+  static async _getClientsYearDeposits(userId) {
+    userId = castToObjectId(userId)
+
+    return this.where({
+      userId,
+      commissionType: CommissionType.NEW_DEPOSIT,
+      created_at: {
+        $gte: moment().startOf("year"),
+      }
+    }).fetch()
   }
 
   /**
@@ -166,6 +194,7 @@ class Commission extends Model {
     return currentCommissionSettings
   }
 
+  _isAMomentObject = true
   /**
    * Commission that occurs each time a client of an agent invest new money
    * @returns {Promise<void>}
@@ -347,15 +376,20 @@ class Commission extends Model {
     return newCommissionMovement
   }
 
-  static async getLast(userId) {
+  static async getStatistics(userId) {
     // for the current state i get the last movement which will contain
     // totalCommissions, that represent the current amount of available commissions.
-    const currentState = await this._getLastCommission(userId)
-
+    const lastCommission = await this._getLastCommission(userId)
+    const lastReinvestedCommissions = await this._getCommissionsToReinvest(userId, true)
+    const collectedCommissions = await this._getLastMonthCollectedCommissions(userId, lastReinvestedCommissions)
+    const clientsTotalDeposit = await this._getClientsYearDeposits(userId)
     // I search all the collected commission
 
     return {
-      monthCommissions: currentState ? currentState.totalCommissione : 0
+      monthCommissions: lastCommission ? lastCommission.currMonthCommissions : 0,
+      reinvestedCommissions: lastReinvestedCommissions ? lastReinvestedCommissions.amountChange : 0,
+      collectedCommissions: collectedCommissions.rows.reduce((acc, curr) => acc + curr.amountChange, 0),
+      clientsTotalDeposit: clientsTotalDeposit.rows.reduce((acc, curr) => acc + curr.commissionOnValue, 0),
     }
 
   }

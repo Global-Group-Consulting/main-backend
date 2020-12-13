@@ -10,7 +10,8 @@ const CommunicationException = use("App/Exceptions/CommunicationException.js")
 const FileModel = use("App/Models/File")
 
 const ConversationTypes = require("../../enums/MessageTypes")
-const { castToObjectId, castToNumber } = require("../Helpers/ModelFormatters.js")
+const UserRoles = require("../../enums/UserRoles")
+const {castToObjectId, castToNumber} = require("../Helpers/ModelFormatters.js")
 
 class Conversation extends Model {
   static get computed() {
@@ -26,7 +27,7 @@ class Conversation extends Model {
 
   }
 
-  /** 
+  /**
    * @param {IConversation} payload
    */
   static create(payload) {
@@ -35,8 +36,8 @@ class Conversation extends Model {
 
   /**
    * Fetches all the communications where the user is a watcher.
-   * 
-   * @param {string} userId 
+   *
+   * @param {string} userId
    * @returns {Promise<IConversation[]>}
    */
   static async getAll(userId) {
@@ -66,6 +67,22 @@ class Conversation extends Model {
           ])
         })
       })
+      .with("creator", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+        ])
+      })
+      .with("watchers", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+        ])
+      })
       .sort({ "updated_at": -1, "subject": -1 })
       .fetch()
 
@@ -77,26 +94,29 @@ class Conversation extends Model {
   }
 
   /**
-  * Fetches the messages for a single conversation
-  * 
-  * @param {string} userId 
-  * @returns {Promise<IConversation>}
-  */
-  static async getMessages(conversationId, userId) {
+   * Fetches the messages for a single conversation
+   *
+   * @param {} user
+   * @returns {Promise<IConversation>}
+   */
+  static async getMessages(conversationId, user) {
     conversationId = castToObjectId(conversationId)
+
+    const userId = user._id
 
     const result = (await Conversation.query()
       .with("messages", query => {
         query.with("sender", query => {
-          query.setVisible(["firstName", "lastName", "role"])
+          query.setVisible(["firstName", "lastName", "role", "id"])
         })
 
       })
-      .where({ _id: conversationId })
+      .where({_id: conversationId})
       .first()).toJSON()
 
     const messages = {}
     const uid = userId.toString()
+    const userType = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(user.role) ? "admin" : "user"
 
     for (const _message of result.messages) {
       const messageId = _message.messageId
@@ -128,15 +148,26 @@ class Conversation extends Model {
     result.messages = Object.values(messages)
 
     for (const _row of result.messages) {
+      let name = `${_row.sender.firstName} ${_row.sender.lastName}`
+      const fullSender = _row.sender
+
+      if (userType === "user") {
+        name = `${_row.sender.firstName} ${_row.sender.lastName.slice(0, 1)}.`
+      }
+
       _row.sender = {
         role: _row.sender.role,
-        name: `${_row.sender.firstName} ${_row.sender.lastName.slice(0, 1)}.`
+        name,
+      }
+
+      if (userType === "admin") {
+        _row.sender.id = fullSender.id.toString()
       }
 
       if (_row.filesIds) {
         _row.files = await FileModel.where(
           {
-            _id: { $in: _row.filesIds }
+            _id: {$in: _row.filesIds}
           }
         ).setVisible(["id", "extname", "clientName", "type", "subtype"])
           .fetch()
@@ -169,8 +200,8 @@ class Conversation extends Model {
   }
 
   /**
-   * 
-   * @param {IMessage} message 
+   *
+   * @param {IMessage} message
    * @returns {IConversation}
    */
   static async upsert(message) {
@@ -224,11 +255,15 @@ class Conversation extends Model {
     return this.hasOne("App/Models/User", "createdById", "_id")
   }
 
+  watchers() {
+    return this.hasMany("App/Models/User", "watchersIds", "_id")
+  }
+
   request() {
     return this.hasOne("App/Models/Request", "requestId", "_id")
   }
 
-  getId({ _id }) {
+  getId({_id}) {
     return _id.toString()
   }
 

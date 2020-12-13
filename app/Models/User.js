@@ -223,11 +223,34 @@ class User extends Model {
   static async getReceiversUsers(userId) {
     return await User.query()
       .where({
-        account_status: { $in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED] },
-        _id: { $not: { $eq: castToObjectId(userId) } }
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]},
+        _id: {$not: {$eq: castToObjectId(userId)}}
       })
       .setVisible(["id", "firstName", "lastName", "role"])
-      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .sort({role: 1, firstName: 1, lastName: 1})
+      .fetch()
+  }
+
+  static async getReceiversByRole(role) {
+    return await User.query()
+      .where({
+        role: +role,
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({role: 1, firstName: 1, lastName: 1})
+      .fetch()
+  }
+
+  static async getReceiversForAgent(userId) {
+    return await User.query()
+      .where({
+        referenceAgent: castToObjectId(userId),
+        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]},
+        _id: {$not: {$eq: castToObjectId(userId)}}
+      })
+      .setVisible(["id", "firstName", "lastName", "role"])
+      .sort({role: 1, firstName: 1, lastName: 1})
       .fetch()
   }
 
