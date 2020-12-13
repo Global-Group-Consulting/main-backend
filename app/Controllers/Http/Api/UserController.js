@@ -276,6 +276,46 @@ class UserController {
     return user.full()
   }
 
+  async importContract({request}) {
+    const userId = request.input("userId")
+    const fileToImport = request.file("fileToImport")
+
+    /** @type {User} */
+    const user = await User.find(userId)
+
+    if (!user) {
+      throw new Error("Can't find any user")
+    }
+
+    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt) {
+      return
+    }
+
+    if (!fileToImport) {
+      throw new UserException("No file provided for import.")
+    }
+
+    user.incompleteData = null // reset existing incomplete data
+    user.contractSignedAt = new Date()
+
+    await user.save()
+
+    try {
+      // Store the contract file in S3
+      await File.store([fileToImport], user._id, user._id, {
+        clientName: fileToImport.clientName,
+        extname: "pdf",
+        fileName: "null",
+        fieldName: "contractDoc",
+        type: "application",
+        subtype: "pdf",
+      })
+    } catch (er) {
+      throw er
+    }
+
+    return user.full()
+  }
 
   me({auth, params}) {
     /*if (auth.user._id !== Number(params.id)) {

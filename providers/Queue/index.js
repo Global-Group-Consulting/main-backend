@@ -14,7 +14,7 @@ class Queue {
   constructor(Config) {
     const appMongoConnection = Config.get("database.mongodb")
 
-    console.info("\n\n-- INITIATING QUEUE PROVIDER --\n\n")
+    Logger.info("-- INITIATING QUEUE PROVIDER --")
 
     if (!appMongoConnection) {
       throw new Error("Missing MongoDb configuration.")
@@ -28,6 +28,7 @@ class Queue {
 
     this.Config = Config
 
+    this.queuesList = {}
 
     if (agendaInstance) {
       /**
@@ -35,7 +36,7 @@ class Queue {
        */
       this._agenda = agendaInstance
 
-      console.info("\n\n-- USING EXISTING ONE --\n\n")
+      Logger.info("-- USING EXISTING AGENDA INSTANCE --")
 
     } else {
 
@@ -53,6 +54,7 @@ class Queue {
       agendaInstance = this._agenda
       this._start()
     }
+
   }
 
   /**
@@ -82,6 +84,8 @@ class Queue {
         }
 
         this._agenda.define(queueName, queue.options || {}, job)
+
+        this.queuesList[queueName] = job
       } catch (er) {
         if (er.code === "MODULE_NOT_FOUND") {
           Logger.error("Can't find the JobHandler for " + queueName + " at " + jobPath)
@@ -159,6 +163,8 @@ class Queue {
    * There can be only one job at a time, so if a job is added more than once,
    * each time, this will overwrite the existing one.
    *
+   * DEFAULTS: options.skipImmediate = true
+   *
    * @public
    *
    * @param {string | number} interval - @see https://github.com/matthewmueller/date#examples
@@ -174,6 +180,18 @@ class Queue {
     return await this._agenda.every(interval, queueName, data, Object.assign({
       skipImmediate: true,
     }, options));
+  }
+
+  async initRecursiveJobs() {
+    const recursiveJobs = this.Config.get("queue.recursiveJobs")
+
+    if (!recursiveJobs || recursiveJobs.length === 0) {
+      return
+    }
+
+    for (const job of recursiveJobs) {
+      await this.cron(job.recursion, job.queue)
+    }
   }
 }
 
