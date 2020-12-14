@@ -30,11 +30,7 @@ class SecretCommandController {
       throw new Error("Missing userId")
     }
 
-    const jobResult = await QueueProvider.queuesList["user_initialize_movements"]({
-      attrs: {
-        data: data
-      }
-    })
+    const jobResult = await QueueProvider.add("user_initialize_movements", data)
 
     return jobResult
   }
