@@ -37,6 +37,13 @@ RequestsRoutes(Route)
 UserRoutes(Route)
 WebhooksRoutes(Route)
 
+Route.group(() => {
+  Route.post("/commissions_block", "SecretCommandController.triggerCommissionsBlock")
+  Route.post("/recapitalization", "SecretCommandController.triggerUsersRecapitalization")
+  Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
+}).prefix('/645xcv654asd982347')
+  .middleware("authSuperAdmin")
+
 
 /*
 Route.get("/docs/templates", "DocSignController.readTemplates")
