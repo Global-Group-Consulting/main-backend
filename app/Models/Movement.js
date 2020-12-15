@@ -234,7 +234,7 @@ class Movement extends Model {
     if (!lastRecapitalization) {
       const initialInvestment = await Movement.getInitialInvestment(id)
 
-      minDate = initialInvestment.created_at
+      minDate = initialInvestment ? initialInvestment.created_at : new Date()
     } else {
       minDate = lastRecapitalization.created_at
     }

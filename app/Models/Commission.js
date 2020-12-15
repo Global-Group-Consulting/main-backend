@@ -105,6 +105,10 @@ class Commission extends Model {
   static _getLastMonthCollectedCommissions(userId, lastReinvestedCommissions) {
     userId = castToObjectId(userId)
 
+    if (!lastReinvestedCommissions) {
+      return null
+    }
+
     const startDate = moment(lastReinvestedCommissions.created_at)// this._getMomentDate(1).subtract(1, "months")
     const endDate = moment(lastReinvestedCommissions.created_at).endOf("month")
 
@@ -388,7 +392,7 @@ class Commission extends Model {
     return {
       monthCommissions: lastCommission ? lastCommission.currMonthCommissions : 0,
       reinvestedCommissions: lastReinvestedCommissions ? lastReinvestedCommissions.amountChange : 0,
-      collectedCommissions: collectedCommissions.rows.reduce((acc, curr) => acc + curr.amountChange, 0),
+      collectedCommissions: collectedCommissions ? collectedCommissions.rows.reduce((acc, curr) => acc + curr.amountChange, 0) : 0,
       clientsTotalDeposit: clientsTotalDeposit.rows.reduce((acc, curr) => acc + curr.commissionOnValue, 0),
     }
 

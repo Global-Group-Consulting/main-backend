@@ -26,4 +26,5 @@ module.exports =
     if (job.save) {
       await job.save()
     }
+    return job
   }
