@@ -18,4 +18,5 @@ Event.on("user::mustRevalidate", "User.onMustRevalidate")
 Event.on("user::validated", "User.onValidated")
 Event.on("user::approved", "User.onApproved")
 
+Event.on("movements::initial", "Movements.onInitial")
 Event.on("request::approved", "Request.onApproved")
