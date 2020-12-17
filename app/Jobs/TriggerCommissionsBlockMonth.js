@@ -20,7 +20,8 @@ module.exports =
     const addedJobs = []
 
     for (const agent of agentsList.rows) {
-      addedJobs.push(await QueueProvider.add("agent_commissions_block", {id: agent._id.toString()}))
+      const newJob = await QueueProvider.add("agent_commissions_block", {id: agent._id.toString()})
+      addedJobs.push(newJob.toJSON()._id)
     }
 
     job.attrs.result = addedJobs;
@@ -28,6 +29,8 @@ module.exports =
     if (job.save) {
       await job.save()
     }
+
+    await QueueProvider.cron(job.attrs.interval, job.attrs.name, job.attrs.data)
 
     return job
   }
