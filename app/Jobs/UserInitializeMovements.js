@@ -1,5 +1,6 @@
 const MovementModel = use("App/Models/Movement")
 const UserModel = use("App/Models/User")
+const Event = use("Event")
 
 const MovementTypes = require("../../enums/MovementTypes")
 
@@ -28,6 +29,11 @@ module.exports =
         })
 
         job.attrs.result = result.toJSON()
+
+        if (incomingData.calcAgentCommissions) {
+          Event.emit("movements::initial", job.attrs.result)
+        }
+
       } catch (er) {
         throw new Error("Can't create initial deposit movement. " + er.message)
       }
@@ -35,5 +41,7 @@ module.exports =
       job.attrs.result = "Initial movement already existing"
     }
 
-    await job.save()
+    if (job.save) {
+      await job.save()
+    }
   }

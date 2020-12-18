@@ -1,3 +1,5 @@
+const Env = use("Env")
+
 /**
  * @type {import("../@types/QueueProvider").QueueFileConfig}
  */
@@ -53,12 +55,12 @@ const queueConfig = {
   recursiveJobs: [
     {
       queue: "trigger_commissions_block_month",
-      recursion: "* 10 0 1 * *"
+      recursion: Env.get("TRIGGER_COMMISSION_BLOCK", "* 10 0 1 * *")
       // recursion: "*/10 * * * * *"
     },
     {
       queue: "trigger_users_recapitalization",
-      recursion: "* 10 0 16 * *"
+      recursion: Env.get("TRIGGER_RECAPITALIZATION", "* 10 0 16 * *")
     }
   ]
 }

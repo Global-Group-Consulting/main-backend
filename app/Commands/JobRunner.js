@@ -7,6 +7,7 @@ class JobRunner extends Command {
     return `
       job-runner
       { --job-name=@value : Specify the job name  }
+      { --job-data=@value : Specify the job data as json  }
     `
   }
 
@@ -28,13 +29,9 @@ class JobRunner extends Command {
       throw new Error("Unknown job")
     }
 
-    const jobResult = await QueueProvider.queuesList[jobName]({
-      attrs: {
-        data: {}
-      }
-    })
+    const jobData = flags.jobData ? JSON.parse(flags.jobData) : {}
 
-    console.log(jobResult)
+    const jobResult = await QueueProvider.add(jobName, jobData)
 
     // process.exit()
   }

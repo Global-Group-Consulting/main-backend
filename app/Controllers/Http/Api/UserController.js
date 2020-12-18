@@ -164,6 +164,7 @@ class UserController {
     // For other roles, this is used to force the status by superadmin
     user.account_status = AccountStatuses.APPROVED
     user.lastChangedBy = auth.user._id
+    user.calcAgentCommissions = false
 
     await user.save()
 

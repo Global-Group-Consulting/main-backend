@@ -37,7 +37,10 @@ User.onApproved = async (user) => {
 
   if (!user.sendOnlyEmail && userType !== "admin") {
     await Queue.add("user_initialize_movements", {
-      userId: user._id.toString()
+      userId: user._id.toString(),
+      // added so that the job workers know if the movement must generate agents commission.
+      // This may not be the case when importing a movements list.
+      calcAgentCommissions: typeof user.calcAgentCommissions === "boolean" ? user.calcAgentCommissions : true
     })
   }
 
