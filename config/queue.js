@@ -54,6 +54,7 @@ const queueConfig = {
     {
       queue: "trigger_commissions_block_month",
       recursion: "* 10 0 1 * *"
+      // recursion: "*/10 * * * * *"
     },
     {
       queue: "trigger_users_recapitalization",

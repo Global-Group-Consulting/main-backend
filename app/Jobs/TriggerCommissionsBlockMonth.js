@@ -30,7 +30,5 @@ module.exports =
       await job.save()
     }
 
-    await QueueProvider.cron(job.attrs.interval, job.attrs.name, job.attrs.data)
-
     return job
   }

@@ -18,7 +18,8 @@ module.exports =
     const addedJobs = []
 
     for (const user of userList.rows) {
-      addedJobs.push(await QueueProvider.add("user_recapitalization", {userId: user._id.toString()}))
+      const newJob = await QueueProvider.add("user_recapitalization", {userId: user._id.toString()})
+      addedJobs.push(newJob.toJSON()._id)
     }
 
     job.attrs.result = addedJobs;
@@ -26,5 +27,6 @@ module.exports =
     if (job.save) {
       await job.save()
     }
+
     return job
   }

@@ -50,7 +50,8 @@ class Queue {
           options: {
             useUnifiedTopology: true
           }
-        }
+        },
+        defaultLockLifetime: 5000
       });
 
       agendaInstance = this._agenda
@@ -110,13 +111,30 @@ class Queue {
       Logger.info(["Job STARTING", job.attrs.name].join(" - "))
     })
 
-    this._agenda.on("success", /** @param {QueueProvider.Job} job */job => {
+    this._agenda.on("success", async /** @param {QueueProvider.Job} job */(job) => {
       Logger.info(["Job COMPLETED SUCCESSFULLY", job.attrs.name].join(" - "))
+
+      await this._rescheduleCronJob(job)
     })
 
-    this._agenda.on("fail", /** @param {QueueProvider.Job} job */(err, job) => {
+    this._agenda.on("fail", async /** @param {QueueProvider.Job} job */(err, job) => {
       Logger.info(["Job COMPLETED FAILING", job.attrs.name, err].join(" - "))
+
+      await this._rescheduleCronJob(job)
     })
+  }
+
+  async _rescheduleCronJob(job) {
+    job.attrs.completed = true
+
+    await job.save()
+
+    if (job.attrs.recursive) {
+      const recursiveJobs = this.Config.get("queue.recursiveJobs")
+      const jobConfig = recursiveJobs.find(_job => _job.queue === job.attrs.name)
+
+      await this.cron(jobConfig.recursion, jobConfig.queue, job.attrs.data)
+    }
   }
 
   /**
@@ -197,10 +215,10 @@ class Queue {
     const existJob = await this._agenda.jobs({
       name: queueName,
       recursive: true,
-      nextRunAt: {
-        $gt: new Date()
-      },
-      lastRunAt: {
+      /* nextRunAt: {
+         $gt: new Date()
+       },*/
+      completed: {
         $exists: false
       }
     })
@@ -209,14 +227,17 @@ class Queue {
     if (existJob && existJob.length > 0) {
       const job = existJob[0]
 
+      await job.touch()
+
       job.attrs.interval = interval;
       job.attrs.lastModifiedAt = new Date();
+      job.attrs.lockedAt = null;
 
       if (nextRun !== job.attrs.nextRunAt) {
         job.schedule(nextRun)
       }
 
-      job.save()
+      await job.save()
 
       return job
     }
@@ -227,7 +248,7 @@ class Queue {
     newJob.attrs.interval = interval;
     newJob.schedule(nextRun)
 
-    newJob.save()
+    await newJob.save()
 
     // @ts-ignore
     /*
