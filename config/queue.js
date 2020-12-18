@@ -55,7 +55,7 @@ const queueConfig = {
   recursiveJobs: [
     {
       queue: "trigger_commissions_block_month",
-      recursion: "* 10 0 1 * *"
+      recursion: Env.get("TRIGGER_COMMISSION_BLOCK", "* 10 0 1 * *")
       // recursion: "*/10 * * * * *"
     },
     {
