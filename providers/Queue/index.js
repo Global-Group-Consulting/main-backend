@@ -2,6 +2,8 @@ const Agenda = require("agenda");
 const mongoUriBuilder = require('mongo-uri-builder');
 const {upperFirst, camelCase} = require("lodash");
 
+const cronParser = require('cron-parser');
+
 const Logger = use("Logger")
 const Helpers = use('Helpers');
 
@@ -48,7 +50,8 @@ class Queue {
           options: {
             useUnifiedTopology: true
           }
-        }
+        },
+        defaultLockLifetime: 5000
       });
 
       agendaInstance = this._agenda
@@ -108,13 +111,30 @@ class Queue {
       Logger.info(["Job STARTING", job.attrs.name].join(" - "))
     })
 
-    this._agenda.on("success", /** @param {QueueProvider.Job} job */job => {
+    this._agenda.on("success", async /** @param {QueueProvider.Job} job */(job) => {
       Logger.info(["Job COMPLETED SUCCESSFULLY", job.attrs.name].join(" - "))
+
+      await this._rescheduleCronJob(job)
     })
 
-    this._agenda.on("fail", /** @param {QueueProvider.Job} job */(err, job) => {
+    this._agenda.on("fail", async /** @param {QueueProvider.Job} job */(err, job) => {
       Logger.info(["Job COMPLETED FAILING", job.attrs.name, err].join(" - "))
+
+      await this._rescheduleCronJob(job)
     })
+  }
+
+  async _rescheduleCronJob(job) {
+    job.attrs.completed = true
+
+    await job.save()
+
+    if (job.attrs.recursive) {
+      const recursiveJobs = this.Config.get("queue.recursiveJobs")
+      const jobConfig = recursiveJobs.find(_job => _job.queue === job.attrs.name)
+
+      await this.cron(jobConfig.recursion, jobConfig.queue, job.attrs.data)
+    }
   }
 
   /**
@@ -175,11 +195,69 @@ class Queue {
    */
   async cron(interval, queueName, data, options) {
     await this._checkQueueExistence(queueName)
+    const scheduledDate = cronParser.parseExpression(interval)
+    const nextRun = scheduledDate.next().toDate()
+
+    /*
+    Due to setTimeout limitation of 32 bit length, that would prevent me to add dates more in the feature of 3 weeks,
+    i implemented a hybrid method.
+
+    Each job is added as a regular one, scheduled for its date. This is added only once at a time, and checks if other
+    jobs with the same name exists that are not yet completed.
+
+    Once a job completes, it's job handler must read itself to the queue using this same method,
+    so that the job can recalculate the next run and re-execute.
+
+    Example:
+      await QueueProvider.cron(job.attrs.interval, job.attrs.name, job.attrs.data)
+     */
+
+    const existJob = await this._agenda.jobs({
+      name: queueName,
+      recursive: true,
+      /* nextRunAt: {
+         $gt: new Date()
+       },*/
+      completed: {
+        $exists: false
+      }
+    })
+
+    // If already exists one that is not yet completed, updates its data.
+    if (existJob && existJob.length > 0) {
+      const job = existJob[0]
+
+      await job.touch()
+
+      job.attrs.interval = interval;
+      job.attrs.lastModifiedAt = new Date();
+      job.attrs.lockedAt = null;
+
+      if (nextRun !== job.attrs.nextRunAt) {
+        job.schedule(nextRun)
+      }
+
+      await job.save()
+
+      return job
+    }
+
+    const newJob = this._agenda.create(queueName, data)
+
+    newJob.attrs.recursive = true;
+    newJob.attrs.interval = interval;
+    newJob.schedule(nextRun)
+
+    await newJob.save()
 
     // @ts-ignore
-    return await this._agenda.every(interval, queueName, data, Object.assign({
-      skipImmediate: true,
-    }, options));
+    /*
+    const addedJob = await this._agenda.every(interval, queueName, data, Object.assign({
+         skipImmediate: false,
+       }, options));
+
+    return addedJob
+   */
   }
 
   async initRecursiveJobs() {
