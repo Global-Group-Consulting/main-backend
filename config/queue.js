@@ -1,3 +1,5 @@
+const Env = use("Env")
+
 /**
  * @type {import("../@types/QueueProvider").QueueFileConfig}
  */
@@ -58,7 +60,7 @@ const queueConfig = {
     },
     {
       queue: "trigger_users_recapitalization",
-      recursion: "* 10 0 16 * *"
+      recursion: Env.get("TRIGGER_RECAPITALIZATION", "* 10 0 16 * *")
     }
   ]
 }
