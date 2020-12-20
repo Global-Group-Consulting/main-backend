@@ -22,10 +22,10 @@ const RequestModel = use('App/Models/Request')
 
 const UserRoles = require("../../../../enums/UserRoles")
 
-const { Types: MongoTypes } = require("mongoose")
+const {Types: MongoTypes} = require("mongoose")
 
 class ConversationController {
-  async readConversationMessages({ params, auth }) {
+  async readConversationMessages({params, auth}) {
     const userRole = +auth.user.role
     const conversationId = params.id
 
@@ -40,7 +40,7 @@ class ConversationController {
     return toReturn
   }
 
-  async readAll({ auth, request }) {
+  async readAll({auth, request}) {
     const requestedType = request.qs["t"]
     const requestedTypeOut = typeof request.qs["out"] === "string"
 
@@ -92,7 +92,7 @@ class ConversationController {
           id: null,
           firstName: null,
           lastName: null,
-          role: UserRoles.SERV_CLIENTI
+          role: [UserRoles.SERV_CLIENTI, UserRoles.ADMIN]
         })
 
         break;
@@ -105,7 +105,7 @@ class ConversationController {
           id: null,
           firstName: null,
           lastName: null,
-          role: UserRoles.SERV_CLIENTI
+          role: [UserRoles.SERV_CLIENTI, UserRoles.ADMIN]
         })
 
         break;
@@ -168,7 +168,7 @@ class ConversationController {
     return createdMessages.find(_msg => _msg.senderId.toString() === _msg.receiverId.toString()) || createdMessages[0]
   }
 
-  async setAsRead({ request, auth }) {
+  async setAsRead({request, auth}) {
     const ids = request.input("ids")
     const userId = auth.user._id
 
@@ -198,7 +198,7 @@ class ConversationController {
       const receiver = incomingData.receiver[i]
 
       if (!isNaN(receiver)) {
-        const receiversByRole = (await UserModel.getReceiversByRole(+receiver))
+        const receiversByRole = (await UserModel.getReceiversByRole(+receiver, incomingData.type === MessageTypes.BUG_REPORT))
           .toJSON()
           .reduce((acc, user) => {
             acc.push(user.id.toString())
@@ -223,12 +223,14 @@ class ConversationController {
     }
   }
 
-  async _createSingleMessage({ receiver,
-    messageId,
-    incomingData,
-    user,
-    conversationId,
-    storedFiles }) {
+  async _createSingleMessage({
+                               receiver,
+                               messageId,
+                               incomingData,
+                               user,
+                               conversationId,
+                               storedFiles
+                             }) {
 
     /**
      * @type {IMessage}
@@ -269,7 +271,6 @@ class ConversationController {
 
     return result
   }
-
 
 
 }

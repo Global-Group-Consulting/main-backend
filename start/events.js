@@ -19,4 +19,27 @@ Event.on("user::validated", "User.onValidated")
 Event.on("user::approved", "User.onApproved")
 
 Event.on("movements::initial", "Movements.onInitial")
+
+Event.on("request::new", "Request.onNewRequest")
 Event.on("request::approved", "Request.onApproved")
+Event.on("request::rejected", "Request.onRejected")
+Event.on("request::cancelled", "Request.onCancelled")
+
+/**********************************************************************************
+ * NOTIFICATIONS
+ **********************************************************************************/
+
+// messages & communications
+Event.on("notification::messageNew", "Notifications.onMessageNew")
+
+// user status change
+Event.on("notification::userDraftConfirmed", "Notifications.onUserDraftConfirmed")
+Event.on("notification::userIncompleteData", "Notifications.onUserIncompleteData")
+Event.on("notification::userMustRevalidate", "Notifications.onUserMustRevalidate")
+Event.on("notification::userValidated", "Notifications.onUserValidated")
+
+// requests new and status change
+Event.on("notification::requestNew", "Notifications.onRequestNew")
+Event.on("notification::requestRejected", "Notifications.onRequestRejected")
+Event.on("notification::requestCancelled", "Notifications.onRequestCancelled")
+Event.on("notification::requestApproved", "Notifications.onRequestApproved")

@@ -1,9 +1,9 @@
 const { BasicEnum } = require('../classes/BasicEnum')
-
+/**
+ * @enum
+ */
 class RequestStatus extends BasicEnum {
-  /**
-   * @enum
-   */
+
   constructor() {
     super('RequestStatus')
 

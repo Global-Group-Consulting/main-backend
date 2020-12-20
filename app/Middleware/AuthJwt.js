@@ -3,7 +3,7 @@ const TokenExpiredException = use("App/Exceptions/TokenExpiredException")
 const Env = use("Env")
 
 class AuthJwt {
-  async handle({ request, auth, response }, next) {
+  async handle({request, auth, response}, next) {
     const scheme = 'jwt'
     let lastError = null
 
@@ -30,6 +30,16 @@ class AuthJwt {
       console.info(lastError)
 
       throw new TokenExpiredException()
+    }
+
+    await next()
+  }
+
+  async wsHandle({request, auth, response}, next) {
+    try {
+      await auth.check()
+    } catch (error) {
+      throw error
     }
 
     await next()
