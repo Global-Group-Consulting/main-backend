@@ -232,12 +232,18 @@ class User extends Model {
       .fetch()
   }
 
-  static async getReceiversByRole(role) {
+  static async getReceiversByRole(role, superAdmin = false) {
+    const query = {
+      role: +role,
+      account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+    }
+
+    if (superAdmin) {
+      query.superaAdmin = true
+    }
+
     return await User.query()
-      .where({
-        role: +role,
-        account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
-      })
+      .where(query)
       .setVisible(["id", "firstName", "lastName", "role"])
       .sort({role: 1, firstName: 1, lastName: 1})
       .fetch()
