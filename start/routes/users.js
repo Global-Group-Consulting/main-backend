@@ -24,12 +24,18 @@ module.exports = function (Route) {
     Route.put('/:id/approve', 'UserController.approve')
       .validator('users/UserApprove')
 
-    Route.post('/:id/sendEmailActivation', 'UserController.sendEmailActivation')
+    Route.post('/:id/sendEmailActivation', 'UserController.sendActivationEmail')
     // .validator('users/UserApprove')
 
-    Route.post('/:id/status', 'UserController.changeStatus')
+    Route.post('/:id/confirmDraft', 'UserController.confirmDraft')
+    Route.post('/:id/incomplete', 'UserController.incomplete')
+    Route.post('/:id/validate', 'UserController.validate')
+    Route.post('/:id/importContract', 'UserController.importContract')
+
+   /* Route.post('/:id/status', 'UserController.changeStatus')
       .validator('users/UserChangeStatus')
-      .middleware("authSuperAdmin")
+      .middleware("authSuperAdmin")*/
+
 
   }).prefix('/api/users')
     .middleware('auth')

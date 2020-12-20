@@ -1,6 +1,6 @@
 'use strict'
 
-const { upperFirst, camelCase } = require("lodash")
+const {upperFirst, camelCase} = require("lodash")
 
 // const UsersController = use("App/Controllers/Http/Api/UserController")
 
@@ -10,11 +10,14 @@ const MovementsModel = use("App/Models/Movement")
 /** @type {typeof import("../../../Models/Request")} */
 const RequestsModel = use("App/Models/Request")
 
+/** @type {typeof import("../../../Models/User")} */
+const UserModel = use("App/Models/User")
+
 const UserRoles = require("../../../../enums/UserRoles")
 
 class DashboardController {
 
-  async getByRole({ auth, response }) {
+  async getByRole({auth, response}) {
     const userRole = +auth.user.role
     const roleData = UserRoles.get(userRole)
     const methodName = upperFirst(camelCase(roleData.id))
@@ -33,6 +36,14 @@ class DashboardController {
 
     return {
       pendingRequests
+    }
+  }
+
+  async getForServClienti(user) {
+    const usersToValidate = await UserModel.getUsersToValidate(user.role)
+
+    return {
+      usersToValidate
     }
   }
 

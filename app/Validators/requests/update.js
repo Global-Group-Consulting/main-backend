@@ -9,8 +9,8 @@ class requestsUpdate extends WhitelistValidator {
     return true
   }
 
-  /** 
-   * @returns {RequestModel} 
+  /**
+   * @returns {RequestModel}
    */
   get rules() {
     return {

@@ -1,26 +1,26 @@
 const { BasicEnum } = require('../classes/BasicEnum')
-
+/**
+ * @enum
+ */
 class UserRoles extends BasicEnum {
-  /**
-   * @enum
-   */
+
   constructor() {
     super('UserRoles')
 
-    this.SUPER_ADMIN = 0
+    // this.SUPER_ADMIN = 0
     this.ADMIN = 1
     this.SERV_CLIENTI = 2
     this.AGENTE = 3
     this.CLIENTE = 4
 
     this.data = {
-      [this.SUPER_ADMIN]: {
+      /*[this.SUPER_ADMIN]: {
         id: 'superAdmin',
         hidden: true,
         text: 'Super Admin',
         color: 'red accent-4',
         bgSrc: 'mb-bg-fb-18.png'
-      },
+      },*/
       [this.ADMIN]: {
         id: 'admin',
         text: 'Amministratore',

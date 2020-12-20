@@ -26,9 +26,12 @@ const providers = [
   '@adonisjs/shield/providers/ShieldProvider',
   '@adonisjs/validator/providers/ValidatorProvider',
   '@adonisjs/drive/providers/DriveProvider',
+  '@adonisjs/websocket/providers/WsProvider',
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
-  path.join(__dirname, '..', 'providers', 'CustomValidatorProvider')
+  path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
+  path.join(__dirname, '..', 'providers', 'DocSigner', "provider"),
+  path.join(__dirname, '..', 'providers', 'Queue', "provider")
 ]
 
 /*
@@ -66,6 +69,8 @@ const aliases = {}
 | Here you store ace commands for your package
 |
 */
-const commands = []
+const commands = [
+  "App/Commands/JobRunner"
+]
 
-module.exports = { providers, aceProviders, aliases, commands }
+module.exports = {providers, aceProviders, aliases, commands}

@@ -1,49 +1,45 @@
 const Event = use('Event')
-
-/**
- * @type {import("../providers/EmailSender").default}
- */
+/** @type {import("../providers/EmailSender").default} */
 const EmailSender = use('EmailSender')
-
 const UserRoles = require("../enums/UserRoles")
 
-Event.on('user::created', async ({ user, token }) => {
-  // const userRole = +user.role
-
-  // if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(userRole)) {
-  //   return
-  // }
-
-  // await EmailSender.onAccountCreated({
-  //   ...user.toObject(),
-  //   token
-  // })
+// Auth events triggered by Persona
+Event.on('user::created', async ({user, token}) => {
+  // Won't do nothing because my user activation is different
+  // from the one of Persona
 })
+Event.on('forgot::password', "Auth.onPasswordForgot")
+Event.on('password::recovered', "Auth.onPasswordRecovered")
 
-Event.on('user::approved', async ({ user, token }) => {
-  const userRole = +user.role
+// User STATUS events
+Event.on("user::draftConfirmed", "User.onDraftUserConfirmed")
+Event.on("user::incomplete", "User.onIncompleteData")
+Event.on("user::mustRevalidate", "User.onMustRevalidate")
+Event.on("user::validated", "User.onValidated")
+Event.on("user::approved", "User.onApproved")
 
-  // Dont' send any email for normal users
-  if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
-    return
-  }
+Event.on("movements::initial", "Movements.onInitial")
 
-  await EmailSender.onAccountCreated({
-    ...user.toObject(),
-    token
-  })
-})
+Event.on("request::new", "Request.onNewRequest")
+Event.on("request::approved", "Request.onApproved")
+Event.on("request::rejected", "Request.onRejected")
+Event.on("request::cancelled", "Request.onCancelled")
 
-Event.on('forgot::password', async ({ user, token }) => {
-  await EmailSender.onPasswordForgot({
-    ...user.toObject(),
-    token
-  })
-})
+/**********************************************************************************
+ * NOTIFICATIONS
+ **********************************************************************************/
 
-Event.on('password::recovered', async ({ user }) => {
-  await EmailSender.onPasswordRecovered({
-    ...user.toObject()
-  })
-})
+// messages & communications
+Event.on("notification::messageNew", "Notifications.onMessageNew")
 
+// user status change
+Event.on("notification::userDraftConfirmed", "Notifications.onUserDraftConfirmed")
+Event.on("notification::userIncompleteData", "Notifications.onUserIncompleteData")
+Event.on("notification::userMustRevalidate", "Notifications.onUserMustRevalidate")
+Event.on("notification::userValidated", "Notifications.onUserValidated")
+
+// requests new and status change
+Event.on("notification::requestNew", "Notifications.onRequestNew")
+Event.on("notification::requestRejected", "Notifications.onRequestRejected")
+Event.on("notification::requestCancelled", "Notifications.onRequestCancelled")
+Event.on("notification::requestApproved", "Notifications.onRequestApproved")

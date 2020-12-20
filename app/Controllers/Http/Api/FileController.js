@@ -8,11 +8,31 @@ const File = use("App/Models/File")
 const Drive = use('Drive')
 const Helpers = use('Helpers')
 const path = require("path")
+const {Readable} = require('stream');
 
-const { existsSync } = require("fs")
+const {existsSync} = require("fs")
+const fs = require("fs")
 
 class FileController {
-  async download({ params, response }) {
+  /**
+   * Save a Readable stream to local disk.
+   * @private
+   * @param {Readable} file - Readable stream that will be saved.
+   * @param {string} pathname - Pathname in the disk.
+   * @return {Promise} If successful returns a WritableStream.
+   */
+  _saveStreamToFile(file, pathname) {
+    return new Promise((resolve, reject) => {
+      const writer = fs.createWriteStream(pathname);
+
+      file.pipe(writer);
+
+      writer.on('finish', resolve);
+      writer.on('error', reject);
+    });
+  }
+
+  async download({params, response}) {
     const {id} = params
 
     const dbFile = await File.find(id)
@@ -23,14 +43,30 @@ class FileController {
       return response.badRequest('File not found');
     }
 
-    const file = await Drive.getStream(id)
+    const filePath = Helpers.tmpPath(``);
+    const file = await Drive.getObject(id)
 
-    response.response.writeHead(200, {
-      'Content-Type': dbFile.headers["content-type"],
+    fs.mkdirSync(filePath, {recursive: true})
+
+    const readableInstanceStream = new Readable({
+      read() {
+        this.push(file.Body);
+        this.push(null);
+      },
+    });
+
+    const pathname = `${filePath}/${dbFile.clientName}`;
+
+    console.log(filePath)
+
+    await this._saveStreamToFile(readableInstanceStream, pathname);
+
+    /*response.response.writeHead(200, {
+      'Content-Type': dbFile.type + "/" + dbFile.subtype,
       'Content-Disposition': 'inline; filename="' + dbFile.clientName + '"'
-    })
+    })*/
 
-    file.pipe(response.response, {end: true})
+    response.download(pathname)
   }
 
   /**

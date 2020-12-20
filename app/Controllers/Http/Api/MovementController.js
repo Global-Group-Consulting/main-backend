@@ -2,10 +2,10 @@
 
 /** @typedef {import('../../../../@types/Movement.d').IMovement} IMovement*/
 
-/**
- * @type {typeof import("../../../Models/Movement")}
- */
+/** @type {typeof import("../../../Models/Movement")} */
 const MovementModel = use("App/Models/Movement")
+/** @type {typeof import("../../../Models/Commission")} */
+const CommissionModel = use("App/Models/Commission")
 const UserModel = use("App/Models/User")
 const Database = use('Database')
 
@@ -114,6 +114,7 @@ class MovementController {
 
     /** @type {IMovement} */
     const result = await MovementModel.getLast(userId)
+    const currMonthCommissions = await CommissionModel._getLastCommission(userId)
 
     if (!result) {
       throw new MovementErrorException("No movement found for the current user.")
@@ -122,7 +123,8 @@ class MovementController {
     return {
       deposit: result.deposit,
       interestAmount: result.interestAmount,
-      interestPercentage: result.interestPercentage
+      interestPercentage: result.interestPercentage,
+      currMonthCommissions: currMonthCommissions ? currMonthCommissions.currMonthCommissions : 0
     }
   }
 

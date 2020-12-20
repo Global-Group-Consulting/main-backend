@@ -1,5 +1,8 @@
 const { BasicEnum } = require('../classes/BasicEnum')
 
+/**
+ * @enum
+ */
 class MovementTypes extends BasicEnum {
 
   constructor() {
@@ -16,6 +19,8 @@ class MovementTypes extends BasicEnum {
     this.CANCEL_INTEREST_COLLECTED = 7
     this.CANCEL_DEPOSIT_COLLECTED = 8
     this.CANCEL_COMMISSION_COLLECTED = 9
+
+    this.COMMISSIONS_REINVESTMENT = 10
 
     super.data = {
       [this.INITIAL_DEPOSIT]: {
@@ -48,7 +53,11 @@ class MovementTypes extends BasicEnum {
       [this.CANCEL_COMMISSION_COLLECTED]: {
         id: "cancelCommissionCollected"
       },
+      [this.COMMISSIONS_REINVESTMENT]: {
+        id: "commissionsReinvestment"
+      },
     }
   }
 }
+
 module.exports = new MovementTypes()

@@ -46,6 +46,7 @@ class ExceptionHandler extends BaseExceptionHandler {
       stack: error.stack,
       request: {
         headers: request.headers(),
+        all: request.all(),
         ip: request.ip(),
         ips: request.ips(),
         method: request.method(),
