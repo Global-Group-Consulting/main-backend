@@ -167,6 +167,7 @@ class User extends Model {
 
   static async groupByRole(filter = {}, returnFlat = false, project) {
     let data = await this.where({...filter})
+      .with("referenceAgentData")
       .sort({firstName: 1, lastName: 1})
       .fetch()
 
@@ -276,7 +277,7 @@ class User extends Model {
     return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
   }
 
-    static async getServClienti() {
+  static async getServClienti() {
     return User.where({role: UserRoles.SERV_CLIENTI, account_status: AccountStatuses.ACTIVE}).fetch()
   }
 
