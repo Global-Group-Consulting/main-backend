@@ -69,10 +69,16 @@ async function onMessageNew(message) {
       break;
   }
 
+  const payload = message.toJSON()
+
+  if(payload.files){
+    delete payload.files
+  }
+
   const notification = await NotificationModel.create({
     receiverId: message.receiverId,
     senderId: message.senderId,
-    payload: message.toJSON(),
+    payload,
     type
   })
 
