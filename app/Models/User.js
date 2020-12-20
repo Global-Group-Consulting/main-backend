@@ -24,9 +24,9 @@ const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 const arraySort = require('array-sort');
 
-const { castToObjectId, castToNumber, castToIsoDate } = require("../Helpers/ModelFormatters.js")
+const {castToObjectId, castToNumber, castToIsoDate} = require("../Helpers/ModelFormatters.js")
 
-const { groupBy: _groupBy, omit: _omit, pick: _pick } = require("lodash")
+const {groupBy: _groupBy, omit: _omit, pick: _pick} = require("lodash")
 
 class User extends Model {
   static userFields = {
@@ -81,8 +81,8 @@ class User extends Model {
   }
 
   /**
- * Hides the fields in the array that returns
- */
+   * Hides the fields in the array that returns
+   */
   static get hidden() {
     return ['password', '_id', '__v']
   }
@@ -166,8 +166,8 @@ class User extends Model {
   }
 
   static async groupByRole(filter = {}, returnFlat = false, project) {
-    let data = await this.where({ ...filter })
-      .sort({ firstName: 1, lastName: 1 })
+    let data = await this.where({...filter})
+      .sort({firstName: 1, lastName: 1})
       .fetch()
 
     data = data.rows
@@ -209,11 +209,11 @@ class User extends Model {
   static async getQuotableUsers(userId) {
     return await User.query()
       .where({
-        role: { $in: [UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE] },
-        _id: { $not: { $eq: castToObjectId(userId) } }
+        role: {$in: [UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE]},
+        _id: {$not: {$eq: castToObjectId(userId)}}
       })
       .setVisible(["id", "firstName", "lastName", "role"])
-      .sort({ role: 1, firstName: 1, lastName: 1 })
+      .sort({role: 1, firstName: 1, lastName: 1})
       .fetch()
   }
 
@@ -274,6 +274,14 @@ class User extends Model {
 
   static async getAgents() {
     return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
+  }
+
+    static async getServClienti() {
+    return User.where({role: UserRoles.SERV_CLIENTI, account_status: AccountStatuses.ACTIVE}).fetch()
+  }
+
+  static async getAdmins() {
+    return User.where({role: UserRoles.ADMIN, account_status: AccountStatuses.ACTIVE}).fetch()
   }
 
   static async getUsersToRecapitalize() {

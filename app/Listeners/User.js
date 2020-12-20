@@ -4,30 +4,34 @@
 const Queue = use("QueueProvider")
 const Persona = use("Persona")
 const Env = use("Env")
+const Event = use("Event")
 
 const UserRoles = require("../../enums/UserRoles")
 
 const User = exports = module.exports = {}
 
-User.onDraftUserConfirmed = async () => {
-
+User.onDraftUserConfirmed = async (user) => {
   // send notification to all servClienti users.
+  Event.emit("notification::userDraftConfirmed", user)
 }
 
-User.onIncompleteData = async () => {
+User.onIncompleteData = async (user) => {
   // send notification to users agent
+  Event.emit("notification::userIncompleteData", user)
 }
 
-User.onMustRevalidate = async () => {
-
+User.onMustRevalidate = async (user) => {
+  // send notification to all servClienti users.
+  Event.emit("notification::userMustRevalidate", user)
 }
 
 /**
  * After the user has been validated and the signRequest has been sent.
  * @returns {Promise<void>}
  */
-User.onValidated = async () => {
-
+User.onValidated = async (user) => {
+  // send notification to all admin users.
+  Event.emit("notification::userValidated", user)
 }
 
 User.onApproved = async (user) => {

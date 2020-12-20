@@ -26,6 +26,7 @@ const providers = [
   '@adonisjs/shield/providers/ShieldProvider',
   '@adonisjs/validator/providers/ValidatorProvider',
   '@adonisjs/drive/providers/DriveProvider',
+  '@adonisjs/websocket/providers/WsProvider',
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
   path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
@@ -72,4 +73,4 @@ const commands = [
   "App/Commands/JobRunner"
 ]
 
-module.exports = { providers, aceProviders, aliases, commands }
+module.exports = {providers, aceProviders, aliases, commands}

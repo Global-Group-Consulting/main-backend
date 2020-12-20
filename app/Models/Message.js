@@ -10,8 +10,8 @@ const Model = use('Model')
 const ConversationModel = use("App/Models/Conversation")
 
 const FileModel = use("App/Models/File")
-
-const CommunicationException = use("App/Exceptions/CommunicationException.js")
+const CommunicationException = use("App/Exceptions/CommunicationException")
+const Event = use("Event")
 
 const MessageTypes = require("../../enums/MessageTypes")
 
@@ -51,6 +51,8 @@ class Message extends Model {
 
     this.addHook("afterCreate", async (message) => {
       message.files = await Message.getFiles(message.filesIds)
+
+      Event.emit("notification::messageNew", message)
     })
   }
 
@@ -143,8 +145,8 @@ class Message extends Model {
   }
 
   /**
-   * 
-   * @param {string[]} ids 
+   *
+   * @param {string[]} ids
    */
   static async setAsRead(ids, userId) {
     return Message.query()

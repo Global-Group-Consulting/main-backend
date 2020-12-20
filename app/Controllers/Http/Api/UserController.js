@@ -81,7 +81,7 @@ class UserController {
     if (user.account_status === AccountStatuses.INCOMPLETE && incompleteData.completed) {
       user.account_status = AccountStatuses.MUST_REVALIDATE
 
-      Event.emit("user::mustRevalidate")
+      Event.emit("user::mustRevalidate", user)
       // maybe could be useful to save who and when had set the user to "MUST REVALIDATE"
     }
 
@@ -172,7 +172,6 @@ class UserController {
 
     return user.full()
   }
-
 
   async confirmDraft({params, auth, response}) {
     const userId = params.id
