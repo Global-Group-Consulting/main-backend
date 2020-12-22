@@ -174,12 +174,12 @@ class MovementController {
     }
 
     // Controlla che il movimento iniziale impostato per l'utente corrisponda con quello dell'importazione.
-    if (+user.contractInitialInvestment !== csvData.initialInvestment) {
+    if (+user.contractInitialInvestment !== +csvData.initialInvestment) {
       throw new ImportException("Users contract initial investment doesn't match with the one you're trying to import.")
     }
 
     // Controlla che l'interesse specificato per l'tente corrisponda con quello del file di importazione
-    if (+user.contractPercentage !== csvData.interestPercentage) {
+    if (+user.contractPercentage !== +csvData.interestPercentage) {
       throw new ImportException("Users contract percentage doesn't match with the one you're trying to import.")
     }
 
@@ -343,7 +343,7 @@ class MovementController {
                 depositOld: dataToReturn[dataToReturn.length - 1].deposit,
                 interestAmountOld: dataToReturn[dataToReturn.length - 1].interestAmount,
                 deposit: dataToReturn[dataToReturn.length - 1].deposit - capitalePrelevato,
-                interestAmount: rdataToReturn[dataToReturn.length - 1].interestAmount,
+                interestAmount: dataToReturn[dataToReturn.length - 1].interestAmount,
                 created_at: moment(`${lastYear}-${currMonth + 1}-16 00:15:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
               })
             }
