@@ -64,6 +64,9 @@ class User extends Model {
     'contractDate': '',
     'contractPercentage': '',
     'contractInitialInvestment': 0,
+    'contractInitialInvestmentGold': 0,
+    'contractInitialPaymentMethod': '', // Bonifico, Assegno, Altro
+    'contractInitialPaymentMethodOther': '', // quando l'utente seleziona "altro"
     'contractIban': '',
     'contractBic': '',
     'commissionsAssigned': {},
