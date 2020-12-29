@@ -176,6 +176,14 @@ class User extends Model {
 
     data = data.rows
 
+    data = await Promise.all(data.map(async (el) => {
+      if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(el.role)) {
+        el.signinLogs = await el.fetchSigningLogs()
+      }
+
+      return el
+    }))
+
     if (project) {
       const mode = Object.values(project).includes(1) ? "pick" : "omit"
       const projectKeys = Object.keys(project)
