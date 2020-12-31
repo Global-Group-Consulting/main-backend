@@ -2518,6 +2518,11 @@ iconv-lite@0.4.24:
   dependencies:
     safer-buffer ">= 2.1.2 < 3"
 
+iconv@*:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/iconv/-/iconv-3.0.0.tgz#9a293ec123b16b4717e450714ddbb07f985b7d9c"
+  integrity sha512-bKTEP55J/e+UutBE3BDBWq6KukPWh3GBYCZGbLEY9vxRDUU2F3bqvPsp/a/DEdIamgF2MvW5lF0Rj1U/7KRL+g==
+
 ieee754@1.1.13:
   version "1.1.13"
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.1.13.tgz#ec168558e95aa181fd87d37f55c32bbcb6708b84"
@@ -3238,7 +3243,7 @@ lodash.padstart@^4.1.0:
   resolved "https://registry.yarnpkg.com/lodash.padstart/-/lodash.padstart-4.6.1.tgz#d2e3eebff0d9d39ad50f5cbd1b52a7bce6bb611b"
   integrity sha1-0uPuv/DZ05rVD1y9G1KnvOa7YRs=
 
-lodash@^4.12.0, lodash@^4.15.0, lodash@^4.16.2, lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.2, lodash@^4.17.20, lodash@^4.17.4, lodash@^4.17.5:
+lodash@^4.12.0, lodash@^4.15.0, lodash@^4.16.2, lodash@^4.17.10, lodash@^4.17.11, lodash@^4.17.14, lodash@^4.17.15, lodash@^4.17.2, lodash@^4.17.20, lodash@^4.17.4, lodash@^4.17.5, lodash@~4.17.11:
   version "4.17.20"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
@@ -4421,6 +4426,14 @@ path-to-regexp@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/path-to-regexp/-/path-to-regexp-2.4.0.tgz#35ce7f333d5616f1c1e1bfe266c3aba2e5b2e704"
   integrity sha512-G6zHoVqC6GGTQkZwF4lkuEyMbVOjoBKAEybQUypI1WTkqinCOrq2x6U2+phkJ1XsEMTy4LjtwPI7HW+NVrRR2w==
+
+pdffiller@^0.0.11:
+  version "0.0.11"
+  resolved "https://registry.yarnpkg.com/pdffiller/-/pdffiller-0.0.11.tgz#7a56323a43c9004123cb40008b4378abe05effab"
+  integrity sha512-VuiWyEgydNVeXX1rAhU+3yimEiZegtuMIBhS54bm8K6WHLzS8OSbGdVefJQGD49mmRlfCxi87JkSjyx468C8kQ==
+  dependencies:
+    lodash "~4.17.11"
+    utf8-fdf-generator "0.0.3"
 
 pg-connection-string@2.0.0:
   version "2.0.0"
@@ -5823,6 +5836,13 @@ useragent@^2.3.0:
     lru-cache "4.1.x"
     tmp "0.0.x"
 
+utf8-fdf-generator@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/utf8-fdf-generator/-/utf8-fdf-generator-0.0.3.tgz#397e8f7940c276d0e3d435ec27b17d3a57e8f9ce"
+  integrity sha1-OX6PeUDCdtDj1DXsJ7F9Olfo+c4=
+  dependencies:
+    iconv "*"
+
 util-deprecate@^1.0.1, util-deprecate@~1.0.1:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
@@ -5957,6 +5977,11 @@ write-file-atomic@^3.0.0:
     is-typedarray "^1.0.0"
     signal-exit "^3.0.2"
     typedarray-to-buffer "^3.1.5"
+
+written-number@^0.9.1:
+  version "0.9.1"
+  resolved "https://registry.yarnpkg.com/written-number/-/written-number-0.9.1.tgz#a400a4d2d6ca2575ad2afc62dc28d2d9f94f5e7e"
+  integrity sha512-tl2EquIdCYnEeGu3p71GRsEJSqnD15CXjVtR6Hl0AFO0PrQ+SATIe3Sf4phaaKwLIuGRzWmA4+sThjJCZqwK1A==
 
 ws@^5.2.2:
   version "5.2.2"

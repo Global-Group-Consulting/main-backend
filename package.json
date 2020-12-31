@@ -57,9 +57,11 @@
     "njwt": "^1.0.0",
     "nodejs": "0.0.0",
     "nodemon": "^2.0.4",
+    "pdffiller": "^0.0.11",
     "postmark": "^2.6.0",
     "signrequest-client": "^1.1.1",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "written-number": "^0.9.1"
   },
   "devDependencies": {},
   "autoload": {
