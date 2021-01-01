@@ -24,7 +24,7 @@ const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 const arraySort = require('array-sort');
 
-const {castToObjectId, castToNumber, castToIsoDate} = require("../Helpers/ModelFormatters.js")
+const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
 
 const {groupBy: _groupBy, omit: _omit, pick: _pick} = require("lodash")
 
@@ -76,7 +76,10 @@ class User extends Model {
     'updated_at': '',
     'activated_at': '',
     'verified_at': '',
-    'account_status': ''
+    'account_status': '',
+    'gold': false,
+    'clubCardNumber': '',
+    'clubPack': 'basic'
   }
 
   static get computed() {
@@ -477,6 +480,10 @@ class User extends Model {
 
   setDocExpiration(value) {
     return castToIsoDate(value)
+  }
+
+  setGold(value) {
+    return castToBoolean(value)
   }
 }
 

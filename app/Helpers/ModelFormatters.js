@@ -40,6 +40,24 @@ exports.castToIsoDate = function (value) {
   return castedDate.toDate()
 }
 
+exports.castToBoolean = function (value) {
+  let boolVal = false
+
+  if (typeof value === "boolean") {
+    boolVal = value
+  }
+
+  if (typeof value === "number") {
+    boolVal = value === 1
+  }
+
+  if (typeof value === "string") {
+    boolVal = value.toLowerCase() === "true"
+  }
+
+  return boolVal
+}
+
 exports.formatDate = function (value, includeHours = false, formatString) {
   if (!value) {
     return value
