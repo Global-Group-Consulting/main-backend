@@ -1,4 +1,4 @@
-const { BasicEnum } = require('@/classes/BasicEnum')
+const {BasicEnum} = require('../classes/BasicEnum')
 
 class CurrencyType extends BasicEnum {
   constructor() {
