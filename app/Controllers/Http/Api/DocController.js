@@ -265,6 +265,7 @@ class DocController {
     }
     const fileName = "receipt_deposit_" + reqData.id.toString()
     const filePath = Helpers.tmpPath(fileName)
+    console.log(filePath)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 
     response.header('x-file-name', `Integrazione ${reqNumber}.pdf`)
