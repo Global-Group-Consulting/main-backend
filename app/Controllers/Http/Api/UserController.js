@@ -297,6 +297,7 @@ class UserController {
 
     user.incompleteData = null // reset existing incomplete data
     user.contractSignedAt = new Date()
+    user.contractImported = true
 
     await user.save()
 

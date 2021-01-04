@@ -24,7 +24,7 @@ const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 const arraySort = require('array-sort');
 
-const {castToObjectId, castToNumber, castToIsoDate} = require("../Helpers/ModelFormatters.js")
+const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
 
 const {groupBy: _groupBy, omit: _omit, pick: _pick} = require("lodash")
 
@@ -64,6 +64,9 @@ class User extends Model {
     'contractDate': '',
     'contractPercentage': '',
     'contractInitialInvestment': 0,
+    'contractInitialInvestmentGold': 0,
+    'contractInitialPaymentMethod': '', // Bonifico, Assegno, Altro
+    'contractInitialPaymentMethodOther': '', // quando l'utente seleziona "altro"
     'contractIban': '',
     'contractBic': '',
     'commissionsAssigned': {},
@@ -73,7 +76,10 @@ class User extends Model {
     'updated_at': '',
     'activated_at': '',
     'verified_at': '',
-    'account_status': ''
+    'account_status': '',
+    'gold': false,
+    'clubCardNumber': '',
+    'clubPack': 'basic'
   }
 
   static get computed() {
@@ -172,6 +178,14 @@ class User extends Model {
       .fetch()
 
     data = data.rows
+
+    data = await Promise.all(data.map(async (el) => {
+      if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(el.role)) {
+        el.signinLogs = await el.fetchSigningLogs()
+      }
+
+      return el
+    }))
 
     if (project) {
       const mode = Object.values(project).includes(1) ? "pick" : "omit"
@@ -466,6 +480,10 @@ class User extends Model {
 
   setDocExpiration(value) {
     return castToIsoDate(value)
+  }
+
+  setGold(value) {
+    return castToBoolean(value)
   }
 }
 

@@ -145,7 +145,7 @@ class Request extends Model {
   }
 
   static async includeFiles(data) {
-    const files = await File.where({ requestId: data.id }).fetch()
+    const files = await File.where({requestId: data.id}).fetch()
 
     data.files = files.rows || files
   }
@@ -247,10 +247,10 @@ class Request extends Model {
 
     /** @type {{rows: IRequest[]}} */
     const data = await Request
-      .where({ userId: { $in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)] } })
+      .where({userId: {$in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)]}})
       .with("movement")
       .with("conversation")
-      .sort(sorting || { "completed_at": -1 }).fetch()
+      .sort(sorting || {"completed_at": -1}).fetch()
 
     return data.rows.map(_entry => {
       _entry.canCancel = false
@@ -277,7 +277,7 @@ class Request extends Model {
       status: RequestStatus.NUOVA
     })
       .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
-      .sort({ created_at: -1, type: 1 })
+      .sort({created_at: -1, type: 1})
       .fetch()
   }
 
@@ -287,6 +287,46 @@ class Request extends Model {
     request.status = RequestStatus.LAVORAZIONE
 
     await request.save()
+  }
+
+  /**
+   *
+   * @param {string} date - YYYY-MM
+   * @returns {Promise<void>}
+   */
+  static async getReportData(date) {
+    const reqToSearch = [RequestTypes.RISC_CAPITALE, RequestTypes.RISC_PROVVIGIONI]
+
+    const momentDate = moment(date, "YYYY-MM")
+    const startDate = moment(momentDate).subtract(1, "months").set({
+      date: 16,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
+    const endDate = moment(momentDate).set({
+      date: 15,
+      hour: 23,
+      minute: 59,
+      second: 59,
+    })
+
+    const data = await this.where({
+      type: {$in: reqToSearch},
+      status: RequestStatus.ACCETTATA,
+      created_at: {
+        $gte: startDate.toDate(),
+        $lte: endDate.toDate()
+      }
+    })
+      .with("user")
+      .sort({
+        userId: 1,
+        type: 1
+      })
+      .fetch()
+
+    return data
   }
 
   async cancelRequest() {
@@ -299,7 +339,7 @@ class Request extends Model {
       throw new MovementErrorException("Movement not found.")
     }
 
-    const movementCancelRef = await MovementModel.where({ cancelRef: movementRef._id }).first()
+    const movementCancelRef = await MovementModel.where({cancelRef: movementRef._id}).first()
 
     if (movementCancelRef) {
       throw new MovementErrorException("Movement already canceled.")
