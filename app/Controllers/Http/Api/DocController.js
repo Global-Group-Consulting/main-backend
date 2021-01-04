@@ -223,8 +223,8 @@ class DocController {
     const sheetResoconto = this._generateResocontoSheet(workbook, data)
     const sheetRiscossioni = this._generateRiscossioniSheet(workbook, data)
 
-    const fileName = "report_requests_" + Date.now() + ".xlsx"
-    const filePath = Helpers.tmpPath() + "/" + fileName
+    const fileName = "report_requests_" + Date.now()
+    const filePath = Helpers.tmpPath(fileName)
 
     await workbook.xlsx.writeFile(filePath);
 
@@ -263,8 +263,8 @@ class DocController {
       amount_text: formatWrittenNumbers(reqData.amount),
       created_at: formatDate(reqData.created_at)
     }
-    const fileName = "receipt_deposit_" + reqData._id.toString()
-    const filePath = Helpers.tmpPath() + "/" + fileName
+    const fileName = "receipt_deposit_" + reqData.id.toString()
+    const filePath = Helpers.tmpPath(fileName)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 
     response.header('x-file-name', `Integrazione ${reqNumber}.pdf`)
