@@ -102,11 +102,29 @@ exports.formatMoney = function (value) {
 }
 
 exports.formatResidencePlace = function (user) {
-  return `${user.legalRepresentativeAddress} - ${user.legalRepresentativeZip} ${user.legalRepresentativeCity} (${user.legalRepresentativeProvince})`
+  const data = []
+
+  if (user.legalRepresentativeAddress) {
+    data.push(`${user.legalRepresentativeAddress} -`)
+  }
+
+  if (user.legalRepresentativeZip) {
+    data.push(user.legalRepresentativeZip)
+  }
+
+  if (user.legalRepresentativeCity) {
+    data.push(user.legalRepresentativeCity)
+  }
+
+  if (user.legalRepresentativeProvince) {
+    data.push(`(${user.legalRepresentativeProvince})`)
+  }
+
+  return data.join(" ")
 }
 
 exports.formatBirthPlace = function (user) {
   let province = user.birthProvince || user.birthCountry
 
-  return `${user.birthCity} (${province})`
+  return `${user.birthCity || ''}` + (province ? `(${province})` : '')
 }

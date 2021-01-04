@@ -1,5 +1,7 @@
 'use strict'
 
+const fs = require("fs")
+
 /*
 |--------------------------------------------------------------------------
 | Http server
@@ -16,6 +18,10 @@
 |     Also you can preload files by calling `preLoad('path/to/file')` method.
 |     Make sure to pass relative path from the project root.
 */
+
+if (!fs.existsSync("tmp")) {
+  fs.mkdirSync("tmp")
+}
 
 const {Ignitor} = require('@adonisjs/ignitor')
 

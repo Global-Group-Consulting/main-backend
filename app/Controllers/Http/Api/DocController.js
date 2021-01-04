@@ -39,6 +39,8 @@ class DocController {
   }
 
   async _fillPdf(src, dest, data) {
+    console.log(src, dest, data)
+
     return new Promise((resolve, reject) => {
       pdfFiller.fillFormWithFlatten(src, dest, data, true, function (err) {
         if (err) {
@@ -223,8 +225,8 @@ class DocController {
     const sheetResoconto = this._generateResocontoSheet(workbook, data)
     const sheetRiscossioni = this._generateRiscossioniSheet(workbook, data)
 
-    const fileName = "report_requests_" + Date.now() + ".xlsx"
-    const filePath = Helpers.tmpPath() + "/" + fileName
+    const fileName = "report_requests_" + Date.now()
+    const filePath = Helpers.tmpPath(fileName)
 
     await workbook.xlsx.writeFile(filePath);
 
@@ -256,15 +258,16 @@ class DocController {
       contract_number: formatContractNumber(user.contractNumber),
       full_name: user.firstName + " " + user.lastName,
       birth_place: formatBirthPlace(user),
-      birth_date: formatDate(user.birthDate),
+      birth_date: formatDate(user.birthDate) || "",
       residence_place: formatResidencePlace(user),
       req_number: reqNumber,
       amount: formatMoney(reqData.amount),
       amount_text: formatWrittenNumbers(reqData.amount),
       created_at: formatDate(reqData.created_at)
     }
-    const fileName = "receipt_deposit_" + reqData._id.toString()
-    const filePath = Helpers.tmpPath() + "/" + fileName
+    const fileName = "receipt_deposit_" + reqData.id.toString()
+    const filePath = Helpers.tmpPath(fileName)
+    console.log(filePath)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 
     response.header('x-file-name', `Integrazione ${reqNumber}.pdf`)
