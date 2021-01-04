@@ -39,8 +39,6 @@ class DocController {
   }
 
   async _fillPdf(src, dest, data) {
-    console.log(src, dest, data)
-
     return new Promise((resolve, reject) => {
       pdfFiller.fillFormWithFlatten(src, dest, data, true, function (err) {
         if (err) {
@@ -267,7 +265,6 @@ class DocController {
     }
     const fileName = "receipt_deposit_" + reqData.id.toString()
     const filePath = Helpers.tmpPath(fileName)
-    console.log(filePath)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 
     response.header('x-file-name', `Integrazione ${reqNumber}.pdf`)
