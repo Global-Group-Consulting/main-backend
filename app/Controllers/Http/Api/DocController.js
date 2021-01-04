@@ -258,7 +258,7 @@ class DocController {
       contract_number: formatContractNumber(user.contractNumber),
       full_name: user.firstName + " " + user.lastName,
       birth_place: formatBirthPlace(user),
-      birth_date: formatDate(user.birthDate),
+      birth_date: formatDate(user.birthDate) || "",
       residence_place: formatResidencePlace(user),
       req_number: reqNumber,
       amount: formatMoney(reqData.amount),
