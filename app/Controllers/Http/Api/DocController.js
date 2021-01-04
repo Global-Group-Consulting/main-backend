@@ -39,6 +39,8 @@ class DocController {
   }
 
   async _fillPdf(src, dest, data) {
+    console.log(src, dest, data)
+
     return new Promise((resolve, reject) => {
       pdfFiller.fillFormWithFlatten(src, dest, data, true, function (err) {
         if (err) {
