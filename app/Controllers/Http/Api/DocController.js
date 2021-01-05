@@ -51,7 +51,7 @@ class DocController {
   }
 
   _generateRiscossioniSheet(workbook, data) {
-    const sheetRiscossioni = workbook.addWorksheet('Riscossioni Capitale - Provvigioni', {
+    const sheetRiscossioni = workbook.addWorksheet('Dettaglio', {
       pageSetup: this.pageSetup,
     });
 
