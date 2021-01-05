@@ -52,7 +52,11 @@ class Request extends Model {
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
 
       // Auto approve some types of requests
-      if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
+      if ([
+        RequestTypes.RISC_INTERESSI,
+        RequestTypes.RISC_INTERESSI_BRITE,
+        RequestTypes.RISC_PROVVIGIONI,
+      ].includes(data.type)) {
         const typeData = RequestTypes.get(data.type)
 
         try {
@@ -62,12 +66,20 @@ class Request extends Model {
           if (RequestTypes.RISC_PROVVIGIONI === data.type) {
             generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
           } else {
-            generatedMovement = await MovementModel.create({
+            const movementData = {
               userId: data.userId,
               movementType: typeData.movement,
               amountChange: data.amount,
               interestPercentage: +user.contractPercentage,
-            })
+            }
+
+            if (data.typeClub) {
+              movementData.iban = data.iban
+              movementData.clubCardNumber = data.clubCardNumber
+              movementData.typeClub = data.typeClub
+            }
+
+            generatedMovement = await MovementModel.create(movementData)
           }
 
           data.movementId = generatedMovement._id
@@ -88,28 +100,42 @@ class Request extends Model {
       const lastMovement = await MovementModel.getLast(data.userId)
 
       // Store the current available amount for future reference
-      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)) {
+      if ([
+        RequestTypes.RISC_CAPITALE,
+        RequestTypes.RISC_CAPITALE_GOLD,
+        RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
-      } else if (RequestTypes.RISC_INTERESSI === data.type) {
+      } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE].includes(data.type)) {
         data.availableAmount = lastMovement.interestAmountOld
       } else if (RequestTypes.RISC_PROVVIGIONI === data.type) {
         const commissionMovement = await CommissionModel.find(data.movementId)
         data.availableAmount = commissionMovement.currMonthCommissionsOld
       }
 
-      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
+      if ([
+        RequestTypes.RISC_CAPITALE,
+        RequestTypes.RISC_CAPITALE_GOLD,
+        RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
         const typeData = RequestTypes.get(data.type)
 
         try {
           const user = await UserModel.find(data.userId)
 
-          const movement = await MovementModel.create({
+          const movementData = {
             userId: data.userId,
             movementType: typeData.movement,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate
-          })
+          }
+
+          if (data.typeClub) {
+            movementData.iban = data.iban
+            movementData.clubCardNumber = data.clubCardNumber
+            movementData.typeClub = data.typeClub
+          }
+
+          const movement = await MovementModel.create(movementData)
 
           data.movementId = movement._id
         } catch (er) {
@@ -438,6 +464,10 @@ class Request extends Model {
 
   setPaymentDocDate(value) {
     return castToIsoDate(value)
+  }
+
+  setClubCardNumber(value) {
+    return value ? +value : value
   }
 }
 
