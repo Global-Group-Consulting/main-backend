@@ -16,7 +16,7 @@
       ${t.row4}
     </mj-text>
 
-    <mj-button font-family="Helvetica" background-color="#f45e43" color="white" font-size="16px" href="${data.formLink}">
+    <mj-button href="${data.formLink}">
       ${t.btn_label}
     </mj-button>
     <mj-text font-size="10px" align="center">

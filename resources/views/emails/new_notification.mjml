@@ -1,0 +1,23 @@
+<mjml>
+  <mj-body>
+    <mj-text padding-bottom="0">
+      ${t.row1}
+    </mj-text>
+
+    <mj-text padding-top="0">
+      ${t.row2}
+    </mj-text>
+
+    <mj-button href="${data.siteLink}">
+      ${t.btn_label}
+    </mj-button>
+
+    <mj-divider border-width="1px" border-style="dashed" border-color="lightgrey" />
+
+    <mj-text>
+      ${t.row3}
+    </mj-text>
+
+    <mj-divider border-width="1px" border-style="dashed" border-color="lightgrey" />
+  </mj-body>
+</mjml>
