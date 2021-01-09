@@ -11,6 +11,8 @@ const NotificationModel = use("App/Models/Notification")
 /** @type {typeof import("../Models/User")} */
 const UserModel = use("App/Models/User")
 
+const Event = use("Event")
+
 const Ws = use("Ws")
 
 const NotificationTypes = require("../../enums/NotificationTypes")

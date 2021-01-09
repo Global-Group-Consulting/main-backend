@@ -43,3 +43,9 @@ Event.on("notification::requestNew", "Notifications.onRequestNew")
 Event.on("notification::requestRejected", "Notifications.onRequestRejected")
 Event.on("notification::requestCancelled", "Notifications.onRequestCancelled")
 Event.on("notification::requestApproved", "Notifications.onRequestApproved")
+
+/**********************************************************************************
+ * EMAIL
+ **********************************************************************************/
+Event.on("schedule::notificationEmail", "Emails.scheduleNotificationEmail")
+Event.on("cancel::notificationEmail", "Emails.cancelNotificationEmail")

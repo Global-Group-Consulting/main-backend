@@ -26,5 +26,15 @@
       "row2": "desideriamo informarla che la password del suo account è stata cambiata correttamente.",
       "row3": "Qualora non sia stata Lei ad effettuare questa modifica la preghiamo di informarci il prima possibile all'email <a href=\"mailto:{publicEmail}\">{publicEmail}</a>"
     }
+  },
+  "new_notification": {
+    "subject": "Nuova notifica non letta! ",
+    "content": {
+      "title": "Hai una nuova notifica",
+      "row1": "Gentile <strong>{ firstName } { lastName }</strong>,",
+      "row2": "nella sua area privata è disponibile una nuova notifica. Acceda per vederne i dettagli.",
+      "row3": "Tipologia: {notificationType}",
+      "btn_label": "Accedi al tuo account"
+    }
   }
 }

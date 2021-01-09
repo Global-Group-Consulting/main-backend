@@ -4,6 +4,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
+const Event = use("Event")
 
 const {castToObjectId} = require("../Helpers/ModelFormatters")
 
@@ -17,7 +18,11 @@ class Notification extends Model {
    * @returns {Promise<Model>}
    */
   static async create(newNotification) {
-    return super.create(newNotification)
+    const createdNotification = await super.create(newNotification)
+
+    Event.emit("schedule::notificationEmail", createdNotification)
+
+    return createdNotification
   }
 
   static async getUnread(userId) {
@@ -35,6 +40,8 @@ class Notification extends Model {
     notification.readOn = new Date()
 
     await notification.save()
+
+    Event.emit("cancel::notificationEmail", notification)
   }
 
   getId() {

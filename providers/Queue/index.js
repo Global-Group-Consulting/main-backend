@@ -60,6 +60,10 @@ class Queue {
 
   }
 
+  get agenda() {
+    return this._agenda
+  }
+
   /**
    * @private
    */
