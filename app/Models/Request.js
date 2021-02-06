@@ -25,7 +25,7 @@ const MovementErrorException = require('../Exceptions/MovementErrorException')
 const {query} = require('@adonisjs/lucid/src/Lucid/Model')
 
 
-const {castToIsoDate} = require("../Helpers/ModelFormatters")
+const {castToIsoDate, castToObjectId} = require("../Helpers/ModelFormatters")
 
 const modelFields = {
   userId: "",
@@ -353,6 +353,12 @@ class Request extends Model {
       .fetch()
 
     return data
+  }
+
+  static async findByIdOrMovementId(id) {
+    const objId = castToObjectId(id)
+
+    return this.query().where({$or: [{_id: objId}, {movementId: objId}]}).first()
   }
 
   async cancelRequest() {
