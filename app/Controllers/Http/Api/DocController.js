@@ -233,7 +233,7 @@ class DocController {
 
   async getReceiptDeposit({request, auth, response}) {
     const requestId = request.input("id")
-    const reqData = await RequestModel.find(requestId)
+    let reqData = await RequestModel.findByIdOrMovementId(requestId)
 
     if (!reqData) {
       throw new Error("No request found")
