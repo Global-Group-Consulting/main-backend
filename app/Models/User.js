@@ -344,23 +344,36 @@ class User extends Model {
   /**
    *
    * @param {User} agent
+   * @param {boolean} includeReferenceAgentData=false
    * @returns {Promise<typeof User[]>}
    */
-  static async getTeamAgents(agent) {
+  static async getTeamAgents(agent, includeReferenceAgentData = false) {
     const agentId = agent._id
 
     /**
      * @type {VanillaSerializer}
      */
     const directSubAgents = await this.where({"referenceAgent": agentId, role: UserRoles.AGENTE}).fetch()
-    const toReturn = [agent]
+    const toReturn = []
+
+    agent["clientsCount"] = await agent.clients().count()
+
+    if (includeReferenceAgentData) {
+      if (agent.referenceAgent) {
+        agent["referenceAgentData"] = await agent.referenceAgentData().fetch()
+
+        toReturn.push(agent)
+      }
+    } else {
+      toReturn.push(agent)
+    }
 
     /*
      While there are subAgents, cycle throw each one and return it's sub agents, if any
      */
     for (const subAgent of directSubAgents.rows) {
       // I should avoid recursive call and use a while instead
-      toReturn.push(...(await this.getTeamAgents(subAgent)))
+      toReturn.push(...(await this.getTeamAgents(subAgent, includeReferenceAgentData)))
     }
 
     return toReturn

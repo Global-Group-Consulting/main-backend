@@ -349,11 +349,25 @@ class UserController {
     If the user is an agent and has subAgents and the filter for agents is active,
     return the list of all agents for the agents team
      */
-    if (userRole === UserRoles.AGENTE && (filterRole && +filterRole === UserRoles.AGENTE)) {
+    if (userRole === UserRoles.AGENTE) {
       const hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
 
       if (hasSubAgents) {
-        return await User.getTeamAgents(auth.user)
+        const returnFilterByRole = filterRole && +filterRole === UserRoles.AGENTE
+        const teamAgents = await User.getTeamAgents(auth.user, !returnFilterByRole)
+
+        if (returnFilterByRole) {
+          return teamAgents
+        }
+
+        const toReturn = await User.groupByRole(match, returnFlat, project)
+        const agentsGroupIndex = toReturn.findIndex(_data => _data.id === UserRoles.AGENTE.toString())
+
+        if (agentsGroupIndex >= 0) {
+          toReturn[agentsGroupIndex].data = teamAgents
+        }
+
+        return toReturn
       }
     }
 
