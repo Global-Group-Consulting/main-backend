@@ -1,5 +1,6 @@
 import UserModel from "../app/Models/User"
 import {SignRequestQuickCreate} from "./SignRequest";
+import AgentTeamType from "../enums/AgentTeamType"
 
 export interface User extends UserModel {
   'personType': string,
@@ -46,4 +47,14 @@ export interface User extends UserModel {
   'verified_at': string,
   'account_status': string,
   'hooks': Exclude<WebhooksCall, "document.signrequest">[]
+  'files': any[]
+  'gold': boolean
+  'hasSubAgents': boolean
+  'agentTeamType': typeof AgentTeamType
+  'commissionsAssigned': CommissionAssigned[]
+}
+
+export interface CommissionAssigned {
+  name: CommissionType,
+  percent: number
 }

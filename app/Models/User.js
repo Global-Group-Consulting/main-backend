@@ -79,7 +79,8 @@ class User extends Model {
     'account_status': '',
     'gold': false,
     'clubCardNumber': '',
-    'clubPack': 'basic'
+    'clubPack': 'basic',
+    'agentTeamType': ""
   }
 
   static get computed() {
@@ -183,6 +184,8 @@ class User extends Model {
       if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(el.role)) {
         el.signinLogs = await el.fetchSigningLogs()
       }
+
+      el.clientsCount = await el.clients().count()
 
       return el
     }))
@@ -313,11 +316,54 @@ class User extends Model {
   }
 
   /**
+   * Return the full list of agent's clients
+   *
+   * @param agentId
+   * @returns {Promise<User[]>}
+   */
+  static async getClientsList(agentId) {
+    const agent = await this.find(agentId)
+
+    const result = await agent.clients().fetch()
+
+    return Promise.all(result.rows.map(async (el) => {
+      el.clientsCount = await el.clients().count()
+
+      return el
+    }))
+  }
+
+  /**
    * @param signRequestId
    * @returns {Promise<User>}
    */
   static async findFromSignRequest(signRequestId) {
     return User.where({"contractSignRequest.uuid": signRequestId}).first()
+  }
+
+  /**
+   *
+   * @param {User} agent
+   * @returns {Promise<typeof User[]>}
+   */
+  static async getTeamAgents(agent) {
+    const agentId = agent._id
+
+    /**
+     * @type {VanillaSerializer}
+     */
+    const directSubAgents = await this.where({"referenceAgent": agentId, role: UserRoles.AGENTE}).fetch()
+    const toReturn = [agent]
+
+    /*
+     While there are subAgents, cycle throw each one and return it's sub agents, if any
+     */
+    for (const subAgent of directSubAgents.rows) {
+      // I should avoid recursive call and use a while instead
+      toReturn.push(...(await this.getTeamAgents(subAgent)))
+    }
+
+    return toReturn
   }
 
   /**
@@ -357,12 +403,23 @@ class User extends Model {
   }
 
   referenceAgentData() {
-    return this.hasOne('App/Models/User', "referenceAgent", "_id").setVisible([
-      "id",
-      "firstName",
-      "lastName",
-      "email",
-    ])
+    return this.hasOne('App/Models/User', "referenceAgent", "_id")
+      .setVisible([
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "commissionsAssigned"
+      ])
+  }
+
+  subAgents() {
+    return this.hasMany('App/Models/User', "_id", "referenceAgent")
+      .where({role: UserRoles.AGENTE})
+  }
+
+  clients() {
+    return this.hasMany('App/Models/User', "_id", "referenceAgent")
   }
 
   async fetchSigningLogs() {
@@ -403,6 +460,7 @@ class User extends Model {
     result.files = files.toJSON()
     result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
     result.contractFiles = contractFiles.toJSON()
+    result.hasSubAgents = (await this.subAgents().fetch()).rows.length > 0
 
     if (includeSignLogs) {
       result.signinLogs = await this.fetchSigningLogs()
