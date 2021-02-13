@@ -29,8 +29,8 @@ class AuthController {
    * @param response
    * @return {Promise<void|*>}
    */
-  async login({ request, auth, response }) {
-    const { email, password } = request.only(['email', 'password'])
+  async login({request, auth, response}) {
+    const {email, password} = request.only(['email', 'password'])
     let authResult = null
 
     try {
@@ -44,7 +44,7 @@ class AuthController {
       throw new InvalidLoginException()
     }
 
-    const user = await User.where({ email }).first()
+    const user = await User.where({email}).first()
 
     if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)) {
       throw new InvalidLoginException("Invalid user.")
@@ -57,12 +57,13 @@ class AuthController {
 
   }
 
-  async user({ request, auth, response }) {
+  async user({request, auth, response}) {
     try {
-      return await auth.getUser()
+      const userId = auth.user._id
+
+      return (await User.find(userId)).full()
     } catch (error) {
-      throw new Error('Missing or invalid jwt token')
-      response.send('Missing or invalid jwt token')
+      throw new InvalidLoginException('Missing or invalid jwt token')
     }
   }
 
@@ -73,14 +74,14 @@ class AuthController {
    * @param auth
    * @return {Promise<void>}
    */
-  async logout({ auth }) {
+  async logout({auth}) {
     const user = await auth.getUser()
     const tokens = await auth.listTokensForUser(user)
 
     await auth.revokeTokens(tokens.map(token => token.token), true)
   }
 
-  async refresh({ request, auth }) {
+  async refresh({request, auth}) {
     const refreshToken = request.input('refresh_token')
 
     const newToken = await auth.generateForRefreshToken(refreshToken.split(' ')[1], true)
@@ -99,7 +100,7 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async activate({ request, response, auth }) {
+  async activate({request, response, auth}) {
     const token = this._formatToken(request.input('token'))
     const password = request.input('password')
 
@@ -130,7 +131,7 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async forgot({ request, response }) {
+  async forgot({request, response}) {
     const email = request.input('email')
 
     await User.checkExists("email", email)
@@ -150,7 +151,7 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async resetPassword({ request, response, auth }) {
+  async resetPassword({request, response, auth}) {
     const inputData = request.only(['token', 'password', 'password_confirmation'])
     const token = inputData.token.replace(/ /g, "+").replace(/%3D/g, "=")
 
