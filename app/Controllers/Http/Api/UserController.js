@@ -64,12 +64,12 @@ class UserController {
     return response.json(user)
   }
 
-  async read({ params }) {
+  async read({params}) {
     // return await User.getUserData(params.id)
     return (await User.find(params.id)).full(true)
   }
 
-  async update({ request, params, auth }) {
+  async update({request, params, auth}) {
     const incomingUser = request.only(User.updatableFields)
     const incompleteData = request.input("incompleteData")
     const user = await User.find(params.id)
@@ -95,7 +95,7 @@ class UserController {
     return result.full()
   }
 
-  async delete({ params }) {
+  async delete({params}) {
     const user = await User.find(params.id)
 
     await user.delete()
@@ -126,7 +126,7 @@ class UserController {
     Event.emit("user::approved", user)
   }
 
-  async changeStatus({ params, request, auth }) {
+  async changeStatus({params, request, auth}) {
     const userId = params.id
     const newStatus = request.input("status")
 
@@ -319,22 +319,20 @@ class UserController {
   }
 
   me({auth, params}) {
-    /*if (auth.user._id !== Number(params.id)) {
-      return "You cannot see someone else's profile"
-    }*/
     return auth.user
   }
 
   async getAll({request, auth}) {
     const userRole = +auth.user.role
-    const filterRole = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) ? request.input("f") : null
+    const filterRole = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE].includes(userRole) ? request.input("f") : null
     let match = {}
     let returnFlat = false
     let project = null
+    let result
 
     // Filter used for fetching agents list
     if (filterRole && +filterRole === UserRoles.AGENTE) {
-      match = {role: {$in: [filterRole.toString(), +filterRole]}}
+      match["role"] = {$in: [filterRole.toString(), +filterRole]}
       returnFlat = true
       project = {
         "firstName": 1,
@@ -345,14 +343,40 @@ class UserController {
     }
 
     if (userRole === UserRoles.AGENTE) {
-      match = { "referenceAgent": { $in: [auth.user._id.toString(), auth.user._id] } }
+      match["referenceAgent"] = {$in: [auth.user._id.toString(), auth.user._id]}
+    }
+    /*
+    If the user is an agent and has subAgents and the filter for agents is active,
+    return the list of all agents for the agents team
+     */
+    if (userRole === UserRoles.AGENTE && (filterRole && +filterRole === UserRoles.AGENTE)) {
+      const hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
+
+      if (hasSubAgents) {
+        return await User.getTeamAgents(auth.user)
+      }
     }
 
     return await User.groupByRole(match, returnFlat, project)
   }
 
   async getValidatedUsers() {
-    return await User.where({ account_status: AccountStatuses.VALIDATED }).fetch()
+    return await User.where({account_status: AccountStatuses.VALIDATED}).fetch()
+  }
+
+  async getClientsList({request, auth}) {
+    const user = auth.user
+    const userRole = +auth.user.role
+    const userId = request.params.id
+
+    /*
+    Should check if the client belongs to the logged agent if is a agent,
+    or the user is an admin
+     */
+
+    const result = await User.getClientsList(userId)
+
+    return result
   }
 }
 
