@@ -1,6 +1,19 @@
 'use strict'
 
 /** @typedef {import("../../@types/Movement.d").default} Movement */
+/** @typedef {import("../../@types/User.d").User} User */
+/** @typedef {import("../../@types/User.d").CommissionAssigned} CommissionAssigned */
+
+/**
+ * @typedef {{}} NewDepositCommission
+ * @property {CommissionType} type
+ * @property {string} movementId
+ * @property {string} agentId
+ * @property {boolean} indirectCommission
+ * @property {number} percentageToApply
+ * @property {{}} commissionsAssigned
+ * @property {string} teamCommissionType
+ */
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
@@ -20,6 +33,7 @@ const CommissionException = use("App/Exceptions/CommissionException")
 const {castToObjectId} = require("../Helpers/ModelFormatters")
 const CommissionType = require("../../enums/CommissionType")
 const MovementTypes = require("../../enums/MovementTypes")
+const AgentTeamType = require("../../enums/AgentTeamType")
 const moment = require("moment")
 
 class Commission extends Model {
@@ -30,10 +44,11 @@ class Commission extends Model {
   /**
    *
    * @param movementId
+   * @param agentId
    * @returns {Promise<{agent: *, movement: Movement, user: *}>}
    * @private
    */
-  static async _getMovementRelatedDate(movementId) {
+  static async _getMovementRelatedDate(movementId, agentId) {
     // get movement
     const movement = await MovementModel.where({"_id": castToObjectId(movementId)}).first()
 
@@ -48,8 +63,8 @@ class Commission extends Model {
       throw new CommissionException("Can't find the user related with the specified movement")
     }
 
-    // get the user's agent
-    const agent = await user.referenceAgentData().first()
+    // get the reference agent specified when creating the queue entry
+    const agent = await UserModel.find(agentId)
 
     if (!agent) {
       throw new CommissionException("The user associated with the movement doesn't have a reference agent")
@@ -147,6 +162,7 @@ class Commission extends Model {
    *   commissionPercentage: number
    * }} data
    * @param lastCommission
+   * @returns {typeof Commission}
    * @private
    */
   static _create(data, lastCommission) {
@@ -180,8 +196,9 @@ class Commission extends Model {
   /**
    * Check if the user has the specified type of commission active, otherwise won't do nothing.
    *
-   * @param agent
+   * @param {User} agent
    * @param requiredType
+   * @returns CommissionAssigned
    * @private
    */
   static _checkAgentActiveCommission(agent, requiredType) {
@@ -198,22 +215,31 @@ class Commission extends Model {
     return currentCommissionSettings
   }
 
-  _isAMomentObject = true
   /**
    * Commission that occurs each time a client of an agent invest new money
+   *
+   * @param {NewDepositCommission} data
    * @returns {Promise<void>}
    */
-  static async addNewDepositCommission(movementId) {
-    const {movement, agent, user} = await this._getMovementRelatedDate(movementId)
+  static async addNewDepositCommission(data) {
+    const movementId = data.movementId
+    const {movement, agent, user} = await this._getMovementRelatedDate(movementId, data.agentId)
 
-    // Check if the user has the specified type of commission active, otherwise won't do nothing.
+    /**
+     * Check if the user has the specified type of commission active, otherwise won't do nothing.
+     *
+     * @type {CommissionAssigned}
+     */
     const currentCommissionSettings = await this._checkAgentActiveCommission(agent, CommissionType.NEW_DEPOSIT)
 
     // get the user new deposit
     const newDeposit = movement.amountChange
 
     // calc the percentage based on the new deposit
-    const agentCommissionPercentage = currentCommissionSettings.percent
+    // If data.percentageToApply is set, will be used because indicates is a indirect commission
+    // that comes from a subAgent client. If is null (in the most cases), will be used the one set
+    // in the commissionsAssigned array, if any.
+    const agentCommissionPercentage = data.percentageToApply || currentCommissionSettings.percent
     const commissionValue = (agentCommissionPercentage * newDeposit) / 100
 
     // get the date specified for the deposit (specified by admin when confirming a new deposit. This is the date when the money fiscally arrived in our bank account)
@@ -222,8 +248,9 @@ class Commission extends Model {
     const lastCommission = await this._getLastCommission(agent._id)
 
     // create the movement in the database
-    // use that date as the date of the commission movement, so that when reinvesting it, will figure in the right month.
-    const newCommissionMovement = await this._create({
+    // use that date as the date of the commission movement,
+    // so that when reinvesting it, will figure in the right month.
+    return this._create({
       movementId: movementId,
       userId: agent._id,
       clientId: user._id,
@@ -232,9 +259,10 @@ class Commission extends Model {
       amountChange: commissionValue,
       commissionOnValue: newDeposit,
       commissionPercentage: agentCommissionPercentage,
-    }, lastCommission)
-
-    return newCommissionMovement
+      indirectCommission: data.indirectCommission || false,
+      commissionsAssigned: agent.commissionsAssigned,
+      teamCommissionType: data.teamCommissionType || ""
+    }, lastCommission);
   }
 
   /**

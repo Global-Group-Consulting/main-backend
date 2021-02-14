@@ -6,7 +6,8 @@ module.exports =
   async function (job) {
     const data = job.attrs.data
 
-    const result = await CommissionModel.addNewDepositCommission(data.movementId)
+    const result = await CommissionModel
+      .addNewDepositCommission(data)
 
     job.attrs.result = result.toJSON()
 
