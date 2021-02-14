@@ -72,6 +72,9 @@ class UserController {
   async update({request, params, auth}) {
     const incomingUser = request.only(User.updatableFields)
     const incompleteData = request.input("incompleteData")
+    /**
+     * @type {User}
+     */
     const user = await User.find(params.id)
 
     delete incomingUser.email
@@ -83,6 +86,25 @@ class UserController {
 
       Event.emit("user::mustRevalidate", user)
       // maybe could be useful to save who and when had set the user to "MUST REVALIDATE"
+    }
+
+    /*
+    If changing the reference agent, must check if the new agent
+    Is a subAgent of the changed agent
+     */
+    if (+incomingUser.role === UserRoles.AGENTE && user.referenceAgent !== incomingUser.referenceAgent) {
+      // Get all SubAgents
+      const teamAgents = await User.getTeamAgents(user)
+
+      // Search if the new reference agent is a subAgent.
+      const subAgent = teamAgents.find(_sub => _sub._id.toString() === incomingUser.referenceAgent)
+      if (subAgent) {
+        // If so, set that agent reference agent,
+        // the one was for the user that has been updated
+        subAgent.referenceAgent = user.referenceAgent
+
+        await subAgent.save()
+      }
     }
 
     const result = await Persona.updateProfile(user, incomingUser)
