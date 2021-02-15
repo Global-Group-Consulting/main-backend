@@ -92,7 +92,8 @@ class UserController {
     If changing the reference agent, must check if the new agent
     Is a subAgent of the changed agent
      */
-    if (+incomingUser.role === UserRoles.AGENTE && user.referenceAgent !== incomingUser.referenceAgent) {
+    if (+incomingUser.role === UserRoles.AGENTE
+      && incomingUser.referenceAgent && user.referenceAgent !== incomingUser.referenceAgent) {
       // Get all SubAgents
       const teamAgents = await User.getTeamAgents(user)
 
