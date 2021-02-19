@@ -16,6 +16,8 @@ const HistoryModel = use('App/Models/History')
 
 /** @type {typeof import("./SignRequest")} */
 const MovementModel = use('App/Models/Movement')
+const AclPermissionsModel = use('App/Models/AclPermissionsModel')
+const AclRolesModel = use('App/Models/AclRolesModel')
 const SignRequestModel = use('App/Models/SignRequest')
 
 const UserRoles = require("../../enums/UserRoles")
@@ -80,7 +82,9 @@ class User extends Model {
     'gold': false,
     'clubCardNumber': '',
     'clubPack': 'basic',
-    'agentTeamType': ""
+    'agentTeamType': "",
+    'roles': [],
+    'directPermissions': []
   }
 
   static get computed() {
@@ -474,12 +478,17 @@ class User extends Model {
     result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
     result.contractFiles = contractFiles.toJSON()
     result.hasSubAgents = (await this.subAgents().fetch()).rows.length > 0
+    result.permissions = await this.permissions()
 
     if (includeSignLogs) {
       result.signinLogs = await this.fetchSigningLogs()
     }
 
     return result
+  }
+
+  async permissions() {
+    return AclRolesModel.getAllPermissions(this.roles)
   }
 
 

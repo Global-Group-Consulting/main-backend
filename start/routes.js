@@ -15,6 +15,7 @@
 
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
+const AclRoutes = require('./routes/acl')
 const AuthRoutes = require('./routes/auth')
 const CommissionsRoutes = require('./routes/commissions')
 const CommunicationsRoutes = require('./routes/communications')
@@ -28,6 +29,7 @@ const WebhooksRoutes = require('./routes/webhooks.js')
 
 Route.on('/').render('welcome')
 
+AclRoutes(Route)
 AuthRoutes(Route)
 CommissionsRoutes(Route)
 CommunicationsRoutes(Route)

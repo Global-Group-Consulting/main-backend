@@ -2,7 +2,6 @@
 
 const { WhitelistValidator } = require("../WhitelistValidator")
 
-
 class MovementsRead extends WhitelistValidator {
   get includeParams() { return true }
 
