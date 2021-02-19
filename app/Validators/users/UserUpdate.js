@@ -13,7 +13,7 @@ class UserUpdate {
   get rules() {
     return {
       id: 'required|idExists',
-      email: 'required',
+      email: 'email',
       contractPercentage: `${requiredForUsers}|number`,
       contractInitialInvestment: `${requiredForUsers}|number`,
     }
