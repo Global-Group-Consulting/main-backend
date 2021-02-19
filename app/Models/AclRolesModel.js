@@ -2,20 +2,13 @@
 
 /** @typedef {import("../../@types/Acl/Roles").AclRole} AclRole */
 
-/** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
+/** @type {import('../../classes/BasicModel')} */
+const BasicModel = require('../../classes/BasicModel')
 
 /** @type {typeof import('./AclPermissionsModel')} */
 // const AclPermissionsModel = use("App/Model/AclPermissionsModel")
 
-class AclRolesModel extends Model {
-  static get hidden() {
-    return ['_id', '__v']
-  }
-
-  static get computed() {
-    return ["id"]
-  }
+class AclRolesModel extends BasicModel {
 
   /**
    * Get all permissions for the provided roles as a flat array of strings
@@ -36,14 +29,6 @@ class AclRolesModel extends Model {
     }
 
     return toReturn
-  }
-
-  getId(value) {
-    try {
-      return this._id.toString()
-    } catch (er) {
-      return value
-    }
   }
 }
 

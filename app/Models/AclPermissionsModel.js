@@ -1,24 +1,11 @@
 'use strict'
 
-/** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
+/** @type {import('../../classes/BasicModel')} */
+const BasicModel = require('../../classes/BasicModel')
 
-class AclPermissionsModel extends Model {
-  static get hidden() {
-    return ['_id', '__v']
-  }
+class AclPermissionsModel extends BasicModel {
 
-  static get computed() {
-    return ["id"]
-  }
-
-  getId(value) {
-    try {
-      return this._id.toString()
-    } catch (er) {
-      return value
-    }
-  }
 }
 
 module.exports = AclPermissionsModel
+
