@@ -135,9 +135,11 @@ class UserController {
       throw new UserNotFoundException()
     }
 
-    const token = await Token.where({user_id: user.id, type: "email"}).first()
+    let token = await Token.where({user_id: user.id, type: "email"}).first()
 
-    if (!token) {
+    if (!token && user.account_status === AccountStatuses.APPROVED) {
+      token = await Persona.generateToken(user, 'email')
+    }else if (!token){
       throw new UserException("Invalid user status.")
     }
 
