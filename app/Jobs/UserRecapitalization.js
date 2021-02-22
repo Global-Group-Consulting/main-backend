@@ -1,4 +1,5 @@
 /** @typedef {import("../../@types/Movement").IMovement} IMovement */
+/** @typedef {import("../../@types/User").User} User */
 
 /** @type {typeof import("../Models/Movement")} */
 const MovementModel = use("App/Models/Movement")
@@ -28,6 +29,9 @@ module.exports =
   /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
   async function (job) {
     const userId = job.attrs.data.userId
+    /**
+     * @type {User}
+     */
     const user = await UserModel.find(userId)
 
     if (!user) {
@@ -43,11 +47,15 @@ module.exports =
       interestPercentage: +user.contractPercentage
     }
 
+    /**
+     * @type {IMovement & Document}
+     */
     const cratedMovement = await MovementModel.create(newMovement)
-
     job.attrs.result = cratedMovement.toJSON()
 
     await job.save()
+
+    await QueueProvider.add("user_recapitalization_brites", {movementId: job.attrs.result._id})
 
     // Avoid adding this job if the percentage of the user is equal or higher to 4, because the agent would get anything
     if (user.referenceAgent && cratedMovement.interestPercentage < 4) {
