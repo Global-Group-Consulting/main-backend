@@ -30,6 +30,16 @@ class AclRolesModel extends BasicModel {
     return toReturn
   }
 
+  static async createIfNew(code, data) {
+    const exists = await AclRolesModel.findBy(code, 'admin')
+
+    if (exists) {
+      return
+    }
+
+    return this.create(data)
+  }
+
   setCode(value) {
     return value ? value.toLowerCase().replace(/\s/g, "_") : value
   }
