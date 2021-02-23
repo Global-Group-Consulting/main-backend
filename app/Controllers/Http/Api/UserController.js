@@ -115,6 +115,8 @@ class UserController {
       await File.store(files, user._id, auth.user._id)
     }
 
+    Event.emit("user::updated", result)
+
     return result.full()
   }
 

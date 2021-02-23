@@ -15,7 +15,11 @@
 
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
+const Logger = use("Logger")
+
+const AclRoutes = require('./routes/acl')
 const AuthRoutes = require('./routes/auth')
+const ClubRoutes = require('./routes/club')
 const CommissionsRoutes = require('./routes/commissions')
 const CommunicationsRoutes = require('./routes/communications')
 const FilesRoutes = require('./routes/files')
@@ -28,7 +32,9 @@ const WebhooksRoutes = require('./routes/webhooks.js')
 
 Route.on('/').render('welcome')
 
+AclRoutes(Route)
 AuthRoutes(Route)
+ClubRoutes(Route)
 CommissionsRoutes(Route)
 CommunicationsRoutes(Route)
 FilesRoutes(Route)
@@ -39,13 +45,17 @@ RequestsRoutes(Route)
 UserRoutes(Route)
 WebhooksRoutes(Route)
 
+const secretRoutePath = Buffer.from(Date.now().toString()).toString('base64')
+
+
 Route.group(() => {
   Route.post("/commissions_block", "SecretCommandController.triggerCommissionsBlock")
   Route.post("/recapitalization", "SecretCommandController.triggerUsersRecapitalization")
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
-}).prefix('/645xcv654asd982347')
+}).prefix('/' + secretRoutePath)
   .middleware("authSuperAdmin")
 
+Logger.info("*** Generated secret routes at /" + secretRoutePath + "/")
 
 /*
 Route.post("/docs/create", "DocSignController.createDocument")

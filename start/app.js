@@ -31,7 +31,8 @@ const providers = [
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
   path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
   path.join(__dirname, '..', 'providers', 'DocSigner', "provider"),
-  path.join(__dirname, '..', 'providers', 'Queue', "provider")
+  path.join(__dirname, '..', 'providers', 'Queue', "provider"),
+  path.join(__dirname, '..', 'providers', 'AclProvider')
 ]
 
 /*
@@ -59,7 +60,8 @@ const aceProviders = [
 |   { Route: 'Adonis/Src/Route' }
 |
 */
-const aliases = {}
+const aliases = {
+}
 
 /*
 |--------------------------------------------------------------------------

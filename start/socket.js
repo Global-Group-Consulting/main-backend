@@ -21,3 +21,6 @@ Ws.channel('chat', ({socket}) => {
 
 Ws.channel('notifications', "NotificationController")
   .middleware(['auth'])
+
+Ws.channel('account', "AccountController")
+  .middleware(['auth'])

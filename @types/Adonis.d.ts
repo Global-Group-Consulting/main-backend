@@ -161,6 +161,8 @@ declare namespace Adonis {
       clearCookie(key: string): void
       abortIf(expression: any, status: number, body: any): void
       abortUnless(expression: any, status: number, body: any): void
+
+      ok()
     }
 
     class Context {
