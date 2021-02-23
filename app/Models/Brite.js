@@ -39,6 +39,16 @@ class BriteModel extends BasicModel {
     })
   }
 
+  static async useRequest(data) {
+    /*return super.create({
+      ...data,
+      movementType: BriteMovementTypes.DEPOSIT_COLLECTED,
+      // i'm using the  current date as a reference.
+      // Maybe could be useful to ask the user what date want's to use
+      referenceSemester: moment().month() < 6 ? 1 : 2
+    })*/
+  }
+
   /**
    *
    * @param {{amountChange: number, userId: any}} data

@@ -42,7 +42,7 @@ class Message extends Model {
 
         // If the message is of type conversation, upsert the conversation and store
         // inside the message, the conversationId
-        if (message.type === MessageTypes.CONVERSATION) {
+        if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE].includes(+message.type)) {
           const conversation = await ConversationModel.upsert(message)
 
           message.conversationId = conversation._id
