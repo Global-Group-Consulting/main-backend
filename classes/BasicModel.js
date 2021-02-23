@@ -1,7 +1,10 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 
-module.exports = class BasicModel extends Model {
+const {castToObjectId, castToNumber} = require("../app/Helpers/ModelFormatters.js")
+
+
+class BasicModel extends Model {
   static get hidden() {
     return ['_id', '__v']
   }
@@ -17,4 +20,19 @@ module.exports = class BasicModel extends Model {
       return value
     }
   }
+
+  setRequestId(value) {
+    return castToObjectId(value)
+  }
+
+  setMovementId(value) {
+    return castToObjectId(value)
+  }
+
+  setUserId(value) {
+    return castToObjectId(value)
+  }
 }
+
+
+module.exports = BasicModel

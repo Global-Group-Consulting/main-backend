@@ -439,6 +439,10 @@ class User extends Model {
     return this.hasMany('App/Models/User', "_id", "referenceAgent")
   }
 
+  brites() {
+    return this.hasMany('App/Models/Brite', "_id", "userId")
+  }
+
   async fetchSigningLogs() {
     const logs = await SignRequestModel.where("userId", this._id).fetch()
 

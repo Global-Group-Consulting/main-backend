@@ -9,7 +9,6 @@ const BasicModel = require('../../classes/BasicModel')
 // const AclPermissionsModel = use("App/Model/AclPermissionsModel")
 
 class AclRolesModel extends BasicModel {
-
   /**
    * Get all permissions for the provided roles as a flat array of strings
    *
@@ -29,6 +28,20 @@ class AclRolesModel extends BasicModel {
     }
 
     return toReturn
+  }
+
+  static async createIfNew(code, data) {
+    const exists = await AclRolesModel.findBy(code, 'admin')
+
+    if (exists) {
+      return
+    }
+
+    return this.create(data)
+  }
+
+  setCode(value) {
+    return value ? value.toLowerCase().replace(/\s/g, "_") : value
   }
 }
 

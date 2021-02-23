@@ -64,6 +64,7 @@ async function onMessageNew(message) {
       type = NotificationTypes.MESSAGE_CHAT
       break;
     case MessageTypes.SERVICE:
+    case MessageTypes.BRITE_USE:
       type = NotificationTypes.MESSAGE_COMMUNICATION
       break;
     case MessageTypes.BUG_REPORT:
