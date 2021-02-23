@@ -141,7 +141,7 @@ class UserController {
 
     if (!token && user.account_status === AccountStatuses.APPROVED) {
       token = await Persona.generateToken(user, 'email')
-    } else if (!token) {
+    }else if (!token){
       throw new UserException("Invalid user status.")
     }
 
