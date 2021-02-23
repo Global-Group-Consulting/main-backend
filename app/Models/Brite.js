@@ -57,10 +57,38 @@ class BriteModel extends BasicModel {
   }
 
   static async getClubUsers() {
-    return UsersModel.query()
+    const result = await UsersModel.query()
       .where({gold: true})
+      .with("brites")
       .setVisible(["firstName", "lastName", "id", "email", "gold", "clubPack", "clubCardNumber", "role"])
+      .sort({lastName: 1, firstName: 1})
       .fetch()
+
+    const jsonResult = result.toJSON()
+    const nowDate = moment()
+
+    return jsonResult.map(user => {
+      const finalBrites = {total: 0, used: 0, available: 0}
+
+      for (const entry of user.brites) {
+        // Check if the movement is not yet usable or is expired
+        if (moment(entry.usableFrom).isAfter(nowDate) || moment(nowDate).isAfter(entry.expiresAt)) {
+          continue
+        }
+
+        finalBrites.total += entry.amountChange
+        finalBrites.used += [BriteMovementTypes.DEPOSIT_COLLECTED].includes(entry.movementType) ? entry.amountChange : 0
+        finalBrites.available = finalBrites.total - finalBrites.used
+      }
+
+      delete user.brites
+
+      user.britesTotal = finalBrites.total
+      user.britesUsed = finalBrites.used
+      user.britesAvailable = finalBrites.available
+
+      return user
+    })
   }
 
   static async getBlocksDataForUSer(userId) {
