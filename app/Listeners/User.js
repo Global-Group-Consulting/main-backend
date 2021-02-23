@@ -5,6 +5,7 @@ const Queue = use("QueueProvider")
 const Persona = use("Persona")
 const Env = use("Env")
 const Event = use("Event")
+const Ws = use("Ws")
 
 const UserRoles = require("../../enums/UserRoles")
 
@@ -56,4 +57,19 @@ User.onApproved = async (user) => {
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${token}`
     }
   })
+}
+
+User.onUpdate = async (user) => {
+  const channel = Ws.getChannel('account')
+  const subscribers = channel.getTopicSubscriptions("account")
+  const topic = channel.topic("account")
+
+  // if no one is listening, so the `topic('subscriptions')` method will return `null`
+  if (topic) {
+    const userEntry = Array.from(subscribers).find(_sub => _sub.user._id.toString() === user._id.toString())
+
+    if (userEntry) {
+      topic.emitTo('accountUpdated', user, [userEntry.id])
+    }
+  }
 }
