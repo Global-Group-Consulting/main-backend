@@ -17,8 +17,15 @@ const UserRoles = require("../../../../enums/UserRoles")
 
 class DashboardController {
 
-  async getByRole({auth, response}) {
-    const userRole = +auth.user.role
+  async getByRole({auth, response, params}) {
+    const reqId = params.id
+    let user = auth.user
+
+    if (reqId) {
+      user = await UserModel.find(reqId)
+    }
+
+    const userRole = +user.role
     const roleData = UserRoles.get(userRole)
     const methodName = upperFirst(camelCase(roleData.id))
 
@@ -26,9 +33,7 @@ class DashboardController {
       return response.badRequest("Role not handled.")
     }
 
-    const data = this[`getFor${methodName}`](auth.user.toJSON())
-
-    return data
+    return this[`getFor${methodName}`](user.toJSON())
   }
 
   async getForAdmin(user) {
