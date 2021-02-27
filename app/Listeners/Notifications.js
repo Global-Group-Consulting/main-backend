@@ -162,7 +162,7 @@ async function onUserValidated(user) {
   const receivers = await UserModel.getAdmins()
 
   for (const receiverUser of receivers.rows) {
-    const notifiction = await NotificationModel.create({
+    const notification = await NotificationModel.create({
       receiverId: receiverUser._id,
       payload: _userPayload(user),
       type: NotificationTypes.USER_SIGN_REQUEST

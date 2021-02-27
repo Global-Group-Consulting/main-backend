@@ -383,6 +383,17 @@ class User extends Model {
     return toReturn
   }
 
+  static async getPendingSignatures() {
+    const result = this.query()
+      .where({role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]}, contractSignedAt: {$exists: false}})
+      .with("signinLogs", query => {
+        query
+      })
+      .fetch()
+
+    return result
+  }
+
   /**
    * A relationship on tokens is required for Auth to
    * work. Since features like `refreshTokens` or
@@ -441,6 +452,10 @@ class User extends Model {
 
   brites() {
     return this.hasMany('App/Models/Brite', "_id", "userId")
+  }
+
+  signinLogs() {
+    return this.hasMany(SignRequestModel, "_id", "userId")
   }
 
   async fetchSigningLogs() {
