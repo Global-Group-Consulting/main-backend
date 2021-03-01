@@ -129,16 +129,16 @@ class User extends Model {
       userData.contractNumber = await (new ContractCounter()).incrementContract()
     })
 
-    this.addHook("afterCreate", async (userData) => {
-    })
-
     /**
      * A hook to hash the user password before saving
      * it to the database.
      */
     this.addHook('beforeSave', async (userInstance) => {
       userInstance.files = []
-      userInstance._id = new Mongoose.Types.ObjectId()
+
+      if (!userInstance._id) {
+        userInstance._id = new Mongoose.Types.ObjectId()
+      }
 
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
@@ -147,14 +147,6 @@ class User extends Model {
       HistoryModel.addChanges(this, userInstance.toJSON())
     })
 
-    this.addHook('afterSave', async (userData) => {
-
-    })
-
-    this.addHook('afterFind', async (userInstance) => {
-    })
-    this.addHook('afterFetch', async (userInstances) => {
-    })
   }
 
   static async includeFiles(data) {
