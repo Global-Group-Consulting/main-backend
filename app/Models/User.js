@@ -25,6 +25,7 @@ const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 const arraySort = require('array-sort');
+const Mongoose = require("mongoose")
 
 const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
 
@@ -137,12 +138,13 @@ class User extends Model {
      */
     this.addHook('beforeSave', async (userInstance) => {
       userInstance.files = []
+      userInstance._id = new Mongoose.Types.ObjectId()
 
       if (userInstance.dirty.password) {
         userInstance.password = await Hash.make(userInstance.password)
       }
 
-      HistoryModel.addChanges(this, userInstance)
+      HistoryModel.addChanges(this, userInstance.toJSON())
     })
 
     this.addHook('afterSave', async (userData) => {
@@ -570,6 +572,10 @@ class User extends Model {
   }
 
   setReferenceAgent(value) {
+    return castToObjectId(value)
+  }
+
+  setLastChangedBy(value) {
     return castToObjectId(value)
   }
 
