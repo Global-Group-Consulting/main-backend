@@ -116,6 +116,8 @@ class AuthController {
       .withRefreshToken()
       .attempt(user.email, password)
 
+    Event.emit("user::firstLogin", user)
+
     return response.json({
       'token': authResult.token,
       'refreshToken': authResult.refreshToken

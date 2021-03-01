@@ -61,8 +61,8 @@ class DashboardController {
 
     return {
       blocks: {
-        deposit: currentStatus.deposit,
-        interestAmount: currentStatus.interestAmount,
+        deposit: currentStatus ? currentStatus.deposit : user.contractInitialInvestment,
+        interestAmount: currentStatus ? currentStatus.interestAmount : 0,
         depositCollected: monthMovements.depositCollected,
         interestsCollected: monthMovements.interestsCollected
       },

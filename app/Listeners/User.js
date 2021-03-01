@@ -1,11 +1,14 @@
 'use strict'
 
+const {addAgentCommission} = require("./Request");
+
 /** @type {import("../../providers/Queue")} */
 const Queue = use("QueueProvider")
 const Persona = use("Persona")
 const Env = use("Env")
 const Event = use("Event")
 const Ws = use("Ws")
+const MovementsModel = use("App/Models/Movement")
 
 const UserRoles = require("../../enums/UserRoles")
 
@@ -72,4 +75,14 @@ User.onUpdate = async (user) => {
       topic.emitTo('accountUpdated', user, [userEntry.id])
     }
   }
+}
+
+User.onFirstLogin = async (user) => {
+  const movement = await MovementsModel.getInitialInvestment(user._id)
+
+  if(!movement){
+    throw new Error("Seems that there is no initial movement for the current user.")
+  }
+
+  await addAgentCommission(user, movement._id)
 }

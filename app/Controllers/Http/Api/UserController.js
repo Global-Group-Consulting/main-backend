@@ -51,7 +51,7 @@ class UserController {
       incomingUser.referenceAgent = auth.user._id.toString()
     }
 
-    incomingUser.lastChangedBy = auth.user._id
+    incomingUser.lastChangedBy = auth.user._id.toString()
 
     const user = await Persona.register(incomingUser)
     const files = request.files()
@@ -61,7 +61,7 @@ class UserController {
       await User.includeFiles(user)
     }
 
-    return response.json(user)
+    return user.toJSON()
   }
 
   async read({params}) {
