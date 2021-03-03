@@ -82,7 +82,14 @@ class DocSigner {
 
     for (const field of template.fields) {
       const valueTmpl = field.text
-      const newValue = (_template(valueTmpl))(data)
+      let newValue
+
+      try {
+        newValue = (_template(valueTmpl))(data)
+      } catch (er) {
+        // ignore any error that comes from the template compilation
+        newValue = ""
+      }
 
       if (newValue) {
         toReturn.push({
