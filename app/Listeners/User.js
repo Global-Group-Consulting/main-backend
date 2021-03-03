@@ -60,6 +60,8 @@ User.onApproved = async (user) => {
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${token}`
     }
   })
+
+  Event.emit("notification::userApproved", user)
 }
 
 User.onUpdate = async (user) => {

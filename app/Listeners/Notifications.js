@@ -74,7 +74,7 @@ async function onMessageNew(message) {
 
   const payload = message.toJSON()
 
-  if(payload.files){
+  if (payload.files) {
     delete payload.files
   }
 
@@ -96,6 +96,7 @@ Notifications.onUserDraftConfirmed = onUserDraftConfirmed
 Notifications.onUserIncompleteData = onUserIncompleteData
 Notifications.onUserMustRevalidate = onUserMustRevalidate
 Notifications.onUserValidated = onUserValidated
+Notifications.onUserApproved = onUserApproved
 
 /**
  * Send notification to all servClienti
@@ -170,6 +171,24 @@ async function onUserValidated(user) {
 
     _broadcastTo(notification)
   }
+}
+
+/**
+ * @param {IUser} user
+ * @returns {Promise<void>}
+ */
+async function onUserApproved(user) {
+  if (!user.referenceAgent) {
+    return
+  }
+
+  const notification = await NotificationModel.create({
+    receiverId: user.referenceAgent,
+    payload: _userPayload(user),
+    type: NotificationTypes.USER_APPROVED
+  })
+
+  _broadcastTo(notification)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
