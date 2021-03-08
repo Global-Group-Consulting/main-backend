@@ -4,6 +4,7 @@ package-lock.json
 
 # Adonis directory for storing tmp files
 tmp
+tmp/
 
 # Environment variables, never commit this file
 .env
@@ -15,4 +16,6 @@ database/*.sqlite
 .history
 .idea
 
-_fileSystem/
+
+
+

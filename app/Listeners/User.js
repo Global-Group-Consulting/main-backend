@@ -1,10 +1,14 @@
 'use strict'
 
+const {addAgentCommission} = require("./Request");
+
 /** @type {import("../../providers/Queue")} */
 const Queue = use("QueueProvider")
 const Persona = use("Persona")
 const Env = use("Env")
 const Event = use("Event")
+const Ws = use("Ws")
+const MovementsModel = use("App/Models/Movement")
 
 const UserRoles = require("../../enums/UserRoles")
 
@@ -56,4 +60,31 @@ User.onApproved = async (user) => {
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${token}`
     }
   })
+
+  Event.emit("notification::userApproved", user)
+}
+
+User.onUpdate = async (user) => {
+  const channel = Ws.getChannel('account')
+  const subscribers = channel.getTopicSubscriptions("account")
+  const topic = channel.topic("account")
+
+  // if no one is listening, so the `topic('subscriptions')` method will return `null`
+  if (topic) {
+    const userEntry = Array.from(subscribers).find(_sub => _sub.user._id.toString() === user._id.toString())
+
+    if (userEntry) {
+      topic.emitTo('accountUpdated', user, [userEntry.id])
+    }
+  }
+}
+
+User.onFirstLogin = async (user) => {
+  const movement = await MovementsModel.getInitialInvestment(user._id)
+
+  if(!movement){
+    throw new Error("Seems that there is no initial movement for the current user.")
+  }
+
+  await addAgentCommission(user, movement._id)
 }

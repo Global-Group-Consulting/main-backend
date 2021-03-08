@@ -21,6 +21,8 @@ class MessageTypes extends BasicEnum {
 
     this.BUG_REPORT = 5
 
+    this.BRITE_USE = 6
+
     this.data = {
       [this.NEWSLETTER]: {
         id: 'newsletter',
@@ -36,6 +38,9 @@ class MessageTypes extends BasicEnum {
       },
       [this.BUG_REPORT]: {
         id: 'bug_report',
+      },
+      [this.BRITE_USE]: {
+        id: 'brite_use',
       }
     }
   }

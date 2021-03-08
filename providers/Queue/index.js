@@ -60,6 +60,10 @@ class Queue {
 
   }
 
+  get agenda() {
+    return this._agenda
+  }
+
   /**
    * @private
    */
@@ -161,6 +165,8 @@ class Queue {
   async add(queueName, data) {
     await this._checkQueueExistence(queueName)
 
+    data.cratedAt = new Date()
+
     return await this._agenda.now(queueName, data);
   }
 
@@ -174,6 +180,8 @@ class Queue {
    */
   async schedule(when, queueName, data) {
     await this._checkQueueExistence(queueName)
+
+    data.cratedAt = new Date()
 
     // @ts-ignore
     return await this._agenda.schedule(when, queueName, data);

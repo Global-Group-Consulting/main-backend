@@ -25,7 +25,7 @@ const MovementErrorException = require('../Exceptions/MovementErrorException')
 const {query} = require('@adonisjs/lucid/src/Lucid/Model')
 
 
-const {castToIsoDate} = require("../Helpers/ModelFormatters")
+const {castToIsoDate, castToObjectId} = require("../Helpers/ModelFormatters")
 
 const modelFields = {
   userId: "",
@@ -52,7 +52,11 @@ class Request extends Model {
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
 
       // Auto approve some types of requests
-      if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
+      if ([
+        RequestTypes.RISC_INTERESSI,
+        RequestTypes.RISC_INTERESSI_BRITE,
+        RequestTypes.RISC_PROVVIGIONI,
+      ].includes(data.type)) {
         const typeData = RequestTypes.get(data.type)
 
         try {
@@ -62,12 +66,20 @@ class Request extends Model {
           if (RequestTypes.RISC_PROVVIGIONI === data.type) {
             generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
           } else {
-            generatedMovement = await MovementModel.create({
+            const movementData = {
               userId: data.userId,
               movementType: typeData.movement,
               amountChange: data.amount,
               interestPercentage: +user.contractPercentage,
-            })
+            }
+
+            if (data.typeClub) {
+              movementData.iban = data.iban
+              movementData.clubCardNumber = data.clubCardNumber
+              movementData.typeClub = data.typeClub
+            }
+
+            generatedMovement = await MovementModel.create(movementData)
           }
 
           data.movementId = generatedMovement._id
@@ -88,28 +100,42 @@ class Request extends Model {
       const lastMovement = await MovementModel.getLast(data.userId)
 
       // Store the current available amount for future reference
-      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)) {
+      if ([
+        RequestTypes.RISC_CAPITALE,
+        RequestTypes.RISC_CAPITALE_GOLD,
+        RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
-      } else if (RequestTypes.RISC_INTERESSI === data.type) {
+      } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE].includes(data.type)) {
         data.availableAmount = lastMovement.interestAmountOld
       } else if (RequestTypes.RISC_PROVVIGIONI === data.type) {
         const commissionMovement = await CommissionModel.find(data.movementId)
         data.availableAmount = commissionMovement.currMonthCommissionsOld
       }
 
-      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
+      if ([
+        RequestTypes.RISC_CAPITALE,
+        RequestTypes.RISC_CAPITALE_GOLD,
+        RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
         const typeData = RequestTypes.get(data.type)
 
         try {
           const user = await UserModel.find(data.userId)
 
-          const movement = await MovementModel.create({
+          const movementData = {
             userId: data.userId,
             movementType: typeData.movement,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate
-          })
+          }
+
+          if (data.typeClub) {
+            movementData.iban = data.iban
+            movementData.clubCardNumber = data.clubCardNumber
+            movementData.typeClub = data.typeClub
+          }
+
+          const movement = await MovementModel.create(movementData)
 
           data.movementId = movement._id
         } catch (er) {
@@ -145,7 +171,7 @@ class Request extends Model {
   }
 
   static async includeFiles(data) {
-    const files = await File.where({ requestId: data.id }).fetch()
+    const files = await File.where({requestId: data.id}).fetch()
 
     data.files = files.rows || files
   }
@@ -247,10 +273,10 @@ class Request extends Model {
 
     /** @type {{rows: IRequest[]}} */
     const data = await Request
-      .where({ userId: { $in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)] } })
+      .where({userId: {$in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)]}})
       .with("movement")
       .with("conversation")
-      .sort(sorting || { "completed_at": -1 }).fetch()
+      .sort(sorting || {"completed_at": -1}).fetch()
 
     return data.rows.map(_entry => {
       _entry.canCancel = false
@@ -277,7 +303,7 @@ class Request extends Model {
       status: RequestStatus.NUOVA
     })
       .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
-      .sort({ created_at: -1, type: 1 })
+      .sort({created_at: -1, type: 1})
       .fetch()
   }
 
@@ -287,6 +313,52 @@ class Request extends Model {
     request.status = RequestStatus.LAVORAZIONE
 
     await request.save()
+  }
+
+  /**
+   *
+   * @param {string} date - YYYY-MM
+   * @returns {Promise<void>}
+   */
+  static async getReportData(date) {
+    const reqToSearch = [RequestTypes.RISC_CAPITALE, RequestTypes.RISC_PROVVIGIONI]
+
+    const momentDate = moment(date, "YYYY-MM")
+    const startDate = moment(momentDate).subtract(1, "months").set({
+      date: 16,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
+    const endDate = moment(momentDate).set({
+      date: 15,
+      hour: 23,
+      minute: 59,
+      second: 59,
+    })
+
+    const data = await this.where({
+      type: {$in: reqToSearch},
+      status: RequestStatus.ACCETTATA,
+      created_at: {
+        $gte: startDate.toDate(),
+        $lte: endDate.toDate()
+      }
+    })
+      .with("user")
+      .sort({
+        userId: 1,
+        type: 1
+      })
+      .fetch()
+
+    return data
+  }
+
+  static async findByIdOrMovementId(id) {
+    const objId = castToObjectId(id)
+
+    return this.query().where({$or: [{_id: objId}, {movementId: objId}]}).first()
   }
 
   async cancelRequest() {
@@ -299,7 +371,7 @@ class Request extends Model {
       throw new MovementErrorException("Movement not found.")
     }
 
-    const movementCancelRef = await MovementModel.where({ cancelRef: movementRef._id }).first()
+    const movementCancelRef = await MovementModel.where({cancelRef: movementRef._id}).first()
 
     if (movementCancelRef) {
       throw new MovementErrorException("Movement already canceled.")
@@ -398,6 +470,10 @@ class Request extends Model {
 
   setPaymentDocDate(value) {
     return castToIsoDate(value)
+  }
+
+  setClubCardNumber(value) {
+    return value ? +value : value
   }
 }
 

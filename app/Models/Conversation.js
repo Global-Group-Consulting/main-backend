@@ -40,20 +40,21 @@ class Conversation extends Model {
    * @param {string} userId
    * @returns {Promise<IConversation[]>}
    */
-  static async getAll(userId) {
+  static async getAll(userId, filter = {}) {
     userId = castToObjectId(userId)
 
     const result = await Conversation.query()
       .where(
         {
-          watchersIds: { $elemMatch: { $eq: userId } }
+          watchersIds: {$elemMatch: {$eq: userId}},
+          ...filter
         }
       )
       .with("unreadMessages", async query => {
         query.where({
           receiverId: castToObjectId(userId),
-          senderId: { $not: { $eq: castToObjectId(userId) } },
-          read_at: { $exists: false }
+          senderId: {$not: {$eq: castToObjectId(userId)}},
+          read_at: {$exists: false}
         })
       })
       .with("request", query => {
@@ -83,7 +84,7 @@ class Conversation extends Model {
           'email',
         ])
       })
-      .sort({ "updated_at": -1, "subject": -1 })
+      .sort({"updated_at": -1, "subject": -1})
       .fetch()
 
     return result.toJSON().map(_row => {
@@ -183,6 +184,7 @@ class Conversation extends Model {
       directedToId: receiver,
       // Default to one because if the conversation is created is due to a message that has to be created
       messages: 1,
+      messageType: message.type,
       subject: message.subject,
       watchersIds: [sender, receiver], // Immediately add as watchers the sender and the receiver
     }

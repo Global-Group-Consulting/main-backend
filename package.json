@@ -48,18 +48,22 @@
     "cron-parser": "^2.18.0",
     "cross-blob": "^2.0.0",
     "csv": "^5.3.2",
+    "exceljs": "^4.2.0",
     "http-status-codes": "^2.1.4",
     "lodash": "^4.17.20",
     "lucid-mongo": "^3.1.6",
     "mjml": "^4.6.3",
+    "moment": "^2.29.1",
     "mongo-uri-builder": "^3.2.2",
     "mongoose": "^5.10.15",
     "njwt": "^1.0.0",
     "nodejs": "0.0.0",
     "nodemon": "^2.0.4",
+    "pdffiller": "^0.0.11",
     "postmark": "^2.6.0",
     "signrequest-client": "^1.1.1",
-    "tmp": "^0.2.1"
+    "tmp": "^0.2.1",
+    "written-number": "^0.9.1"
   },
   "devDependencies": {},
   "autoload": {

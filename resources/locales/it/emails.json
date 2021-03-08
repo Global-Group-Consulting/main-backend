@@ -5,7 +5,7 @@
     "content": {
       "row1": "Gentile { firstName } { lastName } , ",
       "row2": "siamo lieti di darLe il benvenuto in <strong>Global Group Consulting</strong>!",
-      "row3": "Per poter accedere al suo account personale, la inviatiamo a creare una password che potrà successivamente usare per effettuare l'accesso.",
+      "row3": "Per poter accedere al suo account personale, la invitiamo a creare una password che potrà successivamente usare per effettuare l'accesso.",
       "row4": "Faccia click sul pulsante sottostante. In alternativa può copiare il link indicato ed incollarlo nella barra di ricerca del suo browser.",
       "btn_label": "Imposta la password"
     }
@@ -25,6 +25,16 @@
       "row1": "Gentile {firstName} {lastName},",
       "row2": "desideriamo informarla che la password del suo account è stata cambiata correttamente.",
       "row3": "Qualora non sia stata Lei ad effettuare questa modifica la preghiamo di informarci il prima possibile all'email <a href=\"mailto:{publicEmail}\">{publicEmail}</a>"
+    }
+  },
+  "new_notification": {
+    "subject": "Nuova notifica non letta! ",
+    "content": {
+      "title": "Hai una nuova notifica",
+      "row1": "Gentile <strong>{ firstName } { lastName }</strong>,",
+      "row2": "nella sua area privata è disponibile una nuova notifica. Acceda per vederne i dettagli.",
+      "row3": "Tipologia: {notificationType}",
+      "btn_label": "Accedi al tuo account"
     }
   }
 }

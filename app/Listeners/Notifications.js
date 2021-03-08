@@ -11,6 +11,8 @@ const NotificationModel = use("App/Models/Notification")
 /** @type {typeof import("../Models/User")} */
 const UserModel = use("App/Models/User")
 
+const Event = use("Event")
+
 const Ws = use("Ws")
 
 const NotificationTypes = require("../../enums/NotificationTypes")
@@ -62,6 +64,7 @@ async function onMessageNew(message) {
       type = NotificationTypes.MESSAGE_CHAT
       break;
     case MessageTypes.SERVICE:
+    case MessageTypes.BRITE_USE:
       type = NotificationTypes.MESSAGE_COMMUNICATION
       break;
     case MessageTypes.BUG_REPORT:
@@ -71,7 +74,7 @@ async function onMessageNew(message) {
 
   const payload = message.toJSON()
 
-  if(payload.files){
+  if (payload.files) {
     delete payload.files
   }
 
@@ -93,6 +96,7 @@ Notifications.onUserDraftConfirmed = onUserDraftConfirmed
 Notifications.onUserIncompleteData = onUserIncompleteData
 Notifications.onUserMustRevalidate = onUserMustRevalidate
 Notifications.onUserValidated = onUserValidated
+Notifications.onUserApproved = onUserApproved
 
 /**
  * Send notification to all servClienti
@@ -159,7 +163,7 @@ async function onUserValidated(user) {
   const receivers = await UserModel.getAdmins()
 
   for (const receiverUser of receivers.rows) {
-    const notifiction = await NotificationModel.create({
+    const notification = await NotificationModel.create({
       receiverId: receiverUser._id,
       payload: _userPayload(user),
       type: NotificationTypes.USER_SIGN_REQUEST
@@ -167,6 +171,24 @@ async function onUserValidated(user) {
 
     _broadcastTo(notification)
   }
+}
+
+/**
+ * @param {IUser} user
+ * @returns {Promise<void>}
+ */
+async function onUserApproved(user) {
+  if (!user.referenceAgent) {
+    return
+  }
+
+  const notification = await NotificationModel.create({
+    receiverId: user.referenceAgent,
+    payload: _userPayload(user),
+    type: NotificationTypes.USER_APPROVED
+  })
+
+  _broadcastTo(notification)
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1,19 +1,26 @@
 <mjml>
   <mj-head>
+    <mj-font name="Poppins" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" />
+
     <mj-attributes>
-      <mj-text font-size="16px" />
+      <mj-button background-color="#0088FF" color="white" border-radius="20px" font-weight="600" font-size="18px" />
+      <mj-text font-size="16px" line-height="20px"/>
+      <mj-all font-family="Poppins, Arial" />
     </mj-attributes>
   </mj-head>
-  <mj-body background-color="#F0F0F0" width="800px">
+  <mj-body background-color="#F7F7F7" width="600px">
     <mj-section>
       <mj-column>
         <!-- header and logo -->
-         <mj-image width="278px" src="${publicUrl}/logo_large.png" />
+         <mj-image width="100px" src="${publicUrl}/logo_dark.png" />
       </mj-column>
     </mj-section>
 
-    <mj-section padding="0">
-      <mj-column border="solid 1px #D7D9DA" background-color="#fff" padding="25px">
+    <mj-section padding="1px" border-radius="20px" background-color="#D7D9Da"  >
+      <mj-column background-color="#fff" padding="50px 20px" border-radius="18px" >
+        <mj-text font-size="30px" font-weight="600" line-height="30px">
+          ${t.title}
+        </mj-text>
 
         <mj-include path="../${fileToInclude}.mjml" />
 

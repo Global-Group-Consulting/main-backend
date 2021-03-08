@@ -58,12 +58,14 @@ class ConversationController {
       default:
         const messages = await MessageModel.getSimpleMessages(auth.user._id)
         const messagesSent = await MessageModel.getSimpleMessagesSent(auth.user._id)
-        const conversations = await ConversationModel.getAll(auth.user._id)
+        const conversations = await ConversationModel.getAll(auth.user._id, {messageType: {$not: {$eq: MessageTypes.BRITE_USE}}})
+        const clubConversations = await ConversationModel.getAll(auth.user._id, {messageType: {$eq: MessageTypes.BRITE_USE}})
 
         toReturn = {
           messages,
           messagesSent,
-          conversations
+          conversations,
+          clubConversations
         }
     }
 
@@ -255,7 +257,7 @@ class ConversationController {
       newMessage.filesIds = storedFiles.map(_file => _file._id)
     }
 
-    if (+incomingData.type === MessageTypes.CONVERSATION) {
+    if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE].includes(+incomingData.type)) {
       newMessage.conversationId = conversationId ? conversationId : new MongoTypes.ObjectId()
 
       conversationId = newMessage.conversationId

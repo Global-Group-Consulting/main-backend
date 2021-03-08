@@ -12,6 +12,7 @@ export interface Request {
   availableAmount: number
   currency: typeof CurrencyType
   notes: string
+  movementId: string
 
   created_at: Date
   updated_at: Date
