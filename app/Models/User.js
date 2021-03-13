@@ -378,14 +378,43 @@ class User extends Model {
   }
 
   static async getPendingSignatures() {
-    const result = this.query()
-      .where({role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]}, contractSignedAt: {$exists: false}})
+    const result = await this.query()
+      .where({
+        role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
+        contractSignedAt: {$exists: false},
+        account_status: AccountStatuses.VALIDATED
+      })
       .with("signinLogs", query => {
-        query
+        query.where({hooks: {$exists: true}})
       })
       .fetch()
 
-    return result
+    const jsonData = result.toJSON()
+
+    return jsonData.map(row => {
+      if(!row.signinLogs || row.signinLogs.length === 0){
+        return row
+      }
+
+      const lastLog = row.signinLogs[row.signinLogs.length - 1]
+
+      row.signinLogs = lastLog.hooks.reduce(
+        /**
+         * @param {[]} acc
+         * @param {import("../../@types/SignRequest/Webhooks.d").WebhooksCall} curr
+         */
+        (acc, curr) => {
+          acc.push({
+            event: curr.event_type,
+            timestamp: curr.timestamp,
+            user: curr.signer ? `${curr.signer.first_name} ${curr.signer.last_name}` : null
+          })
+
+          return acc
+        }, [])
+
+      return row
+    })
   }
 
   /**
