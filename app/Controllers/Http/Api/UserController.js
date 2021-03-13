@@ -27,6 +27,13 @@ const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
 /** @type {import("../../../Exceptions/UserException")} */
 const UserException = use("App/Exceptions/UserException")
 
+const rolesMap = {
+  "admin": "admin",
+  "servClienti": "clients_service",
+  "agente": "agent",
+  "cliente": "client",
+}
+
 class UserController {
   /**
    *
@@ -47,11 +54,14 @@ class UserController {
   async create({request, response, auth}) {
     const incomingUser = request.only(User.updatableFields)
 
+
     if (+auth.user.role === UserRoles.AGENTE) {
       incomingUser.referenceAgent = auth.user._id.toString()
     }
 
     incomingUser.lastChangedBy = auth.user._id.toString()
+
+    incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
 
     const user = await Persona.register(incomingUser)
     const files = request.files()
@@ -80,6 +90,13 @@ class UserController {
     delete incomingUser.email
 
     incomingUser.lastChangedBy = auth.user._id
+
+    /*
+      If the role changes, i also must update the permissions "roles" field.
+     */
+    if(incomingUser.role !== user.role){
+      incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
+    }
 
     if (user.account_status === AccountStatuses.INCOMPLETE && incompleteData.completed) {
       user.account_status = AccountStatuses.MUST_REVALIDATE
