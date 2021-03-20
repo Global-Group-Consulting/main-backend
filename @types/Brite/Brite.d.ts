@@ -8,7 +8,7 @@ export interface Brite {
 
   amountChange: number
 
-  movementType: BriteMovementTypes
+  movementType: typeof BriteMovementTypes
 
   /**
    * Annual semestre that refers to

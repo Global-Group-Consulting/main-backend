@@ -39,6 +39,16 @@ class BriteModel extends BasicModel {
     })
   }
 
+  static async manualRemove(data) {
+    return super.create({
+      ...data,
+      movementType: BriteMovementTypes.DEPOSIT_REMOVED,
+      // i'm using the  current date as a reference.
+      // Maybe could be useful to ask the user what date want's to use
+      referenceSemester: moment().month() < 6 ? 1 : 2
+    })
+  }
+
   static async useRequest(data) {
     /*return super.create({
       ...data,
@@ -48,6 +58,7 @@ class BriteModel extends BasicModel {
       referenceSemester: moment().month() < 6 ? 1 : 2
     })*/
   }
+
 
   /**
    *
@@ -131,7 +142,9 @@ class BriteModel extends BasicModel {
           toReturn[semesterName].briteAvailable += movement.amountChange
 
           break;
-        case BriteMovementTypes.DEPOSIT_COLLECTED: {
+        case BriteMovementTypes.DEPOSIT_COLLECTED:
+        case BriteMovementTypes.DEPOSIT_REMOVED:
+        case BriteMovementTypes.DEPOSIT_TRANSFERED: {
           toReturn[semesterName].briteUsed += movement.amountChange
           toReturn[semesterName].briteAvailable -= movement.amountChange
         }
