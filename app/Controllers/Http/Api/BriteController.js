@@ -92,7 +92,8 @@ class BriteController {
       amountChange: data.amountChange,
       notes: data.notes,
       userId,
-      created_by: currentUser
+      created_by: currentUser,
+      semesterId: data.semesterId
     });
   }
 

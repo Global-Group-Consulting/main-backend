@@ -15,6 +15,7 @@ class Use extends WhitelistValidator {
       id: "required|objectId",
       amountChange: "required|number",
       notes: "required|string",
+      semesterId: "required|string",
     }
   }
 }

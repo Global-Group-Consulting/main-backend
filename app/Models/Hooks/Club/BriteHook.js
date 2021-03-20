@@ -36,15 +36,17 @@ BriteHook.beforeCreate = async (modelInstance) => {
   // If remove type, copy the usableFrom and expiresAt from the last movement
   // I should get this dates from the right semester
   if (isRemoveType) {
-    usableFrom = moment(lastMovement.usableFrom)
-    expiresAt = moment(lastMovement.expiresAt)
+    const semesterData = modelInstance.semesterId.split("_")
+    const semesterYear = +semesterData[0]
+
+    usableFrom = moment().set({date: 1, month: modelInstance.referenceSemester === 1 ? 0 : 6, year: semesterYear})
+    expiresAt = moment(usableFrom).add(1, "year")
   } else {
     usableFrom = modelInstance.referenceSemester === 1 ?
       moment().set({date: 1, month: 6, year: createdAt.year()}) :
       moment().set({date: 1, month: 0, year: createdAt.year() + 1})
     expiresAt = moment(usableFrom).add(1, "year")
   }
-
 
   modelInstance.deposit = newDeposit
   modelInstance.depositOld = oldDeposit
