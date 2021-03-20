@@ -11,6 +11,9 @@ module.exports = function (Route) {
 
     Route.get('/status/:id?', "CommissionController.getStatus")
 
+    Route.post('/:id/add', "CommissionController.manualAdd")
+      .validator("Commissions/AddManual")
+
     /*
      Route.get('/:id', "CommissionsController.read")
        .validator("Movements/Read")

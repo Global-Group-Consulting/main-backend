@@ -1,7 +1,7 @@
 'use strict'
 
 const {ServiceProvider} = require('@adonisjs/fold')
-const UserRoles = require('../enums/UserRoles')
+const UserRoles = require('../../enums/UserRoles')
 
 const defaultRoles = [
   {
@@ -51,7 +51,7 @@ const defaultRoles = [
   }
 ]
 
-class AclProvider extends ServiceProvider {
+class Provider extends ServiceProvider {
   /**
    * Register namespaces to the IoC container
    *
@@ -60,7 +60,11 @@ class AclProvider extends ServiceProvider {
    * @return {void}
    */
   register() {
-    //
+    this.app.singleton('AclProvider', () => {
+      const Config = this.app.use('Adonis/Src/Config')
+
+      return new (require('.'))(Config)
+    })
   }
 
   /**
@@ -72,20 +76,10 @@ class AclProvider extends ServiceProvider {
    * @return {void}
    */
   async boot() {
-    const AclRolesModel = this.app.use("App/Models/AclRolesModel")
+    const AclProvider = use('AclProvider')
     const UserModel = this.app.use("App/Models/User")
 
     console.log("*** Checking necessary roles...")
-
-    // Adds missing roles.ù
-    // In realtà non  server perchè importerò i dati direttamente nel database
-    /* for (const role of defaultRoles) {
-       const result = await AclRolesModel.createIfNew({code: role.code}, role)
-
-       if (result) {
-         console.log("*** Created role", result.code)
-       }
-     }*/
 
     const usersWithoutRoles = await UserModel.where({roles: {$exists: false}}).fetch()
     const rolesMap = {
@@ -105,4 +99,4 @@ class AclProvider extends ServiceProvider {
   }
 }
 
-module.exports = AclProvider
+module.exports = Provider
