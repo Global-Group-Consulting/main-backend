@@ -31,4 +31,5 @@ export interface Brite {
   id: string
   created_at: Date
   updated_at: Date
+  semesterId: string
 }
