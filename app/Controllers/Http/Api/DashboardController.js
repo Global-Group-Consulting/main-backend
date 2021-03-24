@@ -12,6 +12,8 @@ const RequestsModel = use("App/Models/Request")
 
 /** @type {typeof import("../../../Models/User")} */
 const UserModel = use("App/Models/User")
+/** @type {typeof import("../../../Models/Commission")} */
+const CommissionModel = use("App/Models/Commission")
 
 const UserRoles = require("../../../../enums/UserRoles")
 
@@ -61,7 +63,7 @@ class DashboardController {
 
     return {
       blocks: {
-        deposit: currentStatus ? currentStatus.deposit : user.contractInitialInvestment,
+        deposit: currentStatus ? currentStatus.deposit : 0, //user.contractInitialInvestment,
         interestAmount: currentStatus ? currentStatus.interestAmount : 0,
         depositCollected: monthMovements.depositCollected,
         interestsCollected: monthMovements.interestsCollected
@@ -79,10 +81,10 @@ class DashboardController {
 
     return {
       blocks: {
-        deposit: currentStatus ? currentStatus.deposit : user.contractInitialInvestment,
+        deposit: currentStatus ? currentStatus.deposit : 0, //user.contractInitialInvestment,
         interestAmount: currentStatus ? currentStatus.interestAmount : 0,
         depositCollected: monthMovements.depositCollected,
-        interestsCollected: monthMovements.interestsCollected
+        interestsCollected: monthMovements.interestsCollected,
       },
       charts: {
         pastRecapitalizations

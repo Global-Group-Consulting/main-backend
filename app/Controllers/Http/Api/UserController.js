@@ -22,10 +22,19 @@ const Persona = use('Persona')
 const Event = use('Event')
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 const UserRoles = require("../../../../enums/UserRoles")
+const PersonTypes = require("../../../../enums/PersonTypes")
 const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
 
 /** @type {import("../../../Exceptions/UserException")} */
 const UserException = use("App/Exceptions/UserException")
+
+const moment = require("moment")
+
+const {
+  formatWrittenNumbers, formatDate, formatContractNumber, formatMoney,
+  formatCountry, formatRegion, formatProvince, formatCity,
+  formatPaymentMethod
+} = require("../../../Helpers/ModelFormatters")
 
 const rolesMap = {
   "admin": "admin",
@@ -51,6 +60,117 @@ class UserController {
     return user
   }
 
+  /**
+   *
+   * @param user
+   * @param {string} existingRequestId
+   * @returns {Promise<SignRequestModel>}
+   * @private
+   */
+  async _prepareAndSendSignRequest(user, existingRequestId) {
+    const fieldsToEmpty = []
+    /** @type {import("../../../../@types/SignRequest/Config.d").Config} */
+    const docsConfig = Config.get("docSigner")
+    /** @type {import("../../../../@types/User.d").User} */
+    const userData = user.toJSON()
+    const contractData = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      id: user.id,
+      fullName: userData.firstName + " " + userData.lastName,
+      birthCity: await formatCity(userData.birthCity),
+      birthProvince: await formatProvince(userData.birthProvince),
+      birthDate: formatDate(userData.birthDate),
+      residenceAddress: userData.legalRepresentativeAddress,
+      residenceZip: userData.legalRepresentativeZip,
+      residenceCity: await formatCity(userData.legalRepresentativeCity),
+      residenceProvince: await formatProvince(userData.legalRepresentativeProvince),
+      fiscalCode: userData.fiscalCode,
+      mobile: userData.mobile,
+      email: userData.email,
+      contractNumber: formatContractNumber(userData.contractNumber),
+      contractDate: formatDate(moment()),
+
+      // dati persona giuridica
+      businessName: userData.businessName,
+      businessRegion: await formatCountry(userData.businessCountry, true),
+      businessCity: await formatCity(userData.businessCity),
+      businessProvince: await formatProvince(userData.businessProvince),
+      businessAddress: userData.businessAddress,
+      vatNumber: userData.vatNumber,
+      legalRepresentativeFullName: userData.firstName + " " + userData.lastName,
+      legalRepresentativeBirthCity: await formatCity(userData.birthCity),
+      legalRepresentativeBirthProvince: await formatProvince(userData.birthProvince),
+      legalRepresentativeBirthDate: formatDate(userData.birthDate),
+      legalRepresentativeCF: userData.fiscalCode,
+
+      // Dati versamento iniziale
+      contractInitialInvestmentGold: userData.contractInitialInvestmentGold,
+      contractInitialInvestmentGoldText: formatWrittenNumbers(userData.contractInitialInvestmentGold),
+      contractInitialInvestmentGoldVal: formatMoney(userData.contractInitialInvestment, true),
+      contractInitialInvestmentGoldValText: formatWrittenNumbers(userData.contractInitialInvestment),
+      contractPaymentMethod: formatPaymentMethod(userData.contractInitialPaymentMethod, userData.contractInitialPaymentMethodOther),
+      contractInitialInvestment: formatMoney(userData.contractInitialInvestment, true),
+      contractInitialInvestmentText: formatWrittenNumbers(userData.contractInitialInvestment)
+    }
+
+    if (user.personType === PersonTypes.FISICA) {
+      fieldsToEmpty.push(
+        "businessName",
+        "businessRegion",
+        "businessCity",
+        "businessProvince",
+        "businessAddress",
+        "vatNumber",
+        "legalRepresentativeFullName",
+        "legalRepresentativeBirthCity",
+        "legalRepresentativeBirthProvince",
+        "legalRepresentativeBirthDate",
+        "legalRepresentativeCF",
+      )
+    } else {
+      fieldsToEmpty.push(
+        "fullName",
+        "birthCity",
+        "birthProvince",
+        "birthDate",
+        "residenceAddress",
+        "residenceZip",
+        "residenceCity",
+        "residenceProvince",
+        "fiscalCode",
+      )
+    }
+
+    if (!user.contractInitialInvestmentGold) {
+      fieldsToEmpty.push(
+        "contractInitialInvestmentGold",
+        "contractInitialInvestmentGoldText",
+        "contractInitialInvestmentGoldVal",
+        "contractInitialInvestmentGoldValText",
+      )
+    } else {
+      fieldsToEmpty.push(
+        "contractPaymentMethod",
+        "contractInitialInvestment",
+        "contractInitialInvestmentText"
+      )
+    }
+
+    for (const field of fieldsToEmpty) {
+      contractData[field] = "-"
+    }
+
+    const signRequest = await DocSigner.sendSignRequest(docsConfig.templates.mainContract, contractData, existingRequestId)
+
+    // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
+    signRequest.userId = user._id
+
+    await SignRequestModel.create(signRequest)
+
+    return signRequest
+  }
+
   async create({request, response, auth}) {
     const incomingUser = request.only(User.updatableFields)
 
@@ -60,8 +180,6 @@ class UserController {
     }
 
     incomingUser.lastChangedBy = auth.user._id.toString()
-
-    incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
 
     const user = await Persona.register(incomingUser)
     const files = request.files()
@@ -94,7 +212,7 @@ class UserController {
     /*
       If the role changes, i also must update the permissions "roles" field.
      */
-    if(incomingUser.role !== user.role){
+    if (incomingUser.role !== user.role) {
       incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
     }
 
@@ -158,7 +276,7 @@ class UserController {
 
     if (!token && user.account_status === AccountStatuses.APPROVED) {
       token = await Persona.generateToken(user, 'email')
-    }else if (!token){
+    } else if (!token) {
       throw new UserException("Invalid user status.")
     }
 
@@ -229,14 +347,20 @@ class UserController {
         return response.badRequest("Permissions denied.")
       }
 
-      user.account_status = AccountStatuses.CREATED
+      const signRequest = await this._prepareAndSendSignRequest(user)
+
+      // I set the state to validate so i won't need the validation by serv_clienti
+      // as requested in issue #32
+      user.account_status = AccountStatuses.VALIDATED
+      user.contractSignRequestUuid = signRequest.uuid
     } else {
       return response.badRequest("User is not CLIENTE.")
     }
 
     await user.save()
 
-    Event.emit("user::draftConfirmed", user)
+    // I trigger validated as requested by issue #32
+    Event.emit("user::validated", user)
 
     return user.full()
   }
@@ -300,17 +424,11 @@ class UserController {
       throw new UserNotFoundException()
     }
 
-    /** @type {import("../../../../@types/SignRequest/Config.d").Config} */
-    const docsConfig = Config.get("docSigner")
-    const signRequest = await DocSigner.sendSignRequest(docsConfig.templates.mainContract, user.toJSON())
-
-    // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
-    signRequest.userId = user._id
-
-    await SignRequestModel.create(signRequest)
+    const signRequest = await this._prepareAndSendSignRequest(user)
 
     // Update the user status account to VALIDATED
     user.account_status = AccountStatuses.VALIDATED
+    user.contractSignRequestUuid = signRequest.uuid
 
     // Save the user and wait for the signRequest webhooks
     await user.save()
@@ -435,6 +553,32 @@ class UserController {
     const result = await User.getClientsList(userId)
 
     return result
+  }
+
+  async resendContract({params, auth}) {
+    const userId = params.id
+    const authUser = auth.user.toJSON()
+
+    if (authUser.role === UserRoles.CLIENTE) {
+      return response.unauthorized("Permission denied.")
+    }
+
+    const user = await User.find(userId)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    // First get the existing request and get its state.
+    const existingRequestId = await SignRequestModel.getRequestUuid(user._id)
+
+    const signRequest = await this._prepareAndSendSignRequest(user, existingRequestId)
+
+    user.contractStatus = null
+    user.contractSignRequestUuid = signRequest.uuid
+
+    // Save the user and wait for the signRequest webhooks
+    await user.save()
   }
 }
 

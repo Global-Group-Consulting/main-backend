@@ -180,6 +180,7 @@ class Commission extends Model {
       case CommissionType.ANNUAL_DEPOSIT:
       case CommissionType.NEW_DEPOSIT:
       case CommissionType.TOTAL_DEPOSIT:
+      case CommissionType.MANUAL_ADD:
         dataToCreate.currMonthCommissions += data.amountChange
 
         break
@@ -310,6 +311,33 @@ class Commission extends Model {
    */
   static async addAnnualCommission() {
     // TBD
+  }
+
+  /**
+   *
+   * @param {{amountChange: number, notes: string, userId: ObjectId, created_by: ObjectId}} data
+   * @returns {Promise<void>}
+   */
+  static async manualAdd(data) {
+    // get the user new deposit
+    const lastCommission = await this._getLastCommission(data.userId)
+
+    // create the movement in the database
+    // use that date as the date of the commission movement,
+    // so that when reinvesting it, will figure in the right month.
+    return this._create({
+      movementId: null,
+      userId: data.userId,
+      clientId: null,
+      commissionType: CommissionType.MANUAL_ADD,
+      dateReference: moment().toDate(),
+      amountChange: data.amountChange,
+      commissionOnValue: null,
+      commissionPercentage: null,
+      indirectCommission: false,
+      teamCommissionType: "",
+      created_by: data.created_by
+    }, lastCommission);
   }
 
   /**

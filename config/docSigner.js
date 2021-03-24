@@ -15,22 +15,22 @@ module.exports = {
     disable_text: true,
     disable_date: true,
     disable_emails: true,
-    who: "mo",
+    who: "o",
     text_message_verification_locked: true,
-    from_email: "florian.leica@hashtager.eu"/*Env.get("MAIL")*/,
+    from_email: Env.get("MAIL"),
     from_email_name: Env.get("MAIL_FROM"), // Must be the one from the env, used for other emails
   },
   signers: {
-    me: {
+    /*me: {
       email: 'florian.leica@hashtager.eu',
       // first_name: "Hastager",
       // last_name: "Rossi",
       display_name: "Global Group Consulting"
-    }
+    }*/
   },
   templates: {
     mainContract: {
-      uuid: "dfa39b96-7fca-406f-99b6-eafe56372a83",
+      uuid: "59ffa1c8-51e1-4378-8c2f-ad40c73dd749",
       fields: [
         {
           "text": "${fiscalCode}",
@@ -38,11 +38,36 @@ module.exports = {
         },
         {
           "text": "${legalRepresentativeAddress}",
-          "external_id": "residenceAddress"
+          "external_id": "legalRepresentativeAddress"
         },
         {
           "text": "${legalRepresentativeCountry}",
-          "external_id": "residenceCountry"
+          "external_id": "legalRepresentativeCountry"
+        },
+
+        {
+          "text": "${legalRepresentativeCF}",
+          "external_id": "legalRepresentativeCF"
+        },
+        {
+          "text": "${birthProvince}",
+          "external_id": "birthProvince"
+        },
+        {
+          "text": "${fullName}",
+          "external_id": "fullName"
+        },
+        {
+          "text": "${businessName}",
+          "external_id": "businessName"
+        },
+        {
+          "text": "${businessProvince}",
+          "external_id": "businessProvince"
+        },
+        {
+          "text": "${businessRegion}",
+          "external_id": "businessRegion"
         },
         {
           "text": "${businessCity}",
@@ -53,32 +78,32 @@ module.exports = {
           "external_id": "businessAddress"
         },
         {
-          "text": "}",
-          "external_id": "legalRepresentativeCF"
-        },
-        {
-          "text": "${birthProvince}",
-          "external_id": "birthProvince"
-        },
-        {
-          "text": "${firstName} ${lastName}",
-          "external_id": "fullName"
-        },
-        {
-          "text": "${businessName}",
-          "external_id": "businessName"
-        },
-        {
-          "text": "${firstName} ${lastName}",
+          "text": "${legalRepresentativeFullName}",
           "external_id": "legalRepresentativeFullName"
         },
         {
-          "text": "${businessProvince}",
+          "text": "${residenceProvince}",
           "external_id": "residenceProvince"
+        },
+        {
+          "text": "${residenceCity}",
+          "external_id": "residenceCity"
+        },
+        {
+          "text": "${residenceZip}",
+          "external_id": "residenceZip"
         },
         {
           "text": "${legalRepresentativeProvince}",
           "external_id": "legalRepresentativeProvince"
+        },
+        {
+          "text": "${legalRepresentativeBirthCity}",
+          "external_id": "legalRepresentativeBirthCity"
+        },
+        {
+          "text": "${legalRepresentativeBirthProvince}",
+          "external_id": "legalRepresentativeBirthProvince"
         },
         {
           "text": "${vatNumber}",
@@ -93,19 +118,12 @@ module.exports = {
           "external_id": "contractNumber"
         },
         {
-          "text": "${birthCountry}",
-          "external_id": "birthCountry"
+          "text": "${birthCity}",
+          "external_id": "birthCity"
         },
+
         {
-          "text": "${businessProvince}",
-          "external_id": "businessProvince"
-        },
-        {
-          "text": "${businessRegion}",
-          "external_id": "businessRegion"
-        },
-        {
-          "text": "",
+          "text": "${legalRepresentativeBirthDate}",
           "external_id": "legalRepresentativeBirthDate"
         },
         {

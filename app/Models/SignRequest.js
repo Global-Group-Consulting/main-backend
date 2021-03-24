@@ -8,9 +8,19 @@ const {castToObjectId} = require("../Helpers/ModelFormatters")
 class SignRequest extends Model {
 
   static async getUser(requestId) {
-    const signRequest = this.where("uuid", requestId).with("user").first()
+    const signRequest = await this.where("uuid", requestId).with("user").first()
 
     return signRequest.user;
+  }
+
+  static async getRequestUuid(userId) {
+    const signRequest = await this.where({
+      "userId": castToObjectId(userId),
+      "hooks.event_type": {$nin: ["declined"]}
+    }).sort({_id: -1})
+      .first()
+
+    return signRequest;
   }
 
   user() {

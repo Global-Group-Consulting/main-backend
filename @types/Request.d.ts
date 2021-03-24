@@ -13,6 +13,7 @@ export interface Request {
   currency: typeof CurrencyType
   notes: string
   movementId: string
+  targetUserId: string
 
   created_at: Date
   updated_at: Date
@@ -22,4 +23,6 @@ export interface Request {
   firstName: string
   lastName: string
   rejectReason: string
+
+  typeClub: boolean
 }

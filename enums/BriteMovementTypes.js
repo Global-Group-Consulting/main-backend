@@ -14,6 +14,8 @@ class BriteMovementTypes extends BasicEnum {
     // When added by admins
     this.DEPOSIT_ADDED = "deposit_added"
 
+    this.DEPOSIT_REMOVED = "deposit_removed"
+
     // When a user transfers them to a user
     this.DEPOSIT_TRANSFERED = "deposit_transferred"
 
@@ -26,6 +28,9 @@ class BriteMovementTypes extends BasicEnum {
       },
       [this.DEPOSIT_ADDED]: {
         id: this.DEPOSIT_ADDED
+      },
+      [this.DEPOSIT_REMOVED]: {
+        id: this.DEPOSIT_REMOVED
       },
       [this.DEPOSIT_TRANSFERED]: {
         id: this.DEPOSIT_TRANSFERED

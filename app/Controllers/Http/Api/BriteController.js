@@ -77,6 +77,27 @@ class BriteController {
   }
 
   /**
+   * @param {Adonis.Http.Request} request
+   * @param {{}} auth
+   * @returns {Promise<Model>}
+   */
+  async remove({request, auth, params}) {
+    const userId = params.id
+    const currentUser = auth.user._id
+
+    /** @type { import("../../../../@types/Brite/dto/brite.manualAdd").BriteManualAdd } */
+    const data = request.all()
+
+    return BriteModel.manualRemove({
+      amountChange: data.amountChange,
+      notes: data.notes,
+      userId,
+      created_by: currentUser,
+      semesterId: data.semesterId
+    });
+  }
+
+  /**
    * @param {{}} params
    * @returns {Promise<Model>}
    */

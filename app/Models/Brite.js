@@ -39,6 +39,18 @@ class BriteModel extends BasicModel {
     })
   }
 
+  static async manualRemove(data) {
+    /*
+    When removing i must remove them from the last semester still available
+     */
+
+    return super.create({
+      ...data,
+      movementType: BriteMovementTypes.DEPOSIT_REMOVED,
+      referenceSemester: +data.semesterId.split("_")[1]
+    })
+  }
+
   static async useRequest(data) {
     /*return super.create({
       ...data,
@@ -48,6 +60,7 @@ class BriteModel extends BasicModel {
       referenceSemester: moment().month() < 6 ? 1 : 2
     })*/
   }
+
 
   /**
    *
@@ -112,8 +125,11 @@ class BriteModel extends BasicModel {
     for (let i = 0; i < userMovements.rows.length; i++) {
       /** @type {Brite} */
       const movement = userMovements.rows[i]
+      const semesterId = movement.semesterId
       const createdAt = moment(movement.created_at)
-      const semesterName = createdAt.year() + "_" + movement.referenceSemester
+
+      // If exists a semesterId use it, otherwise create it from the created_at date
+      const semesterName = semesterId ? semesterId : (createdAt.year() + "_" + movement.referenceSemester)
 
       if (!toReturn[semesterName]) {
         toReturn[semesterName] = {
@@ -123,15 +139,18 @@ class BriteModel extends BasicModel {
         }
       }
 
-      toReturn[semesterName].briteTotal += movement.amountChange
-
       switch (movement.movementType) {
         case BriteMovementTypes.INTEREST_RECAPITALIZED:
         case BriteMovementTypes.DEPOSIT_ADDED:
           toReturn[semesterName].briteAvailable += movement.amountChange
 
+          // Calculate the total brites available only by summing the positive movements
+          toReturn[semesterName].briteTotal += movement.amountChange
+
           break;
-        case BriteMovementTypes.DEPOSIT_COLLECTED: {
+        case BriteMovementTypes.DEPOSIT_COLLECTED:
+        case BriteMovementTypes.DEPOSIT_REMOVED:
+        case BriteMovementTypes.DEPOSIT_TRANSFERED: {
           toReturn[semesterName].briteUsed += movement.amountChange
           toReturn[semesterName].briteAvailable -= movement.amountChange
         }

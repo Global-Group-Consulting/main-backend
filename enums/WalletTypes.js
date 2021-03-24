@@ -1,10 +1,10 @@
-import { BasicEnum } from '@/classes/BasicEnum'
+const {BasicEnum} = require('../classes/BasicEnum')
 
 class WalletTypes extends BasicEnum {
   /**
    * @enum
    */
-  constructor () {
+  constructor() {
     super('WalletTypes')
 
     // Capitale dell'utente
@@ -27,4 +27,4 @@ class WalletTypes extends BasicEnum {
 /**
  * @export {{test: string}}
  */
-export default new WalletTypes()
+module.exports = new WalletTypes()

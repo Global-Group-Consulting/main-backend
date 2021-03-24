@@ -97,7 +97,14 @@ class Request extends Model {
     this.addHook("beforeSave", /** @param {IRequest} data */async (data) => {
       data.files = null
 
-      const lastMovement = await MovementModel.getLast(data.userId)
+      let lastMovement = await MovementModel.getLast(data.userId)
+
+      if (!lastMovement) {
+        lastMovement = {
+          deposit: 0,
+          interestAmountOld: 0
+        }
+      }
 
       // Store the current available amount for future reference
       if ([
@@ -105,11 +112,19 @@ class Request extends Model {
         RequestTypes.RISC_CAPITALE_GOLD,
         RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
+
       } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE].includes(data.type)) {
         data.availableAmount = lastMovement.interestAmountOld
-      } else if (RequestTypes.RISC_PROVVIGIONI === data.type) {
+
+      } else if ([RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
         const commissionMovement = await CommissionModel.find(data.movementId)
+
         data.availableAmount = commissionMovement.currMonthCommissionsOld
+
+      } else if ([RequestTypes.COMMISSION_MANUAL_ADD].includes(data.type)) {
+        const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
+
+        data.availableAmount = commissionMovement.currMonthCommissions
       }
 
       if ([
@@ -123,7 +138,7 @@ class Request extends Model {
 
           const movementData = {
             userId: data.userId,
-            movementType: typeData.movement,
+            movementType: data.initialMovement ? MovementTypes.INITIAL_DEPOSIT : typeData.movement,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate
@@ -142,6 +157,19 @@ class Request extends Model {
           // data.rejectReason = er.message
           // data.status = RequestStatus.RIFIUTATA
 
+          throw new Error("Can't approve the request.", er.message)
+        }
+      } else if (RequestTypes.COMMISSION_MANUAL_ADD === data.type && data.status === RequestStatus.ACCETTATA) {
+        try {
+          const addedCommission = await CommissionModel.manualAdd({
+            amountChange: data.amount,
+            notes: data.notes,
+            userId: data.targetUserId,
+            created_by: data.userId
+          });
+
+          data.movementId = addedCommission._id
+        } catch (er) {
           throw new Error("Can't approve the request.", er.message)
         }
       }
@@ -186,6 +214,15 @@ class Request extends Model {
 
     return this.query()
       .with("user", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+      })
+      .with("targetUser", query => {
         query.setVisible([
           'id',
           'firstName',
@@ -274,6 +311,15 @@ class Request extends Model {
     /** @type {{rows: IRequest[]}} */
     const data = await Request
       .where({userId: {$in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)]}})
+      .with("targetUser", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+      })
       .with("movement")
       .with("conversation")
       .sort(sorting || {"completed_at": -1}).fetch()
@@ -303,6 +349,7 @@ class Request extends Model {
       status: RequestStatus.NUOVA
     })
       .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
+      .with("targetUser", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
       .sort({created_at: -1, type: 1})
       .fetch()
   }
@@ -422,6 +469,10 @@ class Request extends Model {
 
   conversation() {
     return this.hasOne('App/Models/Conversation', "_id", "requestId")
+  }
+
+  targetUser() {
+    return this.belongsTo('App/Models/User', "targetUserId", "_id")
   }
 
   get_id(value) {
