@@ -33,9 +33,14 @@ export interface User extends UserModel {
   'mobile': string,
   'phone': string,
   'contractNumber': string,
+  'contractNumberLegacy': string,
   'contractDate': string,
-  'contractPercentage': string,
+  'contractPercentage': number,
   'contractInitialInvestment': string,
+  'contractInitialInvestmentGold': string,
+  'contractInitialPaymentMethod': string
+  'contractInitialPaymentMethodOther': string
+  'contractSignedAt': string
   'contractSignRequest': SignRequestQuickCreate,
   'contractIban': string,
   'contractBic': string,
@@ -52,6 +57,8 @@ export interface User extends UserModel {
   'hasSubAgents': boolean
   'agentTeamType': typeof AgentTeamType
   'commissionsAssigned': CommissionAssigned[]
+  clubCardNumber: string
+  clubPack: string
 }
 
 export interface CommissionAssigned {

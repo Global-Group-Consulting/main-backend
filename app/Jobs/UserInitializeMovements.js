@@ -1,8 +1,11 @@
 const MovementModel = use("App/Models/Movement")
+const RequestModel = use("App/Models/Request")
 const UserModel = use("App/Models/User")
 const Event = use("Event")
 
-const MovementTypes = require("../../enums/MovementTypes")
+const RequestTypes = require("../../enums/RequestTypes")
+const WalletTypes = require("../../enums/WalletTypes")
+const CurrencyType = require("../../enums/CurrencyType")
 
 module.exports =
   /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
@@ -12,6 +15,7 @@ module.exports =
      */
     const incomingData = job.attrs.data
     const userId = incomingData.userId
+    /** @type {import("../../@types/User").User} */
     const user = await UserModel.find(userId)
     const lastMovement = await MovementModel.getLast(userId)
 
@@ -19,7 +23,24 @@ module.exports =
       throw new Error("User not found")
     }
 
-    if (!lastMovement) {
+    try {
+      const newRequest = await RequestModel.create({
+        amount: user.contractInitialInvestment,
+        userId: user._id,
+        type: RequestTypes.VERSAMENTO,
+        wallet: WalletTypes.DEPOSIT,
+        currency: CurrencyType.EURO,
+        clubCardNumber: user.clubCardNumber,
+        notes: "Versamento iniziale",
+        initialMovement: true
+      })
+
+      job.attrs.result = newRequest.toJSON()
+    } catch (e) {
+      throw new Error("Can't create initial deposit movement. " + e.message)
+    }
+
+    /*if (!lastMovement) {
       try {
         const result = await MovementModel.create({
           userId: user,
@@ -39,7 +60,7 @@ module.exports =
       }
     } else {
       job.attrs.result = "Initial movement already existing"
-    }
+    }*/
 
     if (job.save) {
       await job.save()

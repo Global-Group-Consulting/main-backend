@@ -87,6 +87,12 @@ class User extends Model {
     'roles': [],
     'directPermissions': []
   }
+  static rolesMap = {
+    "admin": "admin",
+    "servClienti": "clients_service",
+    "agente": "agent",
+    "cliente": "client",
+  }
 
   static get computed() {
     return ["id"]
@@ -122,6 +128,7 @@ class User extends Model {
 
     this.addHook('beforeCreate', async (userData) => {
       userData.role = userData.role || UserRoles.CLIENTE
+      userData.roles = [this.rolesMap[UserRoles.get(userData.role).id]]
       userData.personType = userData.personType || PersonTypes.FISICA
 
       userData.files = null
@@ -144,7 +151,7 @@ class User extends Model {
         userInstance.password = await Hash.make(userInstance.password)
       }
 
-      HistoryModel.addChanges(this, userInstance.toJSON())
+      HistoryModel.addChanges(this, userInstance.toObject())
     })
 
   }
@@ -392,7 +399,7 @@ class User extends Model {
     const jsonData = result.toJSON()
 
     return jsonData.map(row => {
-      if(!row.signinLogs || row.signinLogs.length === 0){
+      if (!row.signinLogs || row.signinLogs.length === 0) {
         return row
       }
 
@@ -513,12 +520,16 @@ class User extends Model {
   async full(includeSignLogs = false) {
     const files = await this.accountFiles().fetch()
     const referenceAgentData = await this.referenceAgentData().fetch()
-    const contractFiles = await this.contractFiles().fetch()
+    const initialMovement = await MovementModel.getInitialInvestment(this._id)
 
     const result = this.toJSON()
     result.files = files.toJSON()
     result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
-    result.contractFiles = contractFiles.toJSON()
+
+    if (initialMovement) {
+      result.contractFiles = (await this.contractFiles().fetch()).toJSON()
+    }
+
     result.hasSubAgents = (await this.subAgents().fetch()).rows.length > 0
     result.permissions = await this.permissions()
 
@@ -592,16 +603,28 @@ class User extends Model {
     return value ? value.toString().toLowerCase() : value
   }
 
+  setBirthProvince(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  setBirthDate(value) {
+    return castToIsoDate(value)
+  }
+
+  setLegalRepresentativeCountry(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  setLegalRepresentativeProvince(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
   setReferenceAgent(value) {
     return castToObjectId(value)
   }
 
   setLastChangedBy(value) {
     return castToObjectId(value)
-  }
-
-  setBirthDate(value) {
-    return castToIsoDate(value)
   }
 
   setDocExpiration(value) {

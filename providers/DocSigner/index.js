@@ -1,4 +1,11 @@
-const {ApiClient, DocumentsApi, TemplatesApi, SignrequestQuickCreateApi, Signer} = require('signrequest-client');
+const {
+  ApiClient,
+  DocumentsApi,
+  TemplatesApi,
+  SignrequestQuickCreateApi,
+  Signer,
+  SignrequestsApi
+} = require('signrequest-client');
 const {SignRequestQuickCreate} = require('signrequest-client');
 const {template: _template, snakeCase} = require("lodash")
 
@@ -24,6 +31,7 @@ class DocSigner {
 
     this.DocumentsApi = new DocumentsApi();
     this.TemplatesApi = new TemplatesApi();
+    this.SignrequestsApi = new SignrequestsApi();
     this.SignrequestQuickCreateApi = new SignrequestQuickCreateApi();
   }
 
@@ -118,9 +126,26 @@ class DocSigner {
    *
    * @param {ITemplateConfig} templateConfig
    * @param {IUser} incomingData
+   * @param {string} existingRequest
    * @return {Promise<unknown>}
    */
-  async sendSignRequest(templateConfig, incomingData) {
+  async sendSignRequest(templateConfig, incomingData, existingRequest) {
+
+    // If already exists a sign request, first cancel it and the create the new one
+    if (existingRequest) {
+      try {
+        /**
+         * @type {{detail: "OK", cancelled: boolean}}
+         */
+        const result = await this._call(this.SignrequestsApi, "signrequestsCancelSignrequest", existingRequest.uuid)
+
+        /*if (!result.cancelled) {
+          throw new Error("Can't cancel the current sign request.")
+        }*/
+      } catch (er) {
+        throw er
+      }
+    }
 
     /** @type {ISignRequestQuickCreate} */
     const signRequestData = {
