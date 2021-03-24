@@ -1,8 +1,9 @@
-const {values} = require("lodash")
+const {capitalize} = require("lodash")
 const {Types: MongoTypes} = require("mongoose")
 const moment = require("moment")
-
 const writtenNumber = require('written-number');
+
+const AddressesProvider = use("AddressesProvider")
 
 exports.castToObjectId = function (value) {
   if (!value) {
@@ -91,12 +92,16 @@ exports.formatContractNumber = function (value) {
   return finalValue
 }
 
-exports.formatMoney = function (value) {
+exports.formatMoney = function (value, removeSign = false) {
   if (!value) {
     return value
   }
 
   let num = new Intl.NumberFormat('it-IT', {style: 'currency', currency: 'EUR'}).format(value);
+
+  if (removeSign) {
+    num = num.replace("€", "")
+  }
 
   return num
 }
@@ -127,4 +132,33 @@ exports.formatBirthPlace = function (user) {
   let province = user.birthProvince || user.birthCountry
 
   return `${user.birthCity || ''}` + (province ? `(${province})` : '')
+}
+
+exports.formatPaymentMethod = function (method, otherMethod) {
+  const toReturn = [capitalize(method)]
+
+  if (otherMethod) {
+    toReturn.push(` (${capitalize(otherMethod)})`)
+  }
+
+  return toReturn.join(" ")
+}
+
+exports.formatCountry = async function (countryCode) {
+  const country = await AddressesProvider.getCountry(countryCode)
+
+  return capitalize(country ? country.nativeName : "")
+}
+exports.formatRegion = async function (regionCode) {
+  const region = await AddressesProvider.getRegion(regionCode)
+
+  return capitalize(region || "")
+}
+exports.formatProvince = async function (provinceCode) {
+  const province = await AddressesProvider.getProvince(provinceCode)
+
+  return capitalize(province ? province.nome : "")
+}
+exports.formatCity = async function (cityCode) {
+  return cityCode
 }

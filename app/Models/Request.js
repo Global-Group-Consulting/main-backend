@@ -97,7 +97,14 @@ class Request extends Model {
     this.addHook("beforeSave", /** @param {IRequest} data */async (data) => {
       data.files = null
 
-      const lastMovement = await MovementModel.getLast(data.userId)
+      let lastMovement = await MovementModel.getLast(data.userId)
+
+      if (!lastMovement) {
+        lastMovement = {
+          deposit: 0,
+          interestAmountOld: 0
+        }
+      }
 
       // Store the current available amount for future reference
       if ([
@@ -131,7 +138,7 @@ class Request extends Model {
 
           const movementData = {
             userId: data.userId,
-            movementType: typeData.movement,
+            movementType: data.initialMovement ? MovementTypes.INITIAL_DEPOSIT : typeData.movement,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate

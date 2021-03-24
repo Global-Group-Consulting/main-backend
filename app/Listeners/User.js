@@ -35,7 +35,8 @@ User.onMustRevalidate = async (user) => {
  */
 User.onValidated = async (user) => {
   // send notification to all admin users.
-  Event.emit("notification::userValidated", user)
+  // No more necessary as requested by issue #32
+  // Event.emit("notification::userValidated", user)
 }
 
 User.onApproved = async (user) => {
@@ -44,6 +45,7 @@ User.onApproved = async (user) => {
   const userType = [UserRoles.AGENTE, UserRoles.SERV_CLIENTI].includes(+user.role) ? "admin" : "user"
 
   if (!user.sendOnlyEmail && userType !== "admin") {
+    // Triggers initial movements that will create a request with type new deposit
     await Queue.add("user_initialize_movements", {
       userId: user._id.toString(),
       // added so that the job workers know if the movement must generate agents commission.

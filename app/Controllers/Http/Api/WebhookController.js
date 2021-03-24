@@ -12,6 +12,9 @@ const Event = use("Event")
 
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 
+const {LogicalException} = require('@adonisjs/generic-exceptions')
+
+
 class WebhookController {
   async _onContractSigned(incomingData, signRequest) {
     /** @type {User} */
@@ -21,13 +24,16 @@ class WebhookController {
       throw new Error("Can't find any user")
     }
 
-    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt) {
+    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt && process.env.NODE_ENV !== 'development') {
       return
     }
 
     user.account_status = AccountStatuses.APPROVED
     user.incompleteData = null // reset existing incomplete data
     user.contractSignedAt = new Date(incomingData.timestamp)
+    user.contractDeclinedAt = null
+
+    user.contractStatus = incomingData.event_type
 
     // User model will emit event user::approved
     await user.save()
@@ -53,10 +59,36 @@ class WebhookController {
         subtype: "pdf",
       })
     } catch (er) {
-      throw er
+      if (process.env.NODE_ENV !== 'development') {
+        if (er.response) {
+          throw new LogicalException(er.response.statusText, er.response.status)
+        } else {
+          throw er
+        }
+      } else {
+        console.error(er)
+      }
     }
 
     Event.emit("user::approved", user)
+  }
+
+  async _onContractDeclined(incomingData, signRequest) {
+    /** @type {User} */
+    const user = await signRequest.user().fetch()
+
+    if (!user) {
+      throw new Error("Can't find any user")
+    }
+
+    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt) {
+      return
+    }
+
+    user.contractStatus = incomingData.event_type
+    user.contractDeclinedAt = new Date(incomingData.timestamp)
+
+    await user.save()
   }
 
   async onSignRequest({request, response}) {
@@ -69,8 +101,6 @@ class WebhookController {
     if (!signRequest) {
       throw new Error("Can't find any request that matches this one.")
     }
-
-    const user = await signRequest.user().fetch()
 
     if (!signRequest.hooks) {
       signRequest.hooks = []
@@ -104,6 +134,10 @@ class WebhookController {
     // If the contract is signed by all the required signers, must approve the user and store the contract in S3.
     if (incomingData.event_type === "signed") {
       await this._onContractSigned(incomingData, signRequest)
+    }
+
+    if (incomingData.event_type === "declined") {
+      await this._onContractDeclined(incomingData, signRequest)
     }
 
     return response.ok()
