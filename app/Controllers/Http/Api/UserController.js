@@ -212,7 +212,7 @@ class UserController {
     /*
       If the role changes, i also must update the permissions "roles" field.
      */
-    if (incomingUser.role !== user.role) {
+    if (incomingUser.role && incomingUser.role !== user.role) {
       incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
     }
 
