@@ -42,7 +42,7 @@ class Message extends Model {
 
         // If the message is of type conversation, upsert the conversation and store
         // inside the message, the conversationId
-        if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE].includes(+message.type)) {
+        if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE, MessageTypes.BUG_REPORT].includes(+message.type)) {
           const conversation = await ConversationModel.upsert(message)
 
           message.conversationId = conversation._id
@@ -83,7 +83,7 @@ class Message extends Model {
           receiverId: userId
         },
         {
-          type: { $not: { $eq: MessageTypes.CONVERSATION } }
+          type: { $not: { $in: [MessageTypes.CONVERSATION, MessageTypes.BUG_REPORT] } }
         }
       ]
     })
@@ -118,7 +118,7 @@ class Message extends Model {
             senderId: userId
           },
           {
-            type: { $not: { $eq: MessageTypes.CONVERSATION } }
+            type: { $not: { $in: [MessageTypes.CONVERSATION, MessageTypes.BUG_REPORT] } }
           }
         ]
       })

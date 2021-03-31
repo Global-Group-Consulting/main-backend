@@ -48,6 +48,7 @@ class ConversationController {
 
     switch (+requestedType) {
       case MessageTypes.CONVERSATION:
+      case MessageTypes.BUG_REPORT:
         toReturn = await ConversationModel.getAll(auth.user._id)
 
         break;
@@ -117,7 +118,7 @@ class ConversationController {
 
         break;
       case UserRoles.ADMIN:
-        if (messageType && +messageType === MessageTypes.CONVERSATION) {
+        if (messageType && (+messageType === MessageTypes.CONVERSATION || +messageType === MessageTypes.BUG_REPORT)) {
           const users = await UserModel.getReceiversUsers(auth.user._id)
           toReturn.push(users.toJSON())
         } else {
@@ -257,7 +258,7 @@ class ConversationController {
       newMessage.filesIds = storedFiles.map(_file => _file._id)
     }
 
-    if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE].includes(+incomingData.type)) {
+    if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE, MessageTypes.BUG_REPORT].includes(+incomingData.type)) {
       newMessage.conversationId = conversationId ? conversationId : new MongoTypes.ObjectId()
 
       conversationId = newMessage.conversationId
