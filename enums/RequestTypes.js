@@ -19,6 +19,8 @@ class RequestTypes extends BasicEnum {
     this.RISC_CAPITALE_GOLD = 6
     this.RISC_INTERESSI_BRITE = 7
 
+    this.COMMISSION_MANUAL_ADD = 8
+
     this.data = {
       /*  [this.ADMIN]: {
           id: 'admin',
@@ -51,6 +53,9 @@ class RequestTypes extends BasicEnum {
       [this.RISC_INTERESSI_BRITE]: {
         id: 'risc_interessi_brite',
         movement: MovementTypes.INTEREST_COLLECTED
+      },
+      [this.COMMISSION_MANUAL_ADD]: {
+        id: 'commission_manual_add',
       }
     }
   }

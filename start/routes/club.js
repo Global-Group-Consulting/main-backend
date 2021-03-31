@@ -14,6 +14,9 @@ module.exports = function (Route) {
     Route.post('/:id/use', 'BriteController.use')
       .validator('App/Validators/Club/Use')
 
+    Route.post('/:id/remove', 'BriteController.remove')
+      .validator('App/Validators/Club/Remove')
+
     Route.put('/:id', 'BriteController.update')
       .validator('App/Validators/Club/Update')
 

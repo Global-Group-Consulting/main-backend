@@ -15,7 +15,7 @@ const Event = use("Event")
 
 const MessageTypes = require("../../enums/MessageTypes")
 
-const { castToObjectId, castToNumber } = require("../Helpers/ModelFormatters.js")
+const {castToObjectId, castToNumber} = require("../Helpers/ModelFormatters.js")
 
 class Message extends Model {
   static get computed() {
@@ -42,7 +42,7 @@ class Message extends Model {
 
         // If the message is of type conversation, upsert the conversation and store
         // inside the message, the conversationId
-        if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE].includes(+message.type)) {
+        if ([MessageTypes.CONVERSATION, MessageTypes.BRITE_USE, MessageTypes.BUG_REPORT].includes(+message.type)) {
           const conversation = await ConversationModel.upsert(message)
 
           message.conversationId = conversation._id
@@ -52,7 +52,12 @@ class Message extends Model {
     this.addHook("afterCreate", async (message) => {
       message.files = await Message.getFiles(message.filesIds)
 
-      Event.emit("notification::messageNew", message)
+      const sender = await message.sender().fetch()
+      const payload = message.toJSON()
+
+      payload.senderName = `${sender.firstName} ${sender.lastName}`
+
+      Event.emit("notification::messageNew", payload)
     })
   }
 
@@ -63,7 +68,7 @@ class Message extends Model {
 
     return await FileModel.where(
       {
-        _id: { $in: filesIds }
+        _id: {$in: filesIds}
       }
     ).setVisible(["id", "extname", "clientName", "type", "subtype"])
       .fetch()
@@ -78,17 +83,17 @@ class Message extends Model {
     userId = castToObjectId(userId)
 
     const data = (await Message.where({
-      $and: [
-        {
-          receiverId: userId
-        },
-        {
-          type: { $not: { $eq: MessageTypes.CONVERSATION } }
-        }
-      ]
-    })
-      .sort({ created_at: -1, updated_at: -1, subject: -1 })
-      .fetch()
+        $and: [
+          {
+            receiverId: userId
+          },
+          {
+            type: {$not: {$in: [MessageTypes.CONVERSATION, MessageTypes.BUG_REPORT]}}
+          }
+        ]
+      })
+        .sort({created_at: -1, updated_at: -1, subject: -1})
+        .fetch()
     ).toJSON()
 
     for (const _row of data) {
@@ -109,21 +114,21 @@ class Message extends Model {
 
     /** @type {IMessage[]} */
     const data = (await Message
-      .with("receiver", query => {
-        query.setVisible(["id", "firstName", "lastName", "role"])
-      })
-      .where({
-        $and: [
-          {
-            senderId: userId
-          },
-          {
-            type: { $not: { $eq: MessageTypes.CONVERSATION } }
-          }
-        ]
-      })
-      .sort({ created_at: -1, updated_at: -1, subject: -1 })
-      .fetch()
+        .with("receiver", query => {
+          query.setVisible(["id", "firstName", "lastName", "role"])
+        })
+        .where({
+          $and: [
+            {
+              senderId: userId
+            },
+            {
+              type: {$not: {$in: [MessageTypes.CONVERSATION, MessageTypes.BUG_REPORT]}}
+            }
+          ]
+        })
+        .sort({created_at: -1, updated_at: -1, subject: -1})
+        .fetch()
     ).toJSON()
 
     /** @type {{[key:string] : IMessage}} */
@@ -152,9 +157,9 @@ class Message extends Model {
     return Message.query()
       .where({
         receiverId: castToObjectId(userId),
-        "_id": { $in: castToObjectId(ids) }
+        "_id": {$in: castToObjectId(ids)}
       })
-      .update({ read_at: new Date().toISOString() })
+      .update({read_at: new Date().toISOString()})
   }
 
   conversation() {
@@ -169,7 +174,7 @@ class Message extends Model {
     return this.hasOne("App/Models/User", "receiverId", "_id")
   }
 
-  getId({ _id }) {
+  getId({_id}) {
     return _id.toString()
   }
 

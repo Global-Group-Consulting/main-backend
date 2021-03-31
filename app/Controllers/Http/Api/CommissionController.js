@@ -3,7 +3,18 @@
 /** @type {typeof import('../../../Models/Commission')} */
 const CommissionModel = use('App/Models/Commission')
 
+/** @type {typeof import("../../../Models/Request")} */
+const RequestModel = use("App/Models/Request")
+
+const AclProvider = use('AclProvider')
+const Event = use("Event")
+
 const UserRoles = require("../../../../enums/UserRoles")
+const RequestTypes = require("../../../../enums/RequestTypes")
+const WalletTypes = require("../../../../enums/WalletTypes")
+const CurrencyType = require("../../../../enums/CurrencyType")
+
+const {CommissionsPermissions} = require("../../../Helpers/Acl/enums/commissions.permissions");
 
 class CommissionController {
   async read() {
@@ -74,7 +85,13 @@ class CommissionController {
     const userRole = auth.user.role
     let userId = auth.user._id
 
-    if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+    let hasSubAgents = false
+
+    if(auth.user.role === UserRoles.AGENTE){
+      hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
+    }
+
+    if (([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) || hasSubAgents) && params["id"]) {
       userId = params["id"]
     }
 
@@ -92,6 +109,40 @@ class CommissionController {
     return {
       blocks: result,
       list
+    }
+  }
+
+  async manualAdd({request, params, auth}) {
+    const userId = params.id
+    const currentUser = auth.user._id
+    const data = request.all()
+
+
+    /*
+    If the user has commissions.all:add permission, doesn't require to be approved
+    else if has commissions.team:add must be approved by an admin
+     */
+    if (await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_ALL_ADD], auth)) {
+      return CommissionModel.manualAdd({
+        amountChange: data.amountChange,
+        notes: data.notes,
+        userId,
+        created_by: currentUser
+      });
+    } else {
+      const newRequest = await RequestModel.create({
+        amount: data.amountChange,
+        userId: currentUser,
+        targetUserId: userId,
+        type: RequestTypes.COMMISSION_MANUAL_ADD,
+        wallet: WalletTypes.COMMISION,
+        currency: CurrencyType.EURO,
+        notes: data.notes
+      })
+
+      Event.emit("request::new", newRequest)
+
+      return newRequest
     }
   }
 }

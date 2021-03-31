@@ -72,7 +72,7 @@ async function onMessageNew(message) {
       break;
   }
 
-  const payload = message.toJSON()
+  const payload = message
 
   if (payload.files) {
     delete payload.files
