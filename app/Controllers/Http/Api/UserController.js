@@ -197,7 +197,7 @@ class UserController {
     return (await User.find(params.id)).full(true)
   }
 
-  async update({request, params, auth}) {
+  async update({request, params, auth, response}) {
     const incomingUser = request.only(User.updatableFields)
     const incompleteData = request.input("incompleteData")
     /**
@@ -205,7 +205,16 @@ class UserController {
      */
     const user = await User.find(params.id)
 
-    delete incomingUser.email
+    // If still in draft, allow to change the email
+    if (user.account_status !== AccountStatuses.DRAFT) {
+      delete incomingUser.email
+    } else {
+      const emailExists = await User.where({"email": incomingUser.email, "_id": {$not: {$eq: user._id}}}).first()
+
+      if (emailExists) {
+        throw new UserException("Email already exists")
+      }
+    }
 
     incomingUser.lastChangedBy = auth.user._id
 
@@ -310,15 +319,15 @@ class UserController {
     const user = await this._checkIncomingUser(params.id)
 
     if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(+user.role)) {
-      if (!auth.user.superAdmin) {
-        throw new UserException("You can't perform this action.", UserException.statusCodes.FORBIDDEN)
-      }
+      // if (!auth.user.superAdmin) {
+      throw new UserException("You can't perform this action.", UserException.statusCodes.FORBIDDEN)
+      // }
 
-      const userContract = await user.contractFiles().fetch()
+      /*const userContract = await user.contractFiles().fetch()
 
       if (userContract.rows.length === 0) {
         throw new UserException("User must first have a contract.")
-      }
+      }*/
     }
 
     // Force the user to approved state.
@@ -338,12 +347,13 @@ class UserController {
   async confirmDraft({params, auth, response}) {
     const userId = params.id
     const authUser = auth.user.toJSON()
+    const authUserAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(authUser.role)
 
     const user = await this._checkIncomingUser(userId)
 
     // If user is cliente, then check the reference agent. Only he can change the status.
-    if (user.role === UserRoles.CLIENTE) {
-      if (user.referenceAgent.toString() !== authUser.id) {
+    if ([UserRoles.AGENTE, UserRoles.CLIENTE].includes(user.role)) {
+      if (user.referenceAgent && user.referenceAgent.toString() !== authUser.id && !authUserAdmin) {
         return response.badRequest("Permissions denied.")
       }
 
