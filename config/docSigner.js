@@ -30,7 +30,7 @@ module.exports = {
   },
   templates: {
     mainContract: {
-      uuid: "59ffa1c8-51e1-4378-8c2f-ad40c73dd749",
+      uuid: Env.get("DOC_MODEL_UUID"),
       fields: [
         {
           "text": "${fiscalCode}",
