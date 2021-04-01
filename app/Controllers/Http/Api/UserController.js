@@ -353,7 +353,7 @@ class UserController {
 
     // If user is cliente, then check the reference agent. Only he can change the status.
     if ([UserRoles.AGENTE, UserRoles.CLIENTE].includes(user.role)) {
-      if (user.referenceAgent.toString() !== authUser.id && !authUserAdmin) {
+      if (user.referenceAgent && user.referenceAgent.toString() !== authUser.id && !authUserAdmin) {
         return response.badRequest("Permissions denied.")
       }
 
