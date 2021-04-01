@@ -573,6 +573,22 @@ class User extends Model {
     return value ? value.map(_entry => JSON.parse(_entry)) : []
   }
 
+  getBirthCountry(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  getBirthProvince(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  getLegalRepresentativeCountry(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
+  getLegalRepresentativeProvince(value) {
+    return value ? value.toString().toLowerCase() : value
+  }
+
   // SETTERS
 
   setRole(value) {
