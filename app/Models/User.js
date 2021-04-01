@@ -187,10 +187,10 @@ class User extends Model {
 
     data = await Promise.all(data.map(async (el) => {
       if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(el.role)) {
-        el.signinLogs = await el.fetchSigningLogs()
+        // el.signinLogs = await el.fetchSigningLogs()
       }
 
-      el.clientsCount = await el.clients().count()
+      // el.clientsCount = await el.clients().count()
 
       return el
     }))
