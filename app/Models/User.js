@@ -534,7 +534,7 @@ class User extends Model {
     result.permissions = await this.permissions()
 
     if (includeSignLogs) {
-      result.signinLogs = await this.fetchSigningLogs()
+      // result.signinLogs = await this.fetchSigningLogs()
     }
 
     return result
