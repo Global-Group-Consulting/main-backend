@@ -565,6 +565,23 @@ class UserController {
     return result
   }
 
+  async getSignRequestLogs({params, auth}) {
+    const userId = params.id
+    const authUserAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(auth.user.role)
+
+    if(!authUserAdmin && userId !== auth.user._id.toString()) {
+      throw new UserException("Action not allowed", 401)
+    }
+
+    const user = await User.find(userId)
+
+    if(!user){
+      throw new UserNotFoundException()
+    }
+
+    return user.fetchSigningLogs()
+  }
+
   async resendContract({params, auth}) {
     const userId = params.id
     const authUser = auth.user.toJSON()

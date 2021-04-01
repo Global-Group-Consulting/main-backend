@@ -33,6 +33,7 @@ module.exports = function (Route) {
     Route.post('/:id/importContract', 'UserController.importContract')
     Route.get('/:id/clientsList', 'UserController.getClientsList')
     Route.post('/:id/resendContract', 'UserController.resendContract')
+    Route.get('/:id/contractLogs', 'UserController.getSignRequestLogs')
 
 
    /* Route.post('/:id/status', 'UserController.changeStatus')
