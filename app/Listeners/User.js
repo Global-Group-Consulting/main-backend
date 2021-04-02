@@ -9,6 +9,7 @@ const Env = use("Env")
 const Event = use("Event")
 const Ws = use("Ws")
 const MovementsModel = use("App/Models/Movement")
+const Logger = use("Logger")
 
 const UserRoles = require("../../enums/UserRoles")
 
@@ -42,9 +43,11 @@ User.onValidated = async (user) => {
 User.onApproved = async (user) => {
   // read the existing token or generate a new one
   const token = user.token || await Persona.generateToken(user, 'email')
-  const userType = [UserRoles.AGENTE, UserRoles.SERV_CLIENTI].includes(+user.role) ? "admin" : "user"
+  const userTypeAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)
 
-  if (!user.sendOnlyEmail && userType !== "admin") {
+  if (!user.sendOnlyEmail && !userTypeAdmin) {
+    Logger.info("add job for initializing user movements")
+
     // Triggers initial movements that will create a request with type new deposit
     await Queue.add("user_initialize_movements", {
       userId: user._id.toString(),

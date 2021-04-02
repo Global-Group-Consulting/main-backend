@@ -83,7 +83,7 @@ class Movement extends Model {
     if (data.movementType !== MovementTypes.INITIAL_DEPOSIT) {
       throw new InvalidMovementException("First must be added an initial deposit.")
     } else if (data.amountChange === 0) {
-      throw new InvalidMovementException("The initial deposit can't be 0.")
+      // throw new InvalidMovementException("The initial deposit can't be 0.")
     }
 
     data.deposit = data.amountChange

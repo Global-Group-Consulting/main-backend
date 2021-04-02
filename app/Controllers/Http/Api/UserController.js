@@ -353,16 +353,22 @@ class UserController {
 
     // If user is cliente, then check the reference agent. Only he can change the status.
     if ([UserRoles.AGENTE, UserRoles.CLIENTE].includes(user.role)) {
-      if (user.referenceAgent && user.referenceAgent.toString() !== authUser.id && !authUserAdmin) {
-        return response.badRequest("Permissions denied.")
+      if (!user.contractImported) {
+        if (user.referenceAgent && user.referenceAgent.toString() !== authUser.id && !authUserAdmin) {
+          return response.badRequest("Permissions denied.")
+        }
+
+        const signRequest = await this._prepareAndSendSignRequest(user)
+
+        user.contractSignRequestUuid = signRequest.uuid
+        // I set the state to validate so i won't need the validation by serv_clienti
+        // as requested in issue #32
+        user.account_status = AccountStatuses.VALIDATED
+      } else {
+        // If the contract was imported, i skip the sign request and immediatly activate the user
+
+        user.account_status = AccountStatuses.APPROVED
       }
-
-      const signRequest = await this._prepareAndSendSignRequest(user)
-
-      // I set the state to validate so i won't need the validation by serv_clienti
-      // as requested in issue #32
-      user.account_status = AccountStatuses.VALIDATED
-      user.contractSignRequestUuid = signRequest.uuid
     } else {
       return response.badRequest("User is not CLIENTE.")
     }
@@ -370,7 +376,7 @@ class UserController {
     await user.save()
 
     // I trigger validated as requested by issue #32
-    Event.emit("user::validated", user)
+    Event.emit("user::" + user.account_status, user)
 
     return user.full()
   }
@@ -471,8 +477,6 @@ class UserController {
     user.contractSignedAt = new Date()
     user.contractImported = true
 
-    await user.save()
-
     try {
       // Store the contract file in S3
       await File.store([fileToImport], user._id, user._id, {
@@ -486,6 +490,8 @@ class UserController {
     } catch (er) {
       throw er
     }
+
+    await user.save()
 
     return user.full()
   }
@@ -569,13 +575,13 @@ class UserController {
     const userId = params.id
     const authUserAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(auth.user.role)
 
-    if(!authUserAdmin && userId !== auth.user._id.toString()) {
+    if (!authUserAdmin && userId !== auth.user._id.toString()) {
       throw new UserException("Action not allowed", 401)
     }
 
     const user = await User.find(userId)
 
-    if(!user){
+    if (!user) {
       throw new UserNotFoundException()
     }
 
