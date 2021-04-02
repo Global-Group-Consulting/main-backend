@@ -526,7 +526,7 @@ class User extends Model {
     result.files = files.toJSON()
     result.referenceAgentData = referenceAgentData ? referenceAgentData.toJSON() : null
 
-    if (initialMovement) {
+    if (initialMovement || result.contractImported) {
       result.contractFiles = (await this.contractFiles().fetch()).toJSON()
     }
 
