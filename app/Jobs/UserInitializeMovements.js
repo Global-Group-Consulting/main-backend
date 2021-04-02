@@ -6,6 +6,7 @@ const Event = use("Event")
 const RequestTypes = require("../../enums/RequestTypes")
 const WalletTypes = require("../../enums/WalletTypes")
 const CurrencyType = require("../../enums/CurrencyType")
+const MovementTypes = require("../../enums/MovementTypes")
 
 module.exports =
   /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
@@ -23,19 +24,45 @@ module.exports =
       throw new Error("User not found")
     }
 
-    try {
-      const newRequest = await RequestModel.create({
-        amount: user.contractInitialInvestment,
-        userId: user._id,
-        type: RequestTypes.VERSAMENTO,
-        wallet: WalletTypes.DEPOSIT,
-        currency: CurrencyType.EURO,
-        clubCardNumber: user.clubCardNumber,
-        notes: "Versamento iniziale",
-        initialMovement: true
-      })
+    if(lastMovement){
+      throw new Error("Initial movement already exists")
+    }
 
-      job.attrs.result = newRequest.toJSON()
+    try {
+      /*
+      If the user cont5ract has been imported, generates the initial movement and avoid generating any agent commission,
+      because this is an already existing user.
+       */
+      if (user.contractImported) {
+        const result = await MovementModel.create({
+          userId: user,
+          movementType: MovementTypes.INITIAL_DEPOSIT,
+          amountChange: +user.contractInitialInvestment,
+          interestPercentage: +user.contractPercentage,
+          notes: "Versamento iniziale",
+        })
+
+        job.attrs.result = result.toJSON()
+
+        /* if (incomingData.calcAgentCommissions) {
+              Event.emit("movements::initial", job.attrs.result)
+            }
+        */
+      } else {
+        const newRequest = await RequestModel.create({
+          amount: user.contractInitialInvestment,
+          userId: user._id,
+          type: RequestTypes.VERSAMENTO,
+          wallet: WalletTypes.DEPOSIT,
+          currency: CurrencyType.EURO,
+          clubCardNumber: user.clubCardNumber,
+          notes: "Versamento iniziale",
+          initialMovement: true
+        })
+
+        job.attrs.result = newRequest.toJSON()
+      }
+
     } catch (e) {
       throw new Error("Can't create initial deposit movement. " + e.message)
     }
