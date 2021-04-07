@@ -39,7 +39,7 @@ class AuthController {
        */
       authResult = await auth
         .withRefreshToken()
-        .attempt(email, password)
+        .attempt(email.toLowerCase(), password)
     } catch (e) {
       throw new InvalidLoginException()
     }
@@ -134,7 +134,9 @@ class AuthController {
    * @return {Promise<void>}
    */
   async forgot({request, response}) {
-    const email = request.input('email')
+    let email = request.input('email')
+
+    email = email.toLowerCase()
 
     await User.checkExists("email", email)
 
