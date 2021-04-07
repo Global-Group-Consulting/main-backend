@@ -33,18 +33,20 @@ class AuthController {
     const {email, password} = request.only(['email', 'password'])
     let authResult = null
 
+    const lowerEmail = email.toLowerCase()
+
     try {
       /**
        * @type {AuthResult}
        */
       authResult = await auth
         .withRefreshToken()
-        .attempt(email.toLowerCase(), password)
+        .attempt(lowerEmail, password)
     } catch (e) {
       throw new InvalidLoginException()
     }
 
-    const user = await User.where({email}).first()
+    const user = await User.where({email: lowerEmail}).first()
 
     if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)) {
       throw new InvalidLoginException("Invalid user.")
