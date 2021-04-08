@@ -58,6 +58,10 @@ module.exports = {
           "external_id": "fullName"
         },
         {
+          "text": "${contractPercentage}",
+          "external_id": "perc"
+        },
+        {
           "text": "${businessName}",
           "external_id": "businessName"
         },

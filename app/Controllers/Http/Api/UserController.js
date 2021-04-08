@@ -90,6 +90,7 @@ class UserController {
       email: userData.email,
       contractNumber: formatContractNumber(userData.contractNumber),
       contractDate: formatDate(moment()),
+      contractPercentage: userData.contractPercentage,
 
       // dati persona giuridica
       businessName: userData.businessName,
