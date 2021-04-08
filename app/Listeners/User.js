@@ -85,11 +85,11 @@ User.onUpdate = async (user) => {
 }
 
 User.onFirstLogin = async (user) => {
-  const movement = await MovementsModel.getInitialInvestment(user._id)
+  // const movement = await MovementsModel.getInitialInvestment(user._id)
 
-  if(!movement){
+  /*if(!movement){
     throw new Error("Seems that there is no initial movement for the current user.")
   }
 
-  await addAgentCommission(user, movement._id)
+  await addAgentCommission(user, movement._id)*/
 }
