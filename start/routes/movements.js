@@ -4,6 +4,9 @@ module.exports = function (Route) {
 
     Route.get('/status/:id?', "MovementController.currentStatus")
 
+    Route.get('/list/:id?', "MovementController.getList")
+
+
     Route.get('/:id', "MovementController.read")
       .validator("Movements/Read")
 

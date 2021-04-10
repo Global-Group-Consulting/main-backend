@@ -4,7 +4,6 @@
  * @typedef {import("../../../../@types/HttpResponse").AdonisHttpResponse} AdonisHttpResponse
  */
 
-
 /** @type {typeof import("../../../Models/User")} */
 const User = use('App/Models/User')
 const Token = use('App/Models/Token')
@@ -15,18 +14,24 @@ const SignRequestModel = use('App/Models/SignRequest')
 const DocSigner = use("DocSigner")
 const Config = use("Config")
 
+const AclProvider = use("AclProvider")
+
 /** @type {typeof import("../../../Models/History")} */
 const HistoryModel = use('App/Models/History')
 
 const Persona = use('Persona')
 const Event = use('Event')
+const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
+
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 const UserRoles = require("../../../../enums/UserRoles")
 const PersonTypes = require("../../../../enums/PersonTypes")
-const UserNotFoundException = use("App/Exceptions/UserNotFoundException")
+const {UsersPermissions} = require("../../../Helpers/Acl/enums/users.permissions")
 
 /** @type {import("../../../Exceptions/UserException")} */
 const UserException = use("App/Exceptions/UserException")
+/** @type {import("../../../Exceptions/Acl/AclGenericException")} */
+const AclGenericException = use("App/Exceptions/Acl/AclGenericException")
 
 const moment = require("moment")
 
@@ -268,7 +273,7 @@ class UserController {
   async delete({params}) {
     const user = await User.find(params.id)
 
-    await user.delete()
+    // await user.delete()
   }
 
   /**
@@ -557,19 +562,26 @@ class UserController {
     return await User.where({account_status: AccountStatuses.VALIDATED}).fetch()
   }
 
-  async getClientsList({request, auth}) {
+  async getClientsList({params, auth}) {
     const user = auth.user
     const userRole = +auth.user.role
-    const userId = request.params.id
+    const userId = params.id
 
-    /*
-    Should check if the client belongs to the logged agent if is a agent,
-    or the user is an admin
-     */
+    if (!(await AclProvider.checkPermissions([UsersPermissions.ACL_USERS_TEAM_READ, UsersPermissions.ACL_USERS_ALL_READ], auth))) {
+      throw new AclGenericException("Not enough permissions", AclGenericException.statusCodes.FORBIDDEN)
+    }
 
-    const result = await User.getClientsList(userId)
+    // The user is an agent, otherwise this call is useless
+    const subAgentsList = await User.getTeamAgents(userId, true )
+    const authUserIsParent = subAgentsList.find(el => el._id.toString() === userId)
 
-    return result
+    if (!authUserIsParent) {
+      throw new AclGenericException("Not enough permissions", AclGenericException.statusCodes.FORBIDDEN)
+    }
+
+    const subAgentsIdList = subAgentsList.map(el => el._id.toString())
+
+    return await User.getClientsList(userId, subAgentsIdList)
   }
 
   async getSignRequestLogs({params, auth}) {

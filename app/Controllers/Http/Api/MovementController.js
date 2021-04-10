@@ -9,21 +9,27 @@ const CommissionModel = use("App/Models/Commission")
 const UserModel = use("App/Models/User")
 const Database = use('Database')
 
+/** @type {import("../../../../@types/Acl/AclProvider").AclProvider} */
+const AclProvider = use('AclProvider')
+
 const MovementTypes = require("../../../../enums/MovementTypes")
 const UserRoles = require('../../../../enums/UserRoles')
 const MovementErrorException = require('../../../Exceptions/MovementErrorException')
 const MovementError = require("../../../Exceptions/MovementErrorException")
+const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
 
-const { parse: parseCsv } = require("csv")
-const { readFileSync } = require("fs")
-const { Types: MongoTypes } = require("mongoose")
+const {parse: parseCsv} = require("csv")
+const {readFileSync} = require("fs")
+const {Types: MongoTypes} = require("mongoose")
 const moment = require("moment")
+
+const {MovementsPermissions} = require("../../../Helpers/Acl/enums/movements.permissions");
 
 /** @type {typeof import("../../../Exceptions/ImportException")} */
 const ImportException = use("App/Exceptions/ImportException")
 
 class MovementController {
-  async read({ auth, params }) {
+  async read({auth, params}) {
     const userRole = +auth.user.role
     const forId = params["id"]
     let userId = auth.user._id
@@ -35,15 +41,15 @@ class MovementController {
     return await MovementModel.getAll(userId)
   }
 
-  async add({ request, response }) {
+  async add({request, response}) {
     /**
      * @type {import("../../../../@types/Movement.d").AddMovementDto}
      */
     const data = request.all()
 
     if ([MovementTypes.CANCEL_INTEREST_COLLECTED,
-    MovementTypes.CANCEL_DEPOSIT_COLLECTED,
-    MovementTypes.CANCEL_COMMISSION_COLLECTED].includes(+data.movementType)) {
+      MovementTypes.CANCEL_DEPOSIT_COLLECTED,
+      MovementTypes.CANCEL_COMMISSION_COLLECTED].includes(+data.movementType)) {
       throw new MovementErrorException("Can't add this type of movement.")
     }
 
@@ -57,7 +63,7 @@ class MovementController {
     return newMovement
   }
 
-  async cancel({ request, params, response }) {
+  async cancel({request, params, response}) {
     const reason = request.input("reason")
     const movementId = params["id"]
 
@@ -70,7 +76,7 @@ class MovementController {
       throw new MovementError("Movement not found.")
     }
 
-    const movementCancelRef = await MovementModel.where({ cancelRef: movementRef._id }).first()
+    const movementCancelRef = await MovementModel.where({cancelRef: movementRef._id}).first()
 
     if (movementCancelRef) {
       throw new MovementError("Movement already canceled.")
@@ -104,7 +110,7 @@ class MovementController {
    * @param {{auth: {user: {id: string}}}} param0
    * @returns {{deposit:number, interestAmount:number, interestPercentage:number}}
    */
-  async currentStatus({ params, auth }) {
+  async currentStatus({params, auth}) {
     let userId = auth.user._id
     let userRole = +auth.user.role
 
@@ -135,7 +141,7 @@ class MovementController {
    *  response: import("../../../../@types/HttpResponse").AdonisHttpResponse
    * }} param0
    */
-  async import({ request, auth, response }) {
+  async import({request, auth, response}) {
     if (!auth.user || ![UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)) {
       return response.unauthorized()
     }
@@ -190,6 +196,25 @@ class MovementController {
     const insertResult = await db.collection("movements").insertMany(csvData.movementsList)
 
     return insertResult.ops
+  }
+
+  async getList({params, auth}) {
+    let user = auth.user
+    const userRole = user.role
+    let userId = params.id || user._id.toString()
+    let hasSubAgents = false
+
+    // If is required data for a different user than the logged one
+    // Must check permissions
+    if (userId !== user._id.toString()) {
+      if (!(await AclProvider.checkPermissions([MovementsPermissions.ACL_MOVEMENTS_ALL_READ, MovementsPermissions.ACL_MOVEMENTS_TEAM_READ], auth))) {
+        throw new AclGenericException("Not enough permissions", AclGenericException.statusCodes.FORBIDDEN)
+      }
+
+      user = await UserModel.find(userId)
+    }
+
+    return await MovementModel.getAll(user._id)
   }
 
   /**

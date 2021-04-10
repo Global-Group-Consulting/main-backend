@@ -39,6 +39,11 @@ class DocController {
   }
 
   async _fillPdf(src, dest, data) {
+
+    /**
+     * Sembra essere necessari la presenza di https://www.pdflabs.com/tools/pdftk-the-pdf-toolkit/
+     * pdf toolkit
+     */
     return new Promise((resolve, reject) => {
       pdfFiller.fillFormWithFlatten(src, dest, data, true, function (err) {
         if (err) {

@@ -31,14 +31,17 @@ module.exports = function (Route) {
     Route.post('/:id/incomplete', 'UserController.incomplete')
     Route.post('/:id/validate', 'UserController.validate')
     Route.post('/:id/importContract', 'UserController.importContract')
+
     Route.get('/:id/clientsList', 'UserController.getClientsList')
+      .validator('users/UserRead')
+
     Route.post('/:id/resendContract', 'UserController.resendContract')
     Route.get('/:id/contractLogs', 'UserController.getSignRequestLogs')
 
 
-   /* Route.post('/:id/status', 'UserController.changeStatus')
-      .validator('users/UserChangeStatus')
-      .middleware("authSuperAdmin")*/
+    /* Route.post('/:id/status', 'UserController.changeStatus')
+       .validator('users/UserChangeStatus')
+       .middleware("authSuperAdmin")*/
 
 
   }).prefix('/api/users')

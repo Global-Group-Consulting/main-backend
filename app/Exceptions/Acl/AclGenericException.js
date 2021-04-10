@@ -7,9 +7,11 @@ const defaultMessage = "Can't execute the required action"
 
 class AclGenericException extends LogicalException {
   /**
-   * Handle this exception by itself
+   * @returns {typeof StatusCodes}
    */
-  // handle () {}
+  static get statusCodes() {
+    return StatusCodes
+  }
 
   constructor(message = defaultMessage, status = StatusCodes.BAD_REQUEST) {
     super(message, status)

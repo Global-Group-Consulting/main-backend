@@ -7,7 +7,7 @@ class UserRead {
 
   get rules () {
     return {
-      'id': 'required|idExists'
+      'id': 'required'
     }
   }
 }
