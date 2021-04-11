@@ -36,7 +36,7 @@ export type RecursiveJob = {
 
 export interface QueueFileConfig {
   jobsPath: string,
-  queuesList: QueuesListConfig,
+  queuesList: QueuesListConfig[],
   recursiveJobs: [RecursiveJob]
 }
 
