@@ -24,7 +24,11 @@ class WebhookController {
       throw new Error("Can't find any user")
     }
 
-    if (user.account_status === AccountStatuses.APPROVED && user.contractSignedAt && process.env.NODE_ENV !== 'development') {
+    if (user.account_status === AccountStatuses.APPROVED
+      && user.contractSignedAt
+      && user.contractStatus !== incomingData.event_type
+      //&& process.env.NODE_ENV !== "development"
+    ) {
       return
     }
 
@@ -59,15 +63,15 @@ class WebhookController {
         subtype: "pdf",
       })
     } catch (er) {
-      if (process.env.NODE_ENV !== 'development') {
+      // if (process.env.NODE_ENV !== 'development') {
         if (er.response) {
           throw new LogicalException(er.response.statusText, er.response.status)
         } else {
           throw er
         }
-      } else {
+      /*} else {
         console.error(er)
-      }
+      }*/
     }
 
     Event.emit("user::approved", user)
@@ -114,6 +118,9 @@ class WebhookController {
       }
     }
 
+    // trying to handle the case where the hook is called more than once
+    let replacingExistingEvent = false
+
     // In some cases the signer can be empty, so i handle it.
     if (incomingData.signer) {
       const existingSameEventIndex = signRequest.hooks.findIndex(_hook => _hook.event_type === incomingData.event_type
@@ -121,6 +128,7 @@ class WebhookController {
 
       // If already exists the same event, i replace it with the new one.
       if (existingSameEventIndex > -1) {
+        replacingExistingEvent = true
         signRequest.hooks.splice(existingSameEventIndex, 1, dataToAdd)
       } else {
         signRequest.hooks.push(dataToAdd)
@@ -132,7 +140,7 @@ class WebhookController {
     signRequest.save()
 
     // If the contract is signed by all the required signers, must approve the user and store the contract in S3.
-    if (incomingData.event_type === "signed") {
+    if (incomingData.event_type === "signed" && !replacingExistingEvent) {
       await this._onContractSigned(incomingData, signRequest)
     }
 

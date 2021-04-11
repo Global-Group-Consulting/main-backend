@@ -53,7 +53,7 @@ User.onApproved = async (user) => {
       userId: user._id.toString(),
       // added so that the job workers know if the movement must generate agents commission.
       // This may not be the case when importing a movements list.
-      calcAgentCommissions: typeof user.calcAgentCommissions === "boolean" ? user.calcAgentCommissions : true
+      calcAgentCommissions: (typeof user.calcAgentCommissions === "boolean" ? user.calcAgentCommissions : true)
     })
   }
 
