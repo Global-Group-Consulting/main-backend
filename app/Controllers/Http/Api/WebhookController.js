@@ -1,6 +1,6 @@
 'use strict'
 
-/** @typedef {import("../../../Models/User")} User */
+/** @typedef {typeof import("../../../Models/User")} User */
 
 /** @type {User} */
 const UserModel = use("App/Models/User")
@@ -18,15 +18,14 @@ const {LogicalException} = require('@adonisjs/generic-exceptions')
 class WebhookController {
   async _onContractSigned(incomingData, signRequest) {
     /** @type {User} */
-    const user = await signRequest.user().fetch()
+    const user =  await signRequest.user().fetch()
 
     if (!user) {
       throw new Error("Can't find any user")
     }
 
-    if (user.account_status === AccountStatuses.APPROVED
+    if (user.account_status !== AccountStatuses.VALIDATED
       && user.contractSignedAt
-      && user.contractStatus !== incomingData.event_type
       //&& process.env.NODE_ENV !== "development"
     ) {
       return
@@ -121,18 +120,12 @@ class WebhookController {
     // trying to handle the case where the hook is called more than once
     let replacingExistingEvent = false
 
-    // In some cases the signer can be empty, so i handle it.
-    if (incomingData.signer) {
-      const existingSameEventIndex = signRequest.hooks.findIndex(_hook => _hook.event_type === incomingData.event_type
-        && _hook.signer.email === incomingData.signer.email)
+    const existingSameEventIndex = signRequest.hooks.findIndex(_hook => _hook.event_type === incomingData.event_type)
 
-      // If already exists the same event, i replace it with the new one.
-      if (existingSameEventIndex > -1) {
-        replacingExistingEvent = true
-        signRequest.hooks.splice(existingSameEventIndex, 1, dataToAdd)
-      } else {
-        signRequest.hooks.push(dataToAdd)
-      }
+    // If already exists the same event, i replace it with the new one.
+    if (existingSameEventIndex > -1) {
+      replacingExistingEvent = true
+      signRequest.hooks.splice(existingSameEventIndex, 1, dataToAdd)
     } else {
       signRequest.hooks.push(dataToAdd)
     }
