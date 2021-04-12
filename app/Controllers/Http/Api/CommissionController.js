@@ -6,13 +6,19 @@ const CommissionModel = use('App/Models/Commission')
 /** @type {typeof import("../../../Models/Request")} */
 const RequestModel = use("App/Models/Request")
 
+/** @type {typeof import("../../../Models/User")} */
+const UserModel = use("App/Models/User")
+
+/** @type {import("../../../../@types/Acl/AclProvider").AclProvider} */
 const AclProvider = use('AclProvider')
 const Event = use("Event")
+
 
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestTypes = require("../../../../enums/RequestTypes")
 const WalletTypes = require("../../../../enums/WalletTypes")
 const CurrencyType = require("../../../../enums/CurrencyType")
+const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
 
 const {CommissionsPermissions} = require("../../../Helpers/Acl/enums/commissions.permissions");
 
@@ -87,7 +93,7 @@ class CommissionController {
 
     let hasSubAgents = false
 
-    if(auth.user.role === UserRoles.AGENTE){
+    if (auth.user.role === UserRoles.AGENTE) {
       hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
     }
 
@@ -104,12 +110,36 @@ class CommissionController {
      */
 
     const result = await CommissionModel.getStatistics(userId)
-    const list = await CommissionModel.getAll(userId)
+    // const list = await CommissionModel.getAll(userId)
 
     return {
       blocks: result,
-      list
+      // list
     }
+  }
+
+  async getList({params, auth}) {
+    let user = auth.user
+    const userRole = user.role
+    let userId = params.id || user._id.toString()
+    let hasSubAgents = false
+
+    // If is required data for a different user than the logged one
+    // Must check permissions
+    if (userId !== user._id.toString()) {
+      if (!(await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_ALL_READ, CommissionsPermissions.COMMISSIONS_TEAM_READ], auth))) {
+        throw new AclGenericException("Not enough permissions", AclGenericException.statusCodes.FORBIDDEN)
+      }
+
+      user = await UserModel.find(userId)
+
+      // Dovrei fare un controllo se l'utente fa parte dei suoi agenti, altrimenti dovrei bloccare tutto
+      /*if (user.role === UserRoles.AGENTE) {
+        hasSubAgents = (await user.subAgents().count())
+      }*/
+    }
+
+    return await CommissionModel.getAll(user._id)
   }
 
   async manualAdd({request, params, auth}) {
