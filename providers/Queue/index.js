@@ -1,3 +1,6 @@
+/** @typedef {import("../../@types/QueueProvider/index.d").QueuesListConfig} QueuesListConfig */
+/** @typedef {import("../../@types/QueueProvider/index.d").QueuesList} QueuesList */
+
 const Agenda = require("agenda");
 const mongoUriBuilder = require('mongo-uri-builder');
 const {upperFirst, camelCase} = require("lodash");
@@ -11,7 +14,7 @@ let agendaInstance = null
 
 class Queue {
   /**
-   * @param {Adonis.ConfigExt} Config
+   * @param {Adonis.Config} Config
    */
   constructor(Config) {
     const appMongoConnection = Config.get("database.mongodb")
@@ -68,6 +71,9 @@ class Queue {
    * @private
    */
   async _start() {
+    /**
+     * @type {{}}
+     */
     const queuesList = this.Config.get("queue.queuesList")
 
     for (const queueName in queuesList) {
@@ -121,7 +127,11 @@ class Queue {
       await this._rescheduleCronJob(job)
     })
 
-    this._agenda.on("fail", async /** @param {QueueProvider.Job} job */(err, job) => {
+    this._agenda.on("fail", /**
+     @param err
+     @param {QueueProvider.Job} job
+     */
+    async (err, job) => {
       Logger.info(["Job COMPLETED FAILING", job.attrs.name, err].join(" - "))
 
       await this._rescheduleCronJob(job)
@@ -159,13 +169,13 @@ class Queue {
    * @public
    *
    * @param {QueueProvider.List} queueName
-   * @param {{}} [data]
+   * @param {{createdAt: any}} [data]
    * @returns {Promise<QueueProvider.Job>}
    */
   async add(queueName, data) {
     await this._checkQueueExistence(queueName)
 
-    data.cratedAt = new Date()
+    data.createdAt = new Date()
 
     return await this._agenda.now(queueName, data);
   }
@@ -175,13 +185,13 @@ class Queue {
    *
    * @param {string} when - @see https://github.com/matthewmueller/date#examples
    * @param {QueueProvider.List[] | QueueProvider.List} queueName
-   * @param {{}} [data]
+   * @param {{createdAt: any}} [data]
    * @returns {Promise<QueueProvider.Job>}
    */
   async schedule(when, queueName, data) {
     await this._checkQueueExistence(queueName)
 
-    data.cratedAt = new Date()
+    data.createdAt = new Date()
 
     // @ts-ignore
     return await this._agenda.schedule(when, queueName, data);

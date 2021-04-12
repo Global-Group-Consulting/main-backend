@@ -186,11 +186,9 @@ class User extends Model {
     data = data.rows
 
     data = await Promise.all(data.map(async (el) => {
-      if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(el.role)) {
-        // el.signinLogs = await el.fetchSigningLogs()
+      if ([UserRoles.AGENTE].includes(el.role)) {
+        el.clientsCount = await el.clients().count()
       }
-
-      // el.clientsCount = await el.clients().count()
 
       return el
     }))
@@ -323,16 +321,26 @@ class User extends Model {
   /**
    * Return the full list of agent's clients
    *
-   * @param agentId
+   * @param {string} agentId
+   * @param {string[]} subAgentsIdList
    * @returns {Promise<User[]>}
    */
-  static async getClientsList(agentId) {
-    const agent = await this.find(agentId)
+  static async getClientsList(agentId, subAgentsIdList = []) {
+    if (subAgentsIdList.length === 0 || subAgentsIdList.indexOf(agentId) === -1) {
+      subAgentsIdList.push(agentId)
+    }
 
-    const result = await agent.clients().fetch()
+    const result = await this.where({
+      referenceAgent: {$in: subAgentsIdList.map(id => castToObjectId(id))}
+    })
+      .with("referenceAgentData")
+      .sort({role: 1, _id: 1})
+      .fetch()
 
     return Promise.all(result.rows.map(async (el) => {
-      el.clientsCount = await el.clients().count()
+      if (el.role === UserRoles.AGENTE) {
+        el.clientsCount = await el.clients().count()
+      }
 
       return el
     }))
@@ -348,33 +356,33 @@ class User extends Model {
 
   /**
    *
-   * @param {User} agent
+   * @param {User | string} agent
    * @param {boolean} includeReferenceAgentData=false
    * @returns {Promise<typeof User[]>}
    */
   static async getTeamAgents(agent, includeReferenceAgentData = false) {
-    const agentId = agent._id
+    let agentId
+
+    if (typeof agent === "string") {
+      agent = await this.find(agent)
+    }
+
+    agentId = agent._id
 
     /**
      * @type {VanillaSerializer}
      */
-    const directSubAgents = await this.where({"referenceAgent": agentId, role: UserRoles.AGENTE}).fetch()
+    const directSubAgents = await this.where({"referenceAgent": agentId, role: UserRoles.AGENTE})
+      .with("referenceAgentData")
+      .fetch()
     const toReturn = []
 
-    agent["clientsCount"] = await agent.clients().count()
+    // agent["clientsCount"] = await agent.clients().count()
 
-    if (includeReferenceAgentData) {
-      if (agent.referenceAgent) {
-        agent["referenceAgentData"] = await agent.referenceAgentData().fetch()
-
-        toReturn.push(agent)
-      }
-    } else {
-      toReturn.push(agent)
-    }
+    toReturn.push(agent)
 
     /*
-     While there are subAgents, cycle throw each one and return it's sub agents, if any
+     While there are subAgents, cycle thru each one and return it's sub agents, if any
      */
     for (const subAgent of directSubAgents.rows) {
       // I should avoid recursive call and use a while instead
