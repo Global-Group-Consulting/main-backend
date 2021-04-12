@@ -40,11 +40,11 @@ class DashboardController {
 
   async getForAdmin(user) {
     const pendingRequests = await RequestsModel.getPendingOnes(user.role)
-    const pendingSignatures = await UserModel.getPendingSignatures()
+    //const pendingSignatures = await UserModel.getPendingSignatures()
 
     return {
       pendingRequests,
-      pendingSignatures
+      //pendingSignatures
     }
   }
 

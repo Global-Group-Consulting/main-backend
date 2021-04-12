@@ -221,6 +221,14 @@ class Request extends Model {
           'email',
           'contractNumber'
         ])
+          .with("referenceAgentData", q => {
+            q.setVisible([
+              'id',
+              'firstName',
+              'lastName',
+              'email',
+            ])
+          })
       })
       .with("targetUser", query => {
         query.setVisible([
@@ -348,7 +356,15 @@ class Request extends Model {
     return await Request.where({
       status: RequestStatus.NUOVA
     })
-      .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
+      .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"])
+        .with("referenceAgentData", q => {
+          q.setVisible([
+            'id',
+            'firstName',
+            'lastName',
+            'email',
+          ])
+        }))
       .with("targetUser", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
       .sort({created_at: -1, type: 1})
       .fetch()
