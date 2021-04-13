@@ -7,7 +7,6 @@ const Persona = use('Persona')
 const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
 const AccountStatuses = require('../../../../enums/AccountStatuses')
 
-
 /**
  * @typedef AuthResult
  * @property {string} type
@@ -84,9 +83,9 @@ class AuthController {
   }
 
   async refresh({request, auth}) {
-    const refreshToken = request.input('refresh_token')
+    const refreshToken = request.input('refreshToken')
 
-    const newToken = await auth.generateForRefreshToken(refreshToken.split(' ')[1], true)
+    const newToken = await auth.generateForRefreshToken(refreshToken, true)
 
     return newToken
   }
