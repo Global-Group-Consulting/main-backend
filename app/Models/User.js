@@ -599,6 +599,10 @@ class User extends Model {
 
   // SETTERS
 
+  setEmail(value){
+    return value ? value.toString().toLowerCase() : value
+  }
+
   setRole(value) {
     return castToNumber(value)
   }
