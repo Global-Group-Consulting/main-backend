@@ -354,7 +354,7 @@ class Request extends Model {
    */
   static async getPendingOnes(userRole) {
     return await Request.where({
-      status: RequestStatus.NUOVA
+      status: {$in: [RequestStatus.NUOVA, RequestStatus.LAVORAZIONE]}
     })
       .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"])
         .with("referenceAgentData", q => {
@@ -366,7 +366,7 @@ class Request extends Model {
           ])
         }))
       .with("targetUser", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"]))
-      .sort({created_at: -1, type: 1})
+      .sort({status: 1, created_at: -1, type: 1})
       .fetch()
   }
 
