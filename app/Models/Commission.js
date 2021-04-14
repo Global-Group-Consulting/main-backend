@@ -181,11 +181,13 @@ class Commission extends Model {
       case CommissionType.NEW_DEPOSIT:
       case CommissionType.TOTAL_DEPOSIT:
       case CommissionType.MANUAL_ADD:
+      case CommissionType.MANUAL_TRANSFER:
         dataToCreate.currMonthCommissions += data.amountChange
 
         break
       case CommissionType.COMMISSIONS_TO_REINVEST:
       case CommissionType.COMMISSIONS_COLLECTED:
+      case CommissionType.MANUAL_TRANSFER_DONER:
         dataToCreate.currMonthCommissions -= dataToCreate.amountChange
 
         break;
@@ -315,12 +317,34 @@ class Commission extends Model {
 
   /**
    *
-   * @param {{amountChange: number, notes: string, userId: ObjectId, created_by: ObjectId}} data
+   * @param {{amountChange: number, notes: string, userId: ObjectId, created_by: ObjectId,
+   * commissionType: string,
+   * referenceAgent: string,
+   * refAgentAvailableAmount: number}} data
    * @returns {Promise<void>}
    */
   static async manualAdd(data) {
     // get the user new deposit
     const lastCommission = await this._getLastCommission(data.userId)
+
+    // If whe are transfering commissions from another agent, first i create a movement for the doner agent
+    if (data.commissionType === CommissionType.MANUAL_TRANSFER) {
+      await this._create({
+        movementId: null,
+        userId: data.referenceAgent,
+        clientId: null,
+        commissionType: CommissionType.MANUAL_TRANSFER_DONER,
+        availableAmount: data.refAgentAvailableAmount,
+        dateReference: moment().toDate(),
+        amountChange: data.amountChange,
+        commissionOnValue: null,
+        commissionPercentage: null,
+        indirectCommission: false,
+        teamCommissionType: "",
+        requestId: data.requestId,
+        created_by: data.created_by
+      }, (await this._getLastCommission(data.referenceAgent)));
+    }
 
     // create the movement in the database
     // use that date as the date of the commission movement,
@@ -329,7 +353,9 @@ class Commission extends Model {
       movementId: null,
       userId: data.userId,
       clientId: null,
-      commissionType: CommissionType.MANUAL_ADD,
+      commissionType: data.commissionType || CommissionType.MANUAL_ADD,
+      referenceAgent: data.referenceAgent,
+      refAgentAvailableAmount: data.refAgentAvailableAmount,
       dateReference: moment().toDate(),
       amountChange: data.amountChange,
       commissionOnValue: null,
@@ -436,6 +462,16 @@ class Commission extends Model {
     return newCommissionMovement
   }
 
+  static async getAvailableCommissions(userId) {
+    if (!userId) {
+      return 0
+    }
+
+    const lastCommission = await this._getLastCommission(userId)
+
+    return lastCommission ? lastCommission.currMonthCommissions : 0
+  }
+
   static async getStatistics(userId) {
     // for the current state i get the last movement which will contain
     // totalCommissions, that represent the current amount of available commissions.
@@ -471,6 +507,10 @@ class Commission extends Model {
   }
 
   setUserId(value) {
+    return castToObjectId(value)
+  }
+
+  setReferenceAgent(value) {
     return castToObjectId(value)
   }
 

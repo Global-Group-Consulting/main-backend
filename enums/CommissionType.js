@@ -10,6 +10,8 @@ class AccountStatuses extends BasicEnum {
     this.TOTAL_DEPOSIT = "totalDeposit"
     this.ANNUAL_DEPOSIT = "annualDeposit"
     this.MANUAL_ADD = "manualAdd"
+    this.MANUAL_TRANSFER = "manualTransfer"
+    this.MANUAL_TRANSFER_DONER = "manualTransferDoner"
     this.COMMISSIONS_REINVESTMENT = "commissionsReinvestment"
     this.COMMISSIONS_COLLECTED = "commissionsCollected"
     this.CANCEL_COMMISSIONS_COLLECTED = "cancelCommissionsCollected"
@@ -29,6 +31,12 @@ class AccountStatuses extends BasicEnum {
       },
       [this.MANUAL_ADD]: {
         id: this.MANUAL_ADD,
+      },
+      [this.MANUAL_TRANSFER]: {
+        id: this.MANUAL_TRANSFER,
+      },
+      [this.MANUAL_TRANSFER_DONER]: {
+        id: this.MANUAL_TRANSFER_DONER,
       },
       [this.COMMISSIONS_REINVESTMENT]: {
         id: "commissionsReinvestment",
