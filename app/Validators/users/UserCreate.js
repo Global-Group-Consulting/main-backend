@@ -2,7 +2,7 @@
 
 const UseRoles = require("../../../enums/UserRoles")
 
-const requiredForUsers = `required_when:role,${UseRoles.CLIENTE}|required_when:role,${UseRoles.CLIENTE}`
+const requiredForUsers = `required_when:role,${UseRoles.CLIENTE}|required_when:role,${UseRoles.AGENTE}`
 class UserCreate {
   get rules() {
     return {
@@ -10,7 +10,6 @@ class UserCreate {
       firstName: 'required',
       lastName: 'required',
       contractPercentage: `${requiredForUsers}|number`,
-      contractInitialInvestment: `${requiredForUsers}|number`,
       role: 'number',
     }
   }
