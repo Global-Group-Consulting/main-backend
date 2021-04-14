@@ -18,9 +18,13 @@ const UserRoles = require("../../../../enums/UserRoles")
 const RequestTypes = require("../../../../enums/RequestTypes")
 const WalletTypes = require("../../../../enums/WalletTypes")
 const CurrencyType = require("../../../../enums/CurrencyType")
+const CommissionType = require("../../../../enums/CommissionType")
 const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
 
 const {CommissionsPermissions} = require("../../../Helpers/Acl/enums/commissions.permissions");
+
+
+const {castToObjectId} = require("../../../Helpers/ModelFormatters")
 
 class CommissionController {
   async read() {
@@ -142,20 +146,57 @@ class CommissionController {
     return await CommissionModel.getAll(user._id)
   }
 
+  async getAvailable({params, auth}) {
+    const authUser = auth.user
+    const authAdminUser = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(authUser.role)
+    let userId = params.id
+
+    // Dovrei controllare che l'authuser sia davvero un agente sopra l'agente a cui ci si riferisce
+
+    return CommissionModel.getAvailableCommissions(userId)
+  }
+
   async manualAdd({request, params, auth}) {
     const userId = params.id
     const currentUser = auth.user._id
+    /**
+     * @property {string} amountChange
+     * @property {string} amountAvailable
+     * @property {string} notes
+     * @property {string} commissionType
+     * @property {string} referenceAgent
+     */
     const data = request.all()
+    const adminUser = auth.user.role === UserRoles.ADMIN
 
+    let directAdd = false
+
+    if (data.commissionType === CommissionType.MANUAL_TRANSFER && !data.referenceAgent) {
+      throw new AclGenericException("Not allowed without specifying the reference agent")
+    }
 
     /*
-    If the user has commissions.all:add permission, doesn't require to be approved
-    else if has commissions.team:add must be approved by an admin
+      If the user has commissions.all:add, AND the request is made by an admin
+      OR
+      the user has COMMISSIONS_TEAM_ADD permission and the type is MANUAL_TRANSFER, so that the user is transfering
+      its own commissions
+
+      directly approve this transfer
      */
-    if (await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_ALL_ADD], auth)) {
+    if (await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_ALL_ADD], auth)
+      || (await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_TEAM_ADD], auth)
+        && data.commissionType === CommissionType.MANUAL_TRANSFER)) {
+
+      directAdd = true
+    }
+
+    if (directAdd) {
       return CommissionModel.manualAdd({
         amountChange: data.amountChange,
         notes: data.notes,
+        commissionType: data.commissionType,
+        referenceAgent: castToObjectId(data.referenceAgent),
+        refAgentAvailableAmount: data.referenceAgent ? (await CommissionModel.getAvailableCommissions(data.referenceAgent)) : 0,
         userId,
         created_by: currentUser
       });
@@ -165,6 +206,9 @@ class CommissionController {
         userId: currentUser,
         targetUserId: userId,
         type: RequestTypes.COMMISSION_MANUAL_ADD,
+        commissionType: data.commissionType,
+        referenceAgent: castToObjectId(data.referenceAgent),
+        refAgentAvailableAmount: data.referenceAgent ? (await CommissionModel.getAvailableCommissions(data.referenceAgent)) : 0,
         wallet: WalletTypes.COMMISION,
         currency: CurrencyType.EURO,
         notes: data.notes

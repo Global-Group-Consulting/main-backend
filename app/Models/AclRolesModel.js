@@ -13,9 +13,10 @@ class AclRolesModel extends BasicModel {
    * Get all permissions for the provided roles as a flat array of strings
    *
    * @param {string[]} roles
+   * @param {string[]} directPermissions
    * @returns {Promise<string[]>}
    */
-  static async getAllPermissions(roles) {
+  static async getAllPermissions(roles, directPermissions) {
     let toReturn = []
 
     for (const role of roles || []) {
@@ -27,7 +28,11 @@ class AclRolesModel extends BasicModel {
       toReturn.push(...roleData.permissions)
     }
 
-    return toReturn
+    if (directPermissions) {
+      toReturn.push(directPermissions)
+    }
+
+    return toReturn.flat()
   }
 
   static async createIfNew(code, data) {

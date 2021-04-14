@@ -20,6 +20,7 @@ class RequestTypes extends BasicEnum {
     this.RISC_INTERESSI_BRITE = 7
 
     this.COMMISSION_MANUAL_ADD = 8
+    this.COMMISSION_MANUAL_TRANSFER = 9
 
     this.data = {
       /*  [this.ADMIN]: {
@@ -56,6 +57,9 @@ class RequestTypes extends BasicEnum {
       },
       [this.COMMISSION_MANUAL_ADD]: {
         id: 'commission_manual_add',
+      },
+      [this.COMMISSION_MANUAL_TRANSFER]: {
+        id: 'commission_manual_transfer',
       }
     }
   }

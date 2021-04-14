@@ -549,7 +549,7 @@ class User extends Model {
   }
 
   async permissions() {
-    return AclRolesModel.getAllPermissions(this.roles)
+    return AclRolesModel.getAllPermissions(this.roles, this.directPermissions)
   }
 
 
