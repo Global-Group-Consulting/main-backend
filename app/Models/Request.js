@@ -121,7 +121,7 @@ class Request extends Model {
 
         data.availableAmount = commissionMovement.currMonthCommissionsOld
 
-      } else if ([RequestTypes.COMMISSION_MANUAL_ADD].includes(data.type)) {
+      } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER].includes(data.type)) {
         const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
 
         data.availableAmount = commissionMovement.currMonthCommissions
@@ -165,6 +165,10 @@ class Request extends Model {
             amountChange: data.amount,
             notes: data.notes,
             userId: data.targetUserId,
+            commissionType: data.commissionType,
+            referenceAgent: data.referenceAgent,
+            refAgentAvailableAmount: data.refAgentAvailableAmount,
+            requestId: data._id,
             created_by: data.userId
           });
 
@@ -532,7 +536,15 @@ class Request extends Model {
   }
 
   setUserId(value) {
-    return value ? new MongoTypes.ObjectId(value.toString()) : value
+    return castToObjectId(value)
+  }
+
+  setReferenceAgent(value) {
+    return castToObjectId(value)
+  }
+
+  setTargetUserId(value) {
+    return castToObjectId(value)
   }
 
   setPaymentDocDate(value) {

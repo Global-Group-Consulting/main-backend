@@ -10,6 +10,7 @@ module.exports = function (Route) {
     Route.post('/blockCommissionsToReinvest', "CommissionController.blockCommissionsToReinvest")
 
     Route.get('/status/:id?', "CommissionController.getStatus")
+    Route.get('/available/:id?', "CommissionController.getAvailable")
     Route.get('/list/:id?', "CommissionController.getList")
 
     Route.post('/:id/add', "CommissionController.manualAdd")

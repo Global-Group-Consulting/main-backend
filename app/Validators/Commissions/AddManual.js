@@ -12,7 +12,10 @@ class AddManual extends WhitelistValidator {
     return {
       id: "required|objectId",
       amountChange: "required|number",
+      commissionType: "required|string",
       notes: "required",
+      amountAvailable: "number",
+      referenceAgent: "string"
     }
   }
 }
