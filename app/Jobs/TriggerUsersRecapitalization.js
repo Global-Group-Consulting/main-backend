@@ -17,10 +17,18 @@ module.exports =
     const userList = await UserModel.getUsersToRecapitalize()
     const addedJobs = []
 
-    for (const user of userList.rows) {
-      const newJob = await QueueProvider.add("user_recapitalization", {userId: user._id.toString()})
-      addedJobs.push(newJob.toJSON()._id)
-    }
+    console.log("--- starting trigger")
+
+    await Promise.all(
+      userList.rows.map(async (user) => {
+        const newJob = await QueueProvider.add("user_recapitalization", {userId: user._id.toString()})
+        addedJobs.push(newJob.attrs._id.toString())
+      })
+    )
+
+    /* for (const user of userList.rows) {
+
+     }*/
 
     job.attrs.result = addedJobs;
 

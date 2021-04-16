@@ -272,8 +272,8 @@ class Commission extends Model {
    * Commission that'll be calculated based on clients last month deposit after recapitalizazion occurs.
    * @returns {Promise<void>}
    */
-  static async addExistingDepositCommission(movementId) {
-    const {movement, agent, user} = await this._getMovementRelatedDate(movementId)
+  static async addExistingDepositCommission(movementId, agentId) {
+    const {movement, agent, user} = await this._getMovementRelatedDate(movementId, agentId)
 
     if (movement.interestPercentage >= 4) {
       throw new CommissionException("The user percentage is higher that 4, so there is nothing left for the agent.")
