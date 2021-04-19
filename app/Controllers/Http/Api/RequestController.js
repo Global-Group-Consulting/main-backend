@@ -139,10 +139,11 @@ class RequestController {
     }
   }
 
-  async approve({params, response, request}) {
+  async approve({params, response, request, auth}) {
     const requestId = params.id
     const foundedRequest = await RequestModel.find(requestId)
     const incomingDate = request.input("paymentDocDate")
+    const incomingAmount = request.input("paymentAmount")
 
     if (!foundedRequest) {
       throw new RequestNotFoundException()
@@ -183,8 +184,14 @@ class RequestController {
       throw new RequestException("The provided date can't be precedent to the 1st of the current month because the recapitalization has already occurred.")
     }
 
+    if (!isNaN(incomingAmount) && foundedRequest.amount !== +incomingAmount) {
+      foundedRequest.originalAmount = foundedRequest.amount;
+      foundedRequest.amount = +incomingAmount;
+    }
+
     foundedRequest.status = RequestStatus.ACCETTATA
     foundedRequest.paymentDocDate = incomingDate
+    foundedRequest.completedBy = auth.user._id;
     foundedRequest.completed_at = new Date()
 
     await foundedRequest.save()
@@ -203,7 +210,7 @@ class RequestController {
       throw new RequestNotFoundException()
     }
 
-    if (+foundedRequest.status !== RequestStatus.NUOVA) {
+    if (![RequestStatus.NUOVA, RequestStatus.LAVORAZIONE].includes(+foundedRequest.status)) {
       return response.badRequest("Can't change request status.")
     }
 

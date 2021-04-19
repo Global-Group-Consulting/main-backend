@@ -9,6 +9,7 @@ class requestsDelete extends WhitelistValidator {
     return {
       id: "objectId|required",
       paymentDocDate: "required|date",
+      paymentAmount: "number",
     }
   }
 }
