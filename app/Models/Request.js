@@ -22,6 +22,7 @@ const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require("../../enums/RequestTypes")
 const MovementTypes = require("../../enums/MovementTypes")
 const MovementErrorException = require('../Exceptions/MovementErrorException')
+const RequestException = require('../Exceptions/RequestException')
 const {query} = require('@adonisjs/lucid/src/Lucid/Model')
 
 
@@ -157,7 +158,7 @@ class Request extends Model {
           // data.rejectReason = er.message
           // data.status = RequestStatus.RIFIUTATA
 
-          throw new Error("Can't approve the request.", er.message)
+          throw new RequestException("Can't approve the request. " + er.message)
         }
       } else if (RequestTypes.COMMISSION_MANUAL_ADD === data.type && data.status === RequestStatus.ACCETTATA) {
         try {
@@ -174,7 +175,7 @@ class Request extends Model {
 
           data.movementId = addedCommission._id
         } catch (er) {
-          throw new Error("Can't approve the request.", er.message)
+          throw new RequestException("Can't approve the request. " + er.message)
         }
       }
 
