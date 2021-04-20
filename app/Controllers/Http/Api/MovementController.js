@@ -14,6 +14,7 @@ const AclProvider = use('AclProvider')
 
 const MovementTypes = require("../../../../enums/MovementTypes")
 const UserRoles = require('../../../../enums/UserRoles')
+const AccountStatuses = require('../../../../enums/AccountStatuses')
 const MovementErrorException = require('../../../Exceptions/MovementErrorException')
 const MovementError = require("../../../Exceptions/MovementErrorException")
 const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
@@ -149,6 +150,7 @@ class MovementController {
     /** @type {import("@adonisjs/bodyparser/src/Multipart/File.js")} */
     const file = request.file("fileToImport")
     const userId = request.input("userId")
+    let overwrite = request.input("overwrite") === "true" || false;
 
     if (!file || file.extname !== "csv") {
       throw new ImportException("The provided file must be a .csv")
@@ -168,15 +170,23 @@ class MovementController {
       throw new ImportException("Can't find any user with the specified id.")
     }
 
+    // If the user is not in DRAFT status, avoid overwriting the movements
+    if (user.account_status !== AccountStatuses.DRAFT) {
+      overwrite = false;
+    }
+
     if (![UserRoles.AGENTE, UserRoles.CLIENTE].includes(+user.role)) {
       throw new ImportException("User is not Agente or Cliente.")
     }
 
-    // Controlla che non ci siano altri movimenti esistenti.
-    const existingMovements = await MovementModel.getAll(csvData.userId)
+    // If no overwrite must be made, check if the user already have some movements.
+    if (!overwrite) {
+      // Controlla che non ci siano altri movimenti esistenti.
+      const existingMovements = await MovementModel.getAll(csvData.userId)
 
-    if (existingMovements.rows.length > 0) {
-      throw new ImportException("User has already registered movements, so the new ones can't be imported.")
+      if (existingMovements.rows.length > 0) {
+        throw new ImportException("User has already registered movements, so the new ones can't be imported.")
+      }
     }
 
     // Controlla che il movimento iniziale impostato per l'utente corrisponda con quello dell'importazione.
@@ -190,6 +200,11 @@ class MovementController {
     }
 
     const db = await Database.connect('mongodb')
+
+    // First remove existing movements
+    if (overwrite) {
+      await db.collection("movements").deleteMany({userId: user._id});
+    }
 
     // I'm using mongoose insert many instead of lucidMongo createMany because
     // the creation must not trigger the model's hooks.
@@ -293,6 +308,7 @@ class MovementController {
           const interestPercentage = this._parseInterestPercentage(result[0])
           let lastYear = 0
           let correctLastYear = 0
+          const importedAt = moment().toDate();
 
           for (const _entry of result) {
             if (_entry["Anno"]) {
@@ -335,12 +351,14 @@ class MovementController {
               deposit: !capitaleVersato ? nuovoCapitale : capitaleVersato,
               interestAmount: this._castToNumber(_entry[`Int. Maturato ${interestPercentage}%`]),
               created_at: moment(`${lastYear}-${currMonth + 1}-16 00:00:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
+              imported: true,
+              imported_at: importedAt,
             }
 
             dataToReturn.push(recapitalization)
 
             if (recapitalization.movementType === MovementTypes.INITIAL_DEPOSIT) {
-              console
+              // console
             }
 
             // if there is already capitale and has been added new one, create a new deposit movement
@@ -355,6 +373,8 @@ class MovementController {
                 deposit: nuovoCapitale + capitaleVersato,
                 interestAmount: recapitalization.interestAmount,
                 created_at: moment(`${lastYear}-${currMonth + 1}-16 00:10:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
+                imported: true,
+                imported_at: importedAt,
               })
             }
 
@@ -370,6 +390,8 @@ class MovementController {
                 deposit: dataToReturn[dataToReturn.length - 1].deposit - capitalePrelevato,
                 interestAmount: dataToReturn[dataToReturn.length - 1].interestAmount,
                 created_at: moment(`${lastYear}-${currMonth + 1}-16 00:15:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
+                imported: true,
+                imported_at: importedAt,
               })
             }
 
@@ -385,6 +407,8 @@ class MovementController {
                 deposit: dataToReturn[dataToReturn.length - 1].deposit,
                 interestAmount: dataToReturn[dataToReturn.length - 1].interestAmount - interestsCollected,
                 created_at: moment(`${lastYear}-${currMonth + 1}-16 00:20:00`, "YYYY-MM-DD HH:mm:ss").toDate(),
+                imported: true,
+                imported_at: importedAt,
               })
             }
           }
