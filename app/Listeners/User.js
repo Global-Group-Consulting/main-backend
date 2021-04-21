@@ -42,8 +42,12 @@ User.onValidated = async (user) => {
 
 User.onApproved = async (user) => {
   // read the existing token or generate a new one
-  const token = user.token || await Persona.generateToken(user, 'email')
+  const token = await Persona.generateToken(user, 'email')
   const userTypeAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)
+
+  user.token = token;
+
+  await user.save();
 
   if (!user.sendOnlyEmail && !userTypeAdmin) {
     Logger.info("add job for initializing user movements")
