@@ -287,20 +287,19 @@ class UserController {
       throw new UserNotFoundException()
     }
 
-    let token = await Token.where({user_id: user.id, type: "email"}).first()
+    if (user.account_status === AccountStatuses.APPROVED) {
+      // add this data only to pass them to the triggered event
+      user.token = await Persona.generateToken(user, 'email')
 
-    if (!token && user.account_status === AccountStatuses.APPROVED) {
-      token = await Persona.generateToken(user, 'email')
-    } else if (!token) {
+      await user.save();
+
+      user.sendOnlyEmail = true
+
+      // Will send the welcome email with the link to activate the account
+      Event.emit("user::approved", user)
+    } else {
       throw new UserException("Invalid user status.")
     }
-
-    // add this data only to pass them to the triggered event
-    user.token = token.token
-    user.sendOnlyEmail = true
-
-    // Will send the welcome email with the link to activate the account
-    Event.emit("user::approved", user)
   }
 
   async changeStatus({params, request, auth}) {
@@ -572,7 +571,7 @@ class UserController {
     }
 
     // The user is an agent, otherwise this call is useless
-    const subAgentsList = await User.getTeamAgents(userId, true )
+    const subAgentsList = await User.getTeamAgents(userId, true)
     const authUserIsParent = subAgentsList.find(el => el._id.toString() === userId)
 
     if (!authUserIsParent) {
