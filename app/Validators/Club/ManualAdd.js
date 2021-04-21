@@ -18,6 +18,7 @@ class BriteManualAdd extends WhitelistValidator {
       id: "required|objectId",
       amountChange: "required|number",
       notes: "required|string",
+      semester: "required|string",
     }
   }
 }

@@ -35,7 +35,7 @@ class BriteModel extends BasicModel {
       movementType: BriteMovementTypes.DEPOSIT_ADDED,
       // i'm using the  current date as a reference.
       // Maybe could be useful to ask the user what date want's to use
-      referenceSemester: moment().month() < 6 ? 1 : 2
+      referenceSemester: data.semesterId || moment().month() < 6 ? 1 : 2
     })
   }
 
@@ -90,41 +90,52 @@ class BriteModel extends BasicModel {
     const jsonResult = result.toJSON()
     const nowDate = moment()
 
-    return jsonResult.map(user => {
-      const finalBrites = {total: 0, used: 0, available: 0}
+    return Promise.all(jsonResult.map(async user => {
+        const currYear = nowDate.year();
+        const semester = nowDate.month() > 6 ? 2 : 1;
+        const blocksData = await this.getBlocksDataForUSer(null, user.brites)
 
-      for (const entry of user.brites) {
-        // Check if the movement is not yet usable or is expired
-        if (moment(entry.usableFrom).isAfter(nowDate) || moment(nowDate).isAfter(entry.expiresAt)) {
-          continue
+        user.britesTotal = 0;
+        user.britesUsed = 0;
+        user.britesAvailable = 0;
+
+        for (let entry of Object.entries(blocksData)) {
+          const semesterId = entry[0];
+          const entryYear = +semesterId.split("_")[0];
+          const entrySemester = +semesterId.split("_")[1];
+
+          // Se l'anno è lo stesso di quello corrente e anche il semestre è uguale all'attuale o maggiore
+          if (entryYear === currYear && entrySemester >= semester) {
+            continue
+          }
+
+          user.britesTotal += entry[1].briteTotal;
+          user.britesUsed += entry[1].briteUsed;
+          user.britesAvailable += entry[1].briteAvailable;
         }
 
-        finalBrites.total += entry.amountChange
-        finalBrites.used += [BriteMovementTypes.DEPOSIT_COLLECTED].includes(entry.movementType) ? entry.amountChange : 0
-        finalBrites.available = finalBrites.total - finalBrites.used
-      }
+        delete user.brites
 
-      delete user.brites
+        /*user.britesTotal = finalBrites.total
+        user.britesUsed = finalBrites.used
+        user.britesAvailable = finalBrites.available*/
 
-      user.britesTotal = finalBrites.total
-      user.britesUsed = finalBrites.used
-      user.britesAvailable = finalBrites.available
-
-      return user
-    })
+        return user
+      })
+    )
   }
 
-  static async getBlocksDataForUSer(userId) {
+  static async getBlocksDataForUSer(userId, userBrites) {
     /**
      * @type {VanillaSerializer}
      */
-    const userMovements = await this.where({userId: castToObjectId(userId)})
-      .sort({created_at: -1}).fetch()
+    const userMovements = userBrites || (await this.where({userId: castToObjectId(userId)})
+      .sort({created_at: -1}).fetch()).rows
     const toReturn = {}
 
-    for (let i = 0; i < userMovements.rows.length; i++) {
+    for (let i = 0; i < userMovements.length; i++) {
       /** @type {Brite} */
-      const movement = userMovements.rows[i]
+      const movement = userMovements[i]
       const semesterId = movement.semesterId
       const createdAt = moment(movement.created_at)
 
