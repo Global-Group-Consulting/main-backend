@@ -30,6 +30,7 @@ class BriteController {
     return BriteModel.manualAdd({
       amountChange: data.amountChange,
       notes: data.notes,
+      semesterId: data.semester,
       userId,
       created_by: currentUser
     });

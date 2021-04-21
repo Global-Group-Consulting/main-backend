@@ -7,7 +7,8 @@ const Persona = use('Persona')
 const Antl = use('Antl')
 
 const moment = require('moment')
-const { get: _get, template: _template, templateSettings: _templateSettings } = require('lodash')
+const {get: _get, template: _template, templateSettings: _templateSettings} = require('lodash')
+const randtoken = require('rand-token')
 
 /*
 |--------------------------------------------------------------------------
@@ -87,7 +88,7 @@ Persona.getUserByUids = async function (value) {
    */
   const user = await userQuery.first()
   if (!user) {
-    const data = { field: 'uid', validation: 'exists', value }
+    const data = {field: 'uid', validation: 'exists', value}
 
     throw this.Validator.ValidationException.validationFailed([
       {
@@ -104,6 +105,7 @@ Persona.getUserByUids = async function (value) {
 Persona.verifyEmail = async function (token) {
   const AccountStatuses = require("../enums/AccountStatuses")
   const tokenRow = await this.getToken(token, 'email')
+
   if (!tokenRow) {
     throw new Error('The token is invalid or expired')
   }
@@ -120,6 +122,27 @@ Persona.verifyEmail = async function (token) {
   }
 
   return user
+}
+
+Persona._addTokenConstraints = function (query, type) {
+  query
+    .where('type', type)
+    .where('is_revoked', false)
+    .where('updated_at', '>=', moment().subtract(24 * 3, 'hours').format(this.config.dateFormat))
+}
+
+Persona.generateToken = async function (user, type) {
+  const query = user.tokens()
+  this._addTokenConstraints(query, type)
+
+  const row = await query.first()
+  if (row) {
+    return row.token
+  }
+
+  const token = this._encrypter.encrypt(randtoken.generate(16))
+  await user.tokens().create({type, token})
+  return token
 }
 
 Antl.compile = function (locale, key, data) {
