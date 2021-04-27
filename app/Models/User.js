@@ -14,10 +14,9 @@ const ContractCounter = use('App/Controllers/Http/CountersController')
 /** @type {import("./History")} */
 const HistoryModel = use('App/Models/History')
 
-/** @type {typeof import("./SignRequest")} */
+/** @type {typeof import("./Movement")} */
 const MovementModel = use('App/Models/Movement')
 /** @type {typeof import("./Request")} */
-const RequestModel = use('App/Models/Request')
 const AclPermissionsModel = use('App/Models/AclPermissionsModel')
 const AclRolesModel = use('App/Models/AclRolesModel')
 const SignRequestModel = use('App/Models/SignRequest')
@@ -157,13 +156,7 @@ class User extends Model {
     })
 
     this.addHook("beforeDelete", async (userInstance) => {
-      await MovementModel
-        .where('userId', castToObjectId(userInstance._id))
-        .delete()
-
-      await RequestModel
-        .where('userId', castToObjectId(userInstance._id))
-        .delete()
+      Event.emit("user::deleted", userInstance._id.toString())
     })
   }
 

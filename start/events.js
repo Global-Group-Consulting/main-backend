@@ -19,6 +19,7 @@ Event.on("user::validated", "User.onValidated")
 Event.on("user::approved", "User.onApproved")
 Event.on("user::updated", "User.onUpdate")
 Event.on("user::firstLogin", "User.onFirstLogin")
+Event.on("user::deleted", "User.onDeleted")
 
 Event.on("movements::initial", "Movements.onInitial")
 
