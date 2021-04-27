@@ -273,7 +273,7 @@ class UserController {
   async delete({params}) {
     const user = await User.find(params.id)
 
-    // await user.delete()
+    await user.delete()
   }
 
   /**

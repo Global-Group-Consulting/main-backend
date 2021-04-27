@@ -16,6 +16,8 @@ const HistoryModel = use('App/Models/History')
 
 /** @type {typeof import("./SignRequest")} */
 const MovementModel = use('App/Models/Movement')
+/** @type {typeof import("./Request")} */
+const RequestModel = use('App/Models/Request')
 const AclPermissionsModel = use('App/Models/AclPermissionsModel')
 const AclRolesModel = use('App/Models/AclRolesModel')
 const SignRequestModel = use('App/Models/SignRequest')
@@ -154,6 +156,15 @@ class User extends Model {
       HistoryModel.addChanges(this, userInstance.toObject())
     })
 
+    this.addHook("beforeDelete", async (userInstance) => {
+      await MovementModel
+        .where('userId', castToObjectId(userInstance._id))
+        .delete()
+
+      await RequestModel
+        .where('userId', castToObjectId(userInstance._id))
+        .delete()
+    })
   }
 
   static async includeFiles(data) {
@@ -599,7 +610,7 @@ class User extends Model {
 
   // SETTERS
 
-  setEmail(value){
+  setEmail(value) {
     return value ? value.toString().toLowerCase() : value
   }
 
