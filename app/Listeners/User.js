@@ -9,9 +9,13 @@ const Env = use("Env")
 const Event = use("Event")
 const Ws = use("Ws")
 const MovementsModel = use("App/Models/Movement")
+const CommissionsModel = use("App/Models/Commission")
+const RequestsModel = use("App/Models/Request")
 const Logger = use("Logger")
 
 const UserRoles = require("../../enums/UserRoles")
+
+const {castToObjectId} = require("../Helpers/ModelFormatters")
 
 const User = exports = module.exports = {}
 
@@ -96,4 +100,18 @@ User.onFirstLogin = async (user) => {
   }
 
   await addAgentCommission(user, movement._id)*/
+}
+
+User.onDeleted = async (userId) => {
+  await MovementsModel.query()
+    .where('userId', castToObjectId(userId))
+    .delete()
+
+  await CommissionsModel.query()
+    .where('userId', castToObjectId(userId))
+    .delete()
+
+  await RequestsModel.query()
+    .where('userId', castToObjectId(userId))
+    .delete()
 }

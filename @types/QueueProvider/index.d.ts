@@ -15,6 +15,7 @@ export type QueuesList =
   | "agent_commissions_block" // For an agent, close the month and reset the commissions, by storing the amount that must be reinvested
   | "agent_commissions_reinvest" // For an agent, reinvest the available commissions from the past month
   | "agent_commissions_on_total_deposit" // For the reference agent, calculate the commissions based on the user's new deposit
+  | "agent_commissions_auto_withdrawl" // For an agent, check if exists any autoWithdrawl request and execute it
 
 export type QueueConfig = {
   name?: string,

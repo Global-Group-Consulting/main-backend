@@ -25,4 +25,6 @@ export interface Request {
   rejectReason: string
 
   typeClub: boolean
+  autoWithdrawlAll?: boolean
+  autoWithdrawlAllRecursively?: boolean
 }

@@ -26,7 +26,7 @@ const RequestException = require('../Exceptions/RequestException')
 const {query} = require('@adonisjs/lucid/src/Lucid/Model')
 
 
-const {castToIsoDate, castToObjectId} = require("../Helpers/ModelFormatters")
+const {castToIsoDate, castToObjectId, castToNumber} = require("../Helpers/ModelFormatters")
 
 const modelFields = {
   userId: "",
@@ -65,7 +65,13 @@ class Request extends Model {
           let generatedMovement
 
           if (RequestTypes.RISC_PROVVIGIONI === data.type) {
-            generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
+            /*
+             If the request is periodic or for the current month, shouldn't generate any commission movement.
+             this should be generated in a second moment.
+            */
+            if (!data.autoWithdrawlAll) {
+              generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
+            }
           } else {
             const movementData = {
               userId: data.userId,
@@ -83,9 +89,14 @@ class Request extends Model {
             generatedMovement = await MovementModel.create(movementData)
           }
 
-          data.movementId = generatedMovement._id
-          data.status = RequestStatus.ACCETTATA
-          data.completed_at = new Date().toISOString()
+          data.movementId = generatedMovement ? generatedMovement._id : null
+
+          if (!data.autoWithdrawlAll) {
+            data.status = RequestStatus.ACCETTATA
+            data.completed_at = new Date().toISOString()
+          } else {
+            data.status = RequestStatus.LAVORAZIONE
+          }
         } catch (er) {
           data.rejectReason = er.message
           data.status = RequestStatus.RIFIUTATA
@@ -118,10 +129,17 @@ class Request extends Model {
         data.availableAmount = lastMovement.interestAmountOld
 
       } else if ([RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
-        const commissionMovement = await CommissionModel.find(data.movementId)
+        /*
+        If the request is periodic or for the current month, shouldn't generate any commission movement.
+        this should be generated in a second moment.
+         */
+        if (!data.autoWithdrawlAll) {
+          const commissionMovement = await CommissionModel.find(data.movementId)
 
-        data.availableAmount = commissionMovement.currMonthCommissionsOld
-
+          data.availableAmount = commissionMovement.currMonthCommissionsOld
+        } else {
+          data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
+        }
       } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER].includes(data.type)) {
         const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
 
@@ -179,7 +197,7 @@ class Request extends Model {
         }
       }
 
-      if (data.status === RequestStatus.ANNULLATA) {
+      if (data.status === RequestStatus.ANNULLATA && !data.autoWithdrawlAll) {
         await data.cancelRequest()
       }
     })
@@ -429,6 +447,24 @@ class Request extends Model {
     return this.query().where({$or: [{_id: objId}, {movementId: objId}]}).first()
   }
 
+  static async getLastAutoWithdrawlRequest(userId) {
+    return UserModel.query()
+      .where({userId: castToObjectId(userId),})
+  }
+
+  static async getActiveAutoWithdrawlRequests(userId) {
+    const requests = await this.query()
+      .where({
+        userId: castToObjectId(userId),
+        autoWithdrawlAll: true,
+        autoWithdrawlAllRevoked: {$ne: true}
+      })
+      .setVisible(["_id"])
+      .fetch()
+
+    return requests.rows
+  }
+
   async cancelRequest() {
     /* const typeData = RequestTypes.get(data.type)
     const movementData = MovementTypes.get(typeData.movement) */
@@ -524,6 +560,14 @@ class Request extends Model {
     return +value
   }
 
+  setCompletedAt(value) {
+    return castToIsoDate(value)
+  }
+
+  setCurrency(value) {
+    return castToNumber(value)
+  }
+
   setType(value) {
     return +value
   }
@@ -554,6 +598,10 @@ class Request extends Model {
 
   setClubCardNumber(value) {
     return value ? +value : value
+  }
+
+  setLastRun(value){
+    return castToIsoDate(value)
   }
 }
 
