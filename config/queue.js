@@ -54,6 +54,12 @@ const queueConfig = {
         lockLimit: 5
       }
     },
+    agent_commissions_auto_withdrawl: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
 
     trigger_commissions_block_month: {},
     trigger_users_recapitalization: {}
@@ -62,7 +68,6 @@ const queueConfig = {
     {
       queue: "trigger_commissions_block_month",
       recursion: Env.get("TRIGGER_COMMISSION_BLOCK", "* 10 0 1 * *")
-      // recursion: "*/10 * * * * *"
     },
     {
       queue: "trigger_users_recapitalization",
