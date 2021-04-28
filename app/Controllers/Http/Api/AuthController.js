@@ -2,10 +2,12 @@
 'use strict'
 
 const User = use('App/Models/User')
+const Request = use('App/Models/Request')
 const Event = use('Event')
 const Persona = use('Persona')
 const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
 const AccountStatuses = require('../../../../enums/AccountStatuses')
+const UserRoles = require('../../../../enums/UserRoles')
 
 /**
  * @typedef AuthResult
@@ -58,13 +60,29 @@ class AuthController {
 
   }
 
-  async user({request, auth, response}) {
+  async user({auth}) {
     try {
       const userId = auth.user._id
 
-      return (await User.find(userId)).full()
+      const userData = await (await User.find(userId)).full()
+
+      /*
+      i no more need it because this data are now saved in the users data.
+
+      // if the user is an agent, i must add a prop that will indicate if it has an automatic withdrawl request active.
+      if (userData.role === UserRoles.AGENTE) {
+        const autoWithdrawlRequests = await Request.getActiveAutoWithdrawlRequests(userId);
+
+        const withdrawlRequests = autoWithdrawlRequests.filter(req => req.autoWithdrawlAll && !req.autoWithdrawlAllRecursively)[0]
+        const withdrawlRecursivelyRequests = autoWithdrawlRequests.filter(req => req.autoWithdrawlAll && req.autoWithdrawlAllRecursively)[0] || null;
+
+        userData.autoWithdrawlAll = withdrawlRequests ? withdrawlRequests._id.toString() : null;
+        userData.autoWithdrawlAllRecursively = withdrawlRecursivelyRequests ? withdrawlRecursivelyRequests._id.toString() : null;
+      }*/
+
+      return userData
     } catch (error) {
-      throw new InvalidLoginException('Missing or invalid jwt token')
+      throw new InvalidLoginException('Missing or invalid jwt token; ' + error.message);
     }
   }
 
