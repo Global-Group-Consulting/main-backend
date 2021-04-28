@@ -5,7 +5,7 @@ const {WhitelistValidator} = require("../WhitelistValidator")
 /** @typedef {import("../../../@types/Request").Request} RequestModel} */
 
 const rules = {
-  amount: "required|number",
+  amount: "required",
   userId: "required|objectId",
   type: "required|number",
   wallet: "required|number",
@@ -13,7 +13,9 @@ const rules = {
   iban: "string",
   clubCardNumber: "number",
   typeClub: "string",
-  notes: "string"
+  notes: "string",
+  autoWithdrawlAll: "boolean",
+  autoWithdrawlAllRecursively: "boolean",
 }
 
 class requestsCreate extends WhitelistValidator {
