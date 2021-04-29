@@ -18,6 +18,8 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 
+const Event = use('Event')
+
 /** @type {typeof import('./Setting')} */
 const SettingModel = use('App/Models/Setting')
 
@@ -341,6 +343,7 @@ class Commission extends Model {
         commissionPercentage: null,
         indirectCommission: false,
         teamCommissionType: "",
+        notes: data.notes || "",
         requestId: data.requestId,
         created_by: data.created_by
       }, (await this._getLastCommission(data.referenceAgent)));
@@ -362,6 +365,7 @@ class Commission extends Model {
       commissionPercentage: null,
       indirectCommission: false,
       teamCommissionType: "",
+      notes: data.notes || "",
       created_by: data.created_by
     }, lastCommission);
   }
@@ -431,7 +435,7 @@ class Commission extends Model {
     return commissionsToReinvest
   }
 
-  static async collectCommissions(userId, collectAmount) {
+  static async collectCommissions(userId, collectAmount, autoWithdrawlAll) {
     if (!collectAmount) {
       throw new CommissionException("The collect amount must be greater then 0.")
     }
@@ -448,6 +452,11 @@ class Commission extends Model {
       throw new CommissionException("Can't find the last commission movement, so no reinvestment will be added.")
     }
 
+    // If the autoWithdrawl is active, set the amount as the total available
+    if (autoWithdrawlAll) {
+      collectAmount = lastCommission.currMonthCommissions
+    }
+
     // Check if the requested amount is available
     if (lastCommission.currMonthCommissions < collectAmount) {
       throw new CommissionException("There requested amount is higher than the available amount.")
@@ -460,6 +469,20 @@ class Commission extends Model {
     }, lastCommission)
 
     return newCommissionMovement
+  }
+
+  static async autoWithdrawlAll(userId, autoWithdrawlAll, autoWithdrawlAllRecursively) {
+    const result = await this.collectCommissions(userId, 999, true)
+
+    // If the request is not recursive trigger an event that will set it to completed,
+    // so that the user can create a new request for the current month
+    if (!autoWithdrawlAllRecursively) {
+      Event.emit('request::autoWithdrawl:completed', autoWithdrawlAll, result.amountChange)
+    }else {
+      Event.emit('request::autoWithdrawlRecursive:completed', autoWithdrawlAll, result.amountChange, result._id)
+    }
+
+    return result;
   }
 
   static async getAvailableCommissions(userId) {

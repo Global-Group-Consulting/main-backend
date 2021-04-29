@@ -70,6 +70,16 @@ class RequestController {
       throw new UserNotFoundException()
     }
 
+    // cast to boolean
+    if (incomingData.autoWithdrawlAll) {
+      incomingData.autoWithdrawlAll = incomingData.autoWithdrawlAll === "true"
+      incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
+
+      incomingData.amount = 0;
+    }
+
+    const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll;
+
     const newRequest = await RequestModel.create({
       ...incomingData
     })
@@ -82,7 +92,16 @@ class RequestController {
       })
     }
 
-    Event.emit("request::new", newRequest)
+    // avoid triggering notifications for autoWithdrawl requests
+    if (!isAutoWithdrawlRequest) {
+      Event.emit("request::new", newRequest)
+    } else {
+      associatedUser.autoWithdrawlAll = newRequest._id.toString()
+      associatedUser.autoWithdrawlAllRecursively = newRequest.autoWithdrawlAllRecursively ? newRequest._id.toString() : null
+
+      // Updates user's data by storing the autoWithdrawlAll id
+      await associatedUser.save()
+    }
 
     return newRequest
   }
@@ -234,17 +253,42 @@ class RequestController {
       throw new RequestNotFoundException()
     }
 
-    if (+foundedRequest.status !== RequestStatus.ACCETTATA) {
+    const isAutoWithdrawlRequest = !!foundedRequest.autoWithdrawlAll;
+
+    /*
+    Can't cancel a request if this is not autoWithdrawlRequest and not "accettata"
+    OR
+    is an autoWithdrawlRequest and is not in "lavorazione"
+     */
+    if ((!isAutoWithdrawlRequest && +foundedRequest.status !== RequestStatus.ACCETTATA)
+      || (isAutoWithdrawlRequest && +foundedRequest.status !== RequestStatus.LAVORAZIONE)) {
       return response.badRequest("Can't cancel this request.")
     }
 
     foundedRequest.status = RequestStatus.ANNULLATA
-    foundedRequest.cancelReason = reason
+    foundedRequest.cancelReason = reason || ""
     foundedRequest.completed_at = new Date().toISOString()
+
+    if (isAutoWithdrawlRequest) {
+      // Create a prop that immediately show if the request has been disabled.
+      // This prop will be used for fetching if already exist a request of this type.
+      foundedRequest.autoWithdrawlAllRevoked = true;
+
+      const associatedUser = await foundedRequest.user().fetch()
+
+      associatedUser.autoWithdrawlAll = null
+      associatedUser.autoWithdrawlAllRecursively = null
+
+      // Updates user's data by resetting the autoWithdrawlAll
+      await associatedUser.save()
+    }
 
     await foundedRequest.save()
 
-    Event.emit("request::cancelled", foundedRequest)
+    // avoid triggering notifications for autoWithdrawl requests
+    if (!isAutoWithdrawlRequest) {
+      Event.emit("request::cancelled", foundedRequest)
+    }
 
     return foundedRequest
   }

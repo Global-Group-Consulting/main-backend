@@ -20,7 +20,23 @@ module.exports =
     const addedJobs = []
 
     for (const agent of agentsList.rows) {
-      const newJob = await QueueProvider.add("agent_commissions_block", {id: agent._id.toString()})
+      let newJob
+
+      /*
+        I first must check if the user has the autoWithdrawl active.
+        If so, i add to the que an "agent_commissions_auto_withdrawl" job and once this is completed will be added
+        the agent_commissions_block.
+      */
+      if (agent.autoWithdrawlAll) {
+        newJob = await QueueProvider.add("agent_commissions_auto_withdrawl", {
+          id: agent._id.toString(),
+          autoWithdrawlAll: agent.autoWithdrawlAll,
+          autoWithdrawlAllRecursively: agent.autoWithdrawlAllRecursively
+        })
+      } else {
+        newJob = await QueueProvider.add("agent_commissions_block", {id: agent._id.toString()})
+      }
+
       addedJobs.push(newJob.toJSON()._id)
     }
 

@@ -9,8 +9,10 @@ const Env = use("Env")
 const Event = use("Event")
 
 const UserModel = use("App/Models/User")
+const RequestModel = use("App/Models/Request")
 const UserRoles = require("../../enums/UserRoles")
 const RequestTypes = require("../../enums/RequestTypes")
+const RequestStatus = require("../../enums/RequestStatus")
 const CommissionType = require("../../enums/CommissionType")
 const AgentTeamType = require("../../enums/AgentTeamType")
 
@@ -22,6 +24,8 @@ Request.onNewRequest = onNewRequest
 Request.onApproved = onApproved
 Request.onCancelled = onCancelled
 Request.onRejected = onRejected
+Request.onAutoWithdrawlCompleted = onAutoWithdrawlCompleted
+Request.onAutoWithdrawlRecursiveCompleted = onAutoWithdrawlRecursiveCompleted
 
 /**
  * @param {IRequest} request
@@ -64,6 +68,57 @@ async function onApproved(approvedRequest) {
   Event.emit("notification::requestApproved", approvedRequest)
 }
 
+/**
+ * @param {string} requestId
+ * @param {number} amountChange
+ * @returns {Promise<void>}
+ */
+async function onAutoWithdrawlCompleted(requestId, amountChange) {
+  const request = await RequestModel.find(requestId);
+
+  // Update the request state
+  request.amount = amountChange
+  request.status = RequestStatus.ACCETTATA
+  request.cancelReason = "request completed because not recursive"
+  request.completed_at = new Date().toISOString()
+  request.autoWithdrawlAllRevoked = true;
+
+  await request.save()
+
+  // Reset the users data
+  const associatedUser = await request.user().fetch()
+
+  associatedUser.autoWithdrawlAll = null
+  associatedUser.autoWithdrawlAllRecursively = null
+
+  // Updates user's data by resetting the autoWithdrawlAll
+  await associatedUser.save()
+}
+
+/**
+ * @param {string} requestId
+ * @param {number} amountChange
+ * @param {any} commissionId
+ * @returns {Promise<void>}
+ */
+async function onAutoWithdrawlRecursiveCompleted(requestId, amountChange, commissionId) {
+  const request = await RequestModel.find(requestId);
+
+  if (!request.previousResults) {
+    request.previousResults = []
+  }
+
+  // Update the request state
+  request.lastRun = new Date();
+  request.previousResults.push({
+    lastRun: request.lastRun,
+    amount: amountChange,
+    commissionId
+  })
+
+  await request.save()
+}
+
 function _getAgentActiveCommission(agent, requiredType) {
   // get the agent active commissions
   const agentCommissions = agent.commissionsAssigned ? agent.commissionsAssigned.map(_obj => JSON.parse(_obj)) : null
@@ -99,7 +154,7 @@ function _calcPercentageToApply(teamCommissionType, agent, subAgent) {
   return +groupPercentage.percent - +subAgentPercentage.percent
 }
 
-async function addAgentCommission(user, movementId){
+async function addAgentCommission(user, movementId) {
   // if the user doesn't have a referenceAgent, is useless to call
   // agent new deposit commission.
   if (user.referenceAgent) {
