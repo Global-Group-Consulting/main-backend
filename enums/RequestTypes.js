@@ -16,7 +16,7 @@ class RequestTypes extends BasicEnum {
 
     /**  Riscossione delle provvigioni dell'agente */
     this.RISC_PROVVIGIONI = 5
-    this.RISC_CAPITALE_GOLD = 6
+    this.RISC_INTERESSI_GOLD = 6
     this.RISC_INTERESSI_BRITE = 7
 
     this.COMMISSION_MANUAL_ADD = 8
@@ -47,8 +47,8 @@ class RequestTypes extends BasicEnum {
         id: 'risc_provvigioni',
         movement: MovementTypes.COMMISSION_COLLECTED
       },
-      [this.RISC_CAPITALE_GOLD]: {
-        id: 'risc_capitale_gold',
+      [this.RISC_INTERESSI_GOLD]: {
+        id: 'risc_interessi_gold',
         movement: MovementTypes.DEPOSIT_COLLECTED
       },
       [this.RISC_INTERESSI_BRITE]: {

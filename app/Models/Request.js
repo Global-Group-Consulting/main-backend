@@ -56,6 +56,7 @@ class Request extends Model {
       if ([
         RequestTypes.RISC_INTERESSI,
         RequestTypes.RISC_INTERESSI_BRITE,
+        RequestTypes.RISC_INTERESSI_GOLD,
         RequestTypes.RISC_PROVVIGIONI,
       ].includes(data.type)) {
         const typeData = RequestTypes.get(data.type)
@@ -121,11 +122,10 @@ class Request extends Model {
       // Store the current available amount for future reference
       if ([
         RequestTypes.RISC_CAPITALE,
-        RequestTypes.RISC_CAPITALE_GOLD,
         RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
 
-      } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE].includes(data.type)) {
+      } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE, RequestTypes.RISC_INTERESSI_GOLD].includes(data.type)) {
         data.availableAmount = lastMovement.interestAmountOld
 
       } else if ([RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
@@ -148,7 +148,6 @@ class Request extends Model {
 
       if ([
         RequestTypes.RISC_CAPITALE,
-        RequestTypes.RISC_CAPITALE_GOLD,
         RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
         const typeData = RequestTypes.get(data.type)
 
@@ -377,7 +376,9 @@ class Request extends Model {
    */
   static async getPendingOnes(userRole) {
     return await Request.where({
-      status: {$in: [RequestStatus.NUOVA, RequestStatus.LAVORAZIONE]}
+      status: {$in: [RequestStatus.NUOVA, RequestStatus.LAVORAZIONE]},
+      autoWithdrawlAll: {$ne: true},
+      type: {$ne: RequestTypes.RISC_INTERESSI_GOLD}
     })
       .with("user", query => query.setVisible(['firstName', 'lastName', 'email', 'contractNumber', "id"])
         .with("referenceAgentData", q => {
@@ -600,7 +601,7 @@ class Request extends Model {
     return value ? +value : value
   }
 
-  setLastRun(value){
+  setLastRun(value) {
     return castToIsoDate(value)
   }
 }
