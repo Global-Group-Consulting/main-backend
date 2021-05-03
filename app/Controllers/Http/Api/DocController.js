@@ -55,15 +55,26 @@ class DocController {
     })
   }
 
-  _generateRiscossioniSheet(workbook, data) {
-    const sheetRiscossioni = workbook.addWorksheet('Dettaglio', {
+  _generateRiscossioniSheet(workbook, data, title) {
+    const sheetRiscossioni = workbook.addWorksheet(title, {
       pageSetup: this.pageSetup,
     });
 
     const columnsStyle = {
       font: {size: 12},
+      alignment: {wrapText: true}
     }
 
+    /*
+    fields:
+      Importo
+      Tipo richiesta
+      Nome Cognome
+      IBAN
+      BIC
+      Note
+      Agente riferimento
+     */
     const columns = [
       {
         header: 'Id Contratto', key: "contractNumber",
@@ -82,30 +93,60 @@ class DocController {
         }),
         width: 18
       },
-      {header: 'Tipo Richiesta', key: "type", style: columnsStyle, width: 20},
+      {header: 'Tipo Richiesta', key: "type", style: columnsStyle, width: 23},
+      {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
+      //{header: 'BIC / Swift', key: "bic", style: columnsStyle, width: 15},
+      {header: 'Note', key: "notes", style: columnsStyle, width: 50},
+      {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
       {
-        header: 'Data Richiesta', key: "created_at",
+        header: 'Data richiesta', key: "created_at",
         style: Object.assign({}, columnsStyle, {
           alignment: {horizontal: 'center'},
           numFmt: "DD/MM/YYYY HH:mm:ss"
         }),
-        width: 20
+        width: 23
       },
       {
-        header: 'Data Approvazione', key: "completed_at",
+        header: 'Data approvazione', key: "completed_at",
         style: Object.assign({}, columnsStyle, {
           alignment: {horizontal: 'center'},
           numFmt: "DD/MM/YYYY HH:mm:ss"
         }),
-        width: 20
+        width: 23
       },
     ]
     const rows = data.reduce((acc, row) => {
+      const iban = [];
+
+      if (row.iban && row.user.contractIban && row.iban.toLowerCase() !== row.user.contractIban.toLowerCase()) {
+      }
+
+      (row.iban && iban.push(row.iban.toLowerCase()));
+      (row.user.contractIban && iban.push({
+          iban: row.user.contractIban.toLowerCase(),
+          bic: row.user.contractBic
+        })
+      );
+
+
       acc.push({
         contractNumber: row.user.contractNumber,
-        name: row.user.firstName + " " + row.user.lastName,
         amount: row.amount,
         type: RequestTypes.get(row.type).id,
+        name: row.user.firstName + " " + row.user.lastName,
+        iban: iban.reduce((acc, curr) => {
+          if (typeof curr === "string") {
+            (!acc.includes(curr) && acc.push(curr));
+          } else {
+            if (!acc.includes(curr.iban)) {
+              acc.push(curr.iban + (curr.bic ? ` (BIC: ${curr.bic})` : ''));
+            }
+          }
+
+          return acc
+        }, []).join("\n").trim(),
+        notes: row.notes,
+        referenceAgent: row.user.referenceAgent,
         created_at: moment(row.created_at).toDate(),
         completed_at: moment(row.completed_at).toDate(),
       })
@@ -128,7 +169,7 @@ class DocController {
     if (rows.length > 0) {
       const totalRow = sheetRiscossioni.addRow(["", "Totale", ""])
       totalRow.getCell(3).value = {formula: `SUM(C2:C${totalRow.number - 1})`, result: 0}
-      totalRow.height = 20
+      totalRow.height = 30
       totalRow.font = Object.assign({}, columnsStyle.font, {bold: true, size: 14})
       totalRow.fill = {
         type: 'pattern',
@@ -167,10 +208,22 @@ class DocController {
         }),
         width: 18
       },
-      // {header: 'Tipo Richiesta', key: "type", style: columnsStyle, width: 20},
+      {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
+      {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
     ]
     const rows = Object.values(data.reduce((acc, row) => {
       const userId = row.user.id
+      const iban = [];
+
+      if (row.iban && row.user.contractIban && row.iban.toLowerCase() !== row.user.contractIban.toLowerCase()) {
+      }
+
+      (row.iban && iban.push(row.iban.toLowerCase()));
+      (row.user.contractIban && iban.push({
+          iban: row.user.contractIban.toLowerCase(),
+          bic: row.user.contractBic
+        })
+      );
 
       if (!acc[userId]) {
         acc[userId] = {
@@ -179,6 +232,17 @@ class DocController {
           name: row.user.firstName + " " + row.user.lastName,
           amount: row.amount,
           type: RequestTypes.get(row.type).id,
+          iban: iban.reduce((acc, curr) => {
+            if (typeof curr === "string") {
+              (!acc.includes(curr) && acc.push(curr));
+            } else {
+              if (!acc.includes(curr.iban)) {
+                acc.push(curr.iban + (curr.bic ? ` (BIC: ${curr.bic})` : ''));
+              }
+            }
+
+            return acc
+          }, []).join("\n").trim(),
           created_at: moment(row.created_at).toDate(),
           completed_at: moment(row.completed_at).toDate(),
         }
@@ -204,7 +268,7 @@ class DocController {
     if (rows.length > 0) {
       const totalRow = sheetResoconto.addRow(["", "Totale", ""])
       totalRow.getCell(3).value = {formula: `SUM(C2:C${totalRow.number - 1})`, result: 0}
-      totalRow.height = 20
+      totalRow.height = 30
       totalRow.font = Object.assign({}, columnsStyle.font, {bold: true, size: 14})
       totalRow.fill = {
         type: 'pattern',
@@ -212,7 +276,6 @@ class DocController {
         fgColor: {argb: 'FFe8efda'},
       }
     }
-
 
     return sheetResoconto
   }
@@ -226,7 +289,10 @@ class DocController {
     workbook.modified = new Date();
 
     const sheetResoconto = this._generateResocontoSheet(workbook, data)
-    const sheetRiscossioni = this._generateRiscossioniSheet(workbook, data)
+    const sheetRiscossioniClassic = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_INTERESSI), "Riscossione Classic")
+    const sheetRiscossioniGold = this._generateRiscossioniSheet(workbook, data.filter(el => [RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE].includes(el.type)), "Riscossione Gold")
+    const sheetDeposito = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_CAPITALE), "Prelievo Deposito")
+    const sheetCommissions = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_PROVVIGIONI), "Risc. Provvigioni")
 
     const fileName = "report_requests_" + Date.now()
     const filePath = Helpers.tmpPath(fileName)
@@ -288,9 +354,9 @@ class DocController {
       throw new Error("Missing date.")
     }
 
-    const data = await RequestModel.getReportData(date)
+    const jsonData = await RequestModel.getReportData(date)
 
-    const excelFile = await this._generateExcel(data.toJSON())
+    const excelFile = await this._generateExcel(jsonData)
 
     response.download(excelFile)
   }

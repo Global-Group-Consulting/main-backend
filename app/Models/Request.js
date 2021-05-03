@@ -408,7 +408,39 @@ class Request extends Model {
    * @returns {Promise<void>}
    */
   static async getReportData(date) {
-    const reqToSearch = [RequestTypes.RISC_CAPITALE, RequestTypes.RISC_PROVVIGIONI]
+    /*
+    Richieste da recuperare
+    - Prelievo capitale
+    - Riscossione Interessi (Classic)
+    - Riscossione Interessi Gold (Brite)
+    - Riscossione Interessi Gold (Fisico)
+     */
+    const reqToSearch = [RequestTypes.RISC_CAPITALE, RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE]
+
+    /*
+    il report deve contenere 3 tab
+    - Riscossione provvigioni
+      - dal 1 al 30 del mese precedente (quelle riscosse che non sono state bloccate il 1)
+    - Riscossioni rendite classic
+      - Riscossione degli interessi maturati dal 16 al 15
+    - Riscossione rendite gold
+      - Riscossione degli interessi maturati dal 16 al 15
+      - Inserire sia gold che brite (aggiuhngere colonna che mostra uno o l'altro)
+      - In fase di download, se una richiesta è classic, ma l'utente è gold, inserire quella richiesta nella pagina relativa ai gold.
+
+
+    Il giorno 16, mandare agli admin un email che li invita a scaricare il report del mese con i versamenti da effettuare.
+
+
+    Aggiungere le seguenti colonne:
+    Importo
+    Tipo richiesta (nome + gold o fisico)
+    Nome Cognome
+    IBAN
+    BIC
+    Note
+    Agente riferimento
+     */
 
     const momentDate = moment(date, "YYYY-MM")
     const startDate = moment(momentDate).subtract(1, "months").set({
@@ -423,15 +455,42 @@ class Request extends Model {
       minute: 59,
       second: 59,
     })
-
-    const data = await this.where({
-      type: {$in: reqToSearch},
-      status: RequestStatus.ACCETTATA,
-      created_at: {
-        $gte: startDate.toDate(),
-        $lte: endDate.toDate()
-      }
+    const commissionsStartDate = moment(momentDate).subtract(1, "months").set({
+      date: 1,
+      hour: 0,
+      minute: 0,
+      second: 0,
     })
+    const commissionsEndDate = moment(momentDate).set({
+      date: 1,
+      hour: 23,
+      minute: 59,
+      second: 59,
+    }).subtract(1, "days")
+
+    const query = {
+      $or: [
+        {
+          type: {$in: reqToSearch},
+          status: RequestStatus.ACCETTATA,
+          created_at: {
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate()
+          }
+        },
+        {
+          // Riscossione provvigioni agenti
+          type: RequestTypes.RISC_PROVVIGIONI,
+          status: RequestStatus.ACCETTATA,
+          created_at: {
+            $gt: commissionsStartDate.toDate(),
+            $lte: commissionsEndDate.toDate()
+          }
+        }
+      ]
+    }
+
+    const data = await this.where(query)
       .with("user")
       .sort({
         userId: 1,
@@ -439,7 +498,20 @@ class Request extends Model {
       })
       .fetch()
 
-    return data
+    const jsonData = data.toJSON()
+
+    //  In fase di download, se una richiesta è classic, ma l'utente è gold, inserire quella richiesta nella pagina relativa ai gold.
+    for (const entry of jsonData) {
+      const classicReq = entry.type === RequestTypes.RISC_INTERESSI
+
+      // Se un utente ha fatto classic ma è gold la richiesta viene scaricata in gold (NON FISICO)
+      if (entry.user.gold && classicReq) {
+        entry.typeOriginal = entry.type;
+        entry.type = RequestTypes.RISC_INTERESSI_BRITE;
+      }
+    }
+
+    return jsonData
   }
 
   static async findByIdOrMovementId(id) {
