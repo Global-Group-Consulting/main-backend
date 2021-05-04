@@ -36,5 +36,14 @@
       "row3": "Tipologia: {notificationType}",
       "btn_label": "Accedi al tuo account"
     }
+  },
+  "report_available": {
+    "subject": "Report di {month} ora disponibile! ",
+    "content": {
+      "title": "Report di {month} disponibile",
+      "row1": "Gentile <strong>{ firstName } { lastName }</strong>,",
+      "row2": "nella tua area privata, alla sezione \"Richieste\", è ora disponibile il report per il mese di {month}. Accedi subito e scaricare il file Excel.",
+      "btn_label": "Accedi al tuo account"
+    }
   }
 }
