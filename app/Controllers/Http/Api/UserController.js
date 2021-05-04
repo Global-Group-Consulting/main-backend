@@ -211,8 +211,9 @@ class UserController {
      */
     const user = await User.find(params.id)
 
-    // If still in draft, allow to change the email
-    if (user.account_status !== AccountStatuses.DRAFT) {
+    // If still in draft OR the auth user is a superAdmin, allow to change the email
+    // otherwise, avoid it.
+    if (user.account_status !== AccountStatuses.DRAFT && !auth.user.superAdmin) {
       delete incomingUser.email
     } else {
       const emailExists = await User.where({"email": incomingUser.email, "_id": {$not: {$eq: user._id}}}).first()
