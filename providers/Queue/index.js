@@ -54,7 +54,7 @@ class Queue {
             useUnifiedTopology: true
           }
         },
-        defaultLockLifetime: 5000
+        defaultLockLifetime: 5000,
       });
 
       agendaInstance = this._agenda
@@ -65,6 +65,10 @@ class Queue {
 
   get agenda() {
     return this._agenda
+  }
+
+  async _isReady() {
+    return this._agenda._ready
   }
 
   /**
@@ -100,6 +104,8 @@ class Queue {
 
         this.queuesList[queueName] = job
       } catch (er) {
+        console.log(er)
+
         if (er.code === "MODULE_NOT_FOUND") {
           Logger.error("Can't find the JobHandler for " + queueName + " at " + jobPath)
         } else {
@@ -169,7 +175,7 @@ class Queue {
    * @public
    *
    * @param {QueueProvider.List} queueName
-   * @param {{createdAt: any}} [data]
+   * @param {{createdAt?: any, tmpl: string, data?: any}} [data]
    * @returns {Promise<QueueProvider.Job>}
    */
   async add(queueName, data) {
@@ -212,6 +218,18 @@ class Queue {
    * @returns {Promise<QueueProvider.Job>}
    */
   async cron(interval, queueName, data, options) {
+    if (interval === "null") {
+      await this._agenda.cancel({
+        name: queueName,
+        recursive: true,
+        completed: {
+          $exists: false
+        }
+      })
+
+      return {}
+    }
+
     await this._checkQueueExistence(queueName)
     const scheduledDate = cronParser.parseExpression(interval)
     const nextRun = scheduledDate.next().toDate()
@@ -285,9 +303,13 @@ class Queue {
       return
     }
 
-    for (const job of recursiveJobs) {
-      await this.cron(job.recursion, job.queue)
-    }
+    await this._isReady()
+
+    await Promise.all(
+      recursiveJobs.map(async (job) => {
+        await this.cron(job.recursion, job.queue)
+      })
+    )
   }
 }
 

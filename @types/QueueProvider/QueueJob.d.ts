@@ -6,7 +6,9 @@ declare interface QueueJob {
   /**
    * The database record associated with the job.
    */
-  attrs: JobAttributes;
+  attrs: JobAttributes & {
+    result?: any
+  };
 
   /**
    * The agenda that created the job.
