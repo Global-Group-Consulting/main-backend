@@ -11,7 +11,7 @@ const rules = {
   wallet: "required|number",
   currency: "required|number",
   iban: "string",
-  clubCardNumber: "number",
+  clubCardNumber: "string",
   typeClub: "string",
   notes: "string",
   autoWithdrawlAll: "boolean",
