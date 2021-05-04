@@ -62,7 +62,8 @@ const queueConfig = {
     },
 
     trigger_commissions_block_month: {},
-    trigger_users_recapitalization: {}
+    trigger_users_recapitalization: {},
+    trigger_periodic_emails: {}
   },
   recursiveJobs: [
     {
@@ -72,6 +73,10 @@ const queueConfig = {
     {
       queue: "trigger_users_recapitalization",
       recursion: Env.get("TRIGGER_RECAPITALIZATION", "* 10 0 16 * *")
+    },
+    {
+      queue: "trigger_periodic_emails",
+      recursion: Env.get("TRIGGER_PERIODIC_EMAILS", "* * 6 16 * *")
     }
   ]
 }

@@ -6,6 +6,7 @@ export type QueuesList =
   "send_email"
   | "trigger_users_recapitalization" // Loop each USER and add the job "user_recapitalization" and others for the agent
   | "trigger_commissions_block_month" // Loop each AGENT and add the job "agent_commissions_block" that will reset the agent commissions
+  | "trigger_periodic_emails" // each day check if must sent automatic emails.
 
   | "user_initialize_movements"
   | "user_recapitalization" // Recapitalize the users interests

@@ -2,6 +2,8 @@
 
 const {ServiceProvider} = require('@adonisjs/fold')
 
+const Helpers = use("Helpers")
+
 class QueueProvider extends ServiceProvider {
   /**
    * Register namespaces to the IoC container
@@ -27,14 +29,17 @@ class QueueProvider extends ServiceProvider {
    * @return {void}
    */
   boot() {
-    /**
-     * I import it where so that the provider can start immediately
-     *
-     * @type {import("./index")}
-     * */
-    const QueueProvider = this.app.use("QueueProvider")
+    if (!Helpers.isAceCommand()) {
 
-    QueueProvider.initRecursiveJobs()
+      /**
+       * I import it where so that the provider can start immediately
+       *
+       * @type {import("./index")}
+       * */
+      const QueueProvider = this.app.use("QueueProvider")
+
+      QueueProvider.initRecursiveJobs()
+    }
   }
 }
 

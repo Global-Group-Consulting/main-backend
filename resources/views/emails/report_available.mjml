@@ -1,0 +1,15 @@
+<mjml>
+  <mj-body>
+    <mj-text padding-bottom="0">
+      ${t.row1}
+    </mj-text>
+
+    <mj-text padding-top="0">
+      ${t.row2}
+    </mj-text>
+
+    <mj-button href="${data.siteLink}">
+      ${t.btn_label}
+    </mj-button>
+  </mj-body>
+</mjml>
