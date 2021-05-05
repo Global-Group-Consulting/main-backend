@@ -6,6 +6,7 @@ const Request = use('App/Models/Request')
 const Event = use('Event')
 const Persona = use('Persona')
 const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
+const UserException = use('App/Exceptions/UserException')
 const AccountStatuses = require('../../../../enums/AccountStatuses')
 const UserRoles = require('../../../../enums/UserRoles')
 
@@ -157,7 +158,11 @@ class AuthController {
 
     email = email.toLowerCase()
 
-    await User.checkExists("email", email)
+    const user = await User.checkExists("email", email)
+
+    if(user.account_status !== AccountStatuses.ACTIVE){
+      throw new UserException("User not found or account not active.")
+    }
 
     await Persona.forgotPassword(email)
 

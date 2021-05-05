@@ -49,7 +49,7 @@ class RequestTypes extends BasicEnum {
       },
       [this.RISC_INTERESSI_GOLD]: {
         id: 'risc_interessi_gold',
-        movement: MovementTypes.DEPOSIT_COLLECTED
+        movement: MovementTypes.INTEREST_COLLECTED
       },
       [this.RISC_INTERESSI_BRITE]: {
         id: 'risc_interessi_brite',
