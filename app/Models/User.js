@@ -179,6 +179,8 @@ class User extends Model {
     if (!result) {
       throw new UserNotFoundException()
     }
+
+    return result
   }
 
   static async groupByRole(filter = {}, returnFlat = false, project) {
