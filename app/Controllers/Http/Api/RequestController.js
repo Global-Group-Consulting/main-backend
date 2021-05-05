@@ -33,7 +33,6 @@ class RequestController {
     const filter = adminUser ? {} : {userId: {$in: [auth.user._id.toString(), new MongoTypes.ObjectId(auth.user._id)]}}
 
     if (adminUser) {
-      // TODO:: i must avoid returning all this data, instead i should return the minimum data and when a request got open, return all its data
       return await RequestModel.allWithUser(sorting)
     }
 
