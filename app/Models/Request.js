@@ -233,8 +233,27 @@ class Request extends Model {
   }
 
   static async allWithUser(sorting = {}) {
+    // TODO:: i must avoid returning all this data, instead i should return the minimum data and when a request got open, return all its data
+
+    const currDate = moment()
+    const lastMonth = moment()
+
+    /*lastMonth.set({
+      date: 16,
+      month: currDate.month(),
+      hour: 0,
+      minute: 0,
+      second: 0
+    }).subtract(1, "months")*/
+
+    lastMonth.subtract(40, "days")
 
     return this.query()
+      .where({
+        created_at: {
+          $gte: lastMonth.toDate()
+        }
+      })
       .with("user", query => {
         query.setVisible([
           'id',
