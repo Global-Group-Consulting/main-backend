@@ -221,6 +221,9 @@ class UserController {
       if (emailExists) {
         throw new UserException("Email already exists")
       }
+
+      // Set the new email directly on the user so that when Persona handles the saving, avoid changing the user status
+      user.email = incomingUser.email
     }
 
     incomingUser.lastChangedBy = auth.user._id
