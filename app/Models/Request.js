@@ -6,6 +6,7 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
+const Database = use('Database')
 
 /** @type {typeof import("./User")} */
 const UserModel = use('App/Models/User')
@@ -43,12 +44,16 @@ const modelFields = {
 }
 
 class Request extends Model {
+  static db
+
   static get hidden() {
     return ['_id', "__v"]
   }
 
-  static boot() {
+  static async boot() {
     super.boot()
+
+    this.db = await Database.connect('mongodb')
 
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
 
@@ -387,36 +392,70 @@ class Request extends Model {
   }
 
   static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
-    const requests = await this.query()
-      .sort(sorting)
-      .fetch()
+    const requests = await this.db.collection("requests")
+      .aggregate([
+        {
+          "$sort": sorting
+        },
+        {
+          '$lookup': {
+            'from': 'users',
+            'let': {
+              'userId': '$userId'
+            },
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {
+                    '$eq': [
+                      '$_id', '$$userId'
+                    ]
+                  }
+                }
+              }, {
+                '$project': {
+                  'id': 1,
+                  'firstName': 1,
+                  'lastName': 1,
+                  'email': 1,
+                  'contractNumber': 1
+                }
+              }
+            ],
+            'as': 'user'
+          }
+        }, {
+          '$unwind': {
+            'path': '$user'
+          }
+        }
+      ]).toArray()
+    /* .sort(sorting)
+     .toArray()*/
 
-    const usersIds = requests.rows.map(req => req.userId)
+    return requests
+    /*const usersIds = requests.map(req => req.userId)
     const distinctUsers = [...new Set(usersIds)]
 
-    const users = await UserModel
-      .where({_id: {$in: distinctUsers}})
-      .setVisible([
-        'id',
-        'firstName',
-        'lastName',
-        'email',
-        'contractNumber'
-      ]).fetch()
+    const users = await this.db.collection("users")
 
-    const usersList = users.toJSON().reduce((acc, curr) => {
-      acc[curr.id] = curr
+
+    const usersList = users.reduce((acc, curr) => {
+      acc[curr._id.toString()] = {
+        ...curr,
+        id: curr._id.toString(),
+      }
 
       return acc
     }, {})
 
-    const finalRequests = requests.toJSON().map(req => {
+    const finalRequests = requests.map(req => {
       req.user = usersList[req.userId]
 
       return req
     })
 
-    return finalRequests
+    return finalRequests*/
     /*   .with("user", query => {
         query.setVisible([
           'id',
