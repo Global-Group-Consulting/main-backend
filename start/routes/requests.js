@@ -12,6 +12,9 @@ module.exports = function (Route) {
       .validator("requests/update")
 
     Route
+      .get('/targetUser/:id', 'RequestController.readTargetUser')
+
+    Route
       .get('/:id', 'RequestController.read')
 
     Route

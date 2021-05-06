@@ -352,6 +352,19 @@ class User extends Model {
     }))
   }
 
+  static async getTargetUser(userId) {
+    const data = await this.where({"_id": castToObjectId(userId)})
+      .setVisible([
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+        'contractNumber'
+      ]).fetch()
+
+    return data.rows[0]
+  }
+
   /**
    * @param signRequestId
    * @returns {Promise<User>}
