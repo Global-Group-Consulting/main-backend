@@ -232,6 +232,44 @@ class Request extends Model {
     return data
   }
 
+  static async reqWithUser(id) {
+    return this.query()
+      .where("_id", castToObjectId(id))
+      .with("user", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+          .with("referenceAgentData", q => {
+            q.setVisible([
+              'id',
+              'firstName',
+              'lastName',
+              'email',
+            ])
+          })
+      })
+      .with("targetUser", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+      })
+      .with("conversation", query => {
+        query.with("creator",
+          _creatorQuery => _creatorQuery.setVisible(["firstName", "lastName", "id"])
+        )
+      })
+      .with("files")
+      .first()
+  }
+
   static async allWithUser(sorting = {}) {
     // TODO:: i must avoid returning all this data, instead i should return the minimum data and when a request got open, return all its data
 
@@ -348,6 +386,21 @@ class Request extends Model {
     ]) */
   }
 
+  static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
+    return this.query()
+      .with("user", query => {
+        query.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
+      })
+      .sort(sorting)
+      .fetch()
+  }
+
   /**
    * @param {string | ObjectId} userId
    * @param {{}} [sorting]
@@ -355,7 +408,6 @@ class Request extends Model {
   static async allForUser(userId, sorting) {
     /** @type {IMovement} */
     const lastRecapitalization = await MovementModel.getLastRecapitalization(userId)
-
 
     /** @type {{rows: IRequest[]}} */
     const data = await Request

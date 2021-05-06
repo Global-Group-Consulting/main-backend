@@ -33,7 +33,7 @@ class RequestController {
     const filter = adminUser ? {} : {userId: {$in: [auth.user._id.toString(), new MongoTypes.ObjectId(auth.user._id)]}}
 
     if (adminUser) {
-      return await RequestModel.allWithUser(sorting)
+      return await RequestModel.allWithUserPaginated(sorting)
     }
 
     // const data = await RequestModel.where(filter).sort(sorting).fetch()
@@ -46,13 +46,19 @@ class RequestController {
    * @param {AdonisHttpResponse} ctx.response
    */
   async read({params, response}) {
-    const data = await RequestModel.find(params.id)
+    const data = await RequestModel.reqWithUser(params.id)
 
     if (!data) {
       throw new RequestNotFoundException()
     }
 
     return data
+  }
+
+  async readTargetUser({params}) {
+    const id = params.id
+
+    return UserModel.getTargetUser(id)
   }
 
   /**
