@@ -387,8 +387,37 @@ class Request extends Model {
   }
 
   static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
-    return this.query()
-      .with("user", query => {
+    const requests = await this.query()
+      .sort(sorting)
+      .fetch()
+
+    const usersIds = requests.rows.map(req => req.userId)
+    const distinctUsers = [...new Set(usersIds)]
+
+    const users = await UserModel
+      .where({_id: {$in: distinctUsers}})
+      .setVisible([
+        'id',
+        'firstName',
+        'lastName',
+        'email',
+        'contractNumber'
+      ]).fetch()
+
+    const usersList = users.toJSON().reduce((acc, curr) => {
+      acc[curr.id] = curr
+
+      return acc
+    }, {})
+
+    const finalRequests = requests.toJSON().map(req => {
+      req.user = usersList[req.userId]
+
+      return req
+    })
+
+    return finalRequests
+    /*   .with("user", query => {
         query.setVisible([
           'id',
           'firstName',
@@ -396,9 +425,7 @@ class Request extends Model {
           'email',
           'contractNumber'
         ])
-      })
-      .sort(sorting)
-      .fetch()
+      })*/
   }
 
   /**
