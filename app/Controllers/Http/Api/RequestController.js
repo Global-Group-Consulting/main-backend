@@ -27,13 +27,15 @@ const moment = require("moment")
 
 class RequestController {
 
-  async readAll({auth}) {
+  async readAll({auth, transform}) {
     const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
     const sorting = {"created_at": -1, "updated_at": -1, "completed_at": -1}
     const filter = adminUser ? {} : {userId: {$in: [auth.user._id.toString(), new MongoTypes.ObjectId(auth.user._id)]}}
 
     if (adminUser) {
-      return await RequestModel.allWithUserPaginated(sorting)
+      const data = await RequestModel.allWithUserPaginated(sorting)
+
+      return transform.collection(data, "RequestsTransformer")
     }
 
     // const data = await RequestModel.where(filter).sort(sorting).fetch()
