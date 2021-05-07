@@ -35,14 +35,7 @@ class RequestController {
     if (adminUser) {
       const data = await RequestModel.allWithUserPaginated(sorting)
 
-      return transform.collection(data, req => ({
-        ...req,
-        id: req._id.toString(),
-        user: {
-          ...req.user,
-          id: req.user._id.toString(),
-        }
-      }))
+      return transform.collection(data, "RequestsTransformer")
     }
 
     // const data = await RequestModel.where(filter).sort(sorting).fetch()

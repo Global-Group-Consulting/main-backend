@@ -392,7 +392,7 @@ class Request extends Model {
   }
 
   static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
-    const requests = await this.db.collection("requests")
+    return this.db.collection("requests")
       .aggregate([
         {
           "$sort": sorting
@@ -403,6 +403,7 @@ class Request extends Model {
             'let': {
               'userId': '$userId'
             },
+            'as': 'user',
             'pipeline': [
               {
                 '$match': {
@@ -412,59 +413,60 @@ class Request extends Model {
                     ]
                   }
                 }
-              }, {
+              },
+              {
                 '$project': {
                   'id': 1,
                   'firstName': 1,
                   'lastName': 1,
                   'email': 1,
-                  'contractNumber': 1
+                  'contractNumber': 1,
+                  'referenceAgent': 1
+                }
+              },
+              {
+                '$lookup': {
+                  'from': 'users',
+                  'let': {
+                    'agentId': '$referenceAgent'
+                  },
+                  'as': "referenceAgentData",
+                  'pipeline': [
+                    {
+                      '$match': {
+                        '$expr': {
+                          '$eq': [
+                            '$_id', '$$agentId'
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      '$project': {
+                        'id': 1,
+                        'firstName': 1,
+                        'lastName': 1,
+                        'email': 1,
+                      }
+                    },
+                  ]
+                }
+              },
+              {
+                '$unwind': {
+                  'path': '$referenceAgentData',
+                  'preserveNullAndEmptyArrays': true
                 }
               }
             ],
-            'as': 'user'
           }
-        }, {
+        },
+        {
           '$unwind': {
             'path': '$user'
           }
         }
       ]).toArray()
-    /* .sort(sorting)
-     .toArray()*/
-
-    return requests
-    /*const usersIds = requests.map(req => req.userId)
-    const distinctUsers = [...new Set(usersIds)]
-
-    const users = await this.db.collection("users")
-
-
-    const usersList = users.reduce((acc, curr) => {
-      acc[curr._id.toString()] = {
-        ...curr,
-        id: curr._id.toString(),
-      }
-
-      return acc
-    }, {})
-
-    const finalRequests = requests.map(req => {
-      req.user = usersList[req.userId]
-
-      return req
-    })
-
-    return finalRequests*/
-    /*   .with("user", query => {
-        query.setVisible([
-          'id',
-          'firstName',
-          'lastName',
-          'email',
-          'contractNumber'
-        ])
-      })*/
   }
 
   /**
