@@ -27,6 +27,7 @@ const providers = [
   '@adonisjs/validator/providers/ValidatorProvider',
   '@adonisjs/drive/providers/DriveProvider',
   '@adonisjs/websocket/providers/WsProvider',
+  'adonis-bumblebee/providers/BumblebeeProvider',
   'lucid-mongo/providers/LucidMongoProvider',
   path.join(__dirname, '..', 'providers', 'EmailSenderProvider'),
   path.join(__dirname, '..', 'providers', 'CustomValidatorProvider'),
@@ -46,7 +47,8 @@ const providers = [
 |
 */
 const aceProviders = [
-  '@adonisjs/lucid/providers/MigrationsProvider'
+  '@adonisjs/lucid/providers/MigrationsProvider',
+  'adonis-bumblebee/providers/CommandsProvider'
 ]
 
 /*
