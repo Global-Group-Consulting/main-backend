@@ -86,7 +86,7 @@ class RequestController {
 
       incomingData.amount = 0;
     }else{
-      if(incomingData.amount === 0 && incomingData.type !==  RequestTypes.VERSAMENTO){
+      if(+incomingData.amount === 0 && +incomingData.type !==  RequestTypes.VERSAMENTO){
         throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
       }
     }
