@@ -808,10 +808,6 @@ class Request extends Model {
     return castToIsoDate(value)
   }
 
-  setClubCardNumber(value) {
-    return value ? +value : value
-  }
-
   setLastRun(value) {
     return castToIsoDate(value)
   }
