@@ -165,11 +165,13 @@ class DocController {
     sheetRiscossioni.addRows(rows, "i");
 
     for (let i = 0; i < rows.length; i++) {
-      sheetRiscossioni.getCell('B' + (i + 2)).value = {
-        text: rows[i].name,
-        hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].id,
-        tooltip: "Premi per aprire il profilo dell'utente"
-      };
+      if (rows[i].userId) {
+        sheetRiscossioni.getCell('B' + (i + 2)).value = {
+          text: rows[i].name,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].id,
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
 
       if (rows[i].referenceAgent) {
         sheetRiscossioni.getCell('H' + (i + 2)).value = {
@@ -282,11 +284,13 @@ class DocController {
     sheetResoconto.addRows(rows, "i");
 
     for (let i = 0; i < rows.length; i++) {
-      sheetResoconto.getCell('B' + (i + 2)).value = {
-        text: rows[i].name,
-        hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].userId.toString(),
-        tooltip: "Premi per aprire il profilo dell'utente"
-      };
+      if (rows[i].userId) {
+        sheetResoconto.getCell('B' + (i + 2)).value = {
+          text: rows[i].name,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].userId.toString(),
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
 
       if (rows[i].referenceAgent) {
         sheetResoconto.getCell('E' + (i + 2)).value = {
