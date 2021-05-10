@@ -331,64 +331,7 @@ class Request extends Model {
       // .with("files")
       .sort(sorting)
       .fetch()
-    /* return this.query().aggregate([
-      { "$sort": sorting },
-      {
-        '$addFields': {
-          'uId': {
-            '$toObjectId': '$userId'
-          },
-          'id': {
-            '$toString': "$_id"
-          }
-        }
-      }, {
-        '$lookup': {
-          'from': 'users',
-          'let': {
-            'uId': '$uId'
-          },
-          'pipeline': [
-            {
-              '$match': {
-                '$expr': {
-                  '$eq': [
-                    '$$uId', '$_id'
-                  ]
-                }
-              }
-            }, {
-              '$project': {
-                'uId': 1,
-                'id': 1,
-                'firstName': 1,
-                'lastName': 1,
-                'email': 1,
-                'contractNumber': 1
-              }
-            }
-          ],
-          'as': 'user'
-        }
-      }, {
-        '$lookup': {
-          'from': 'files',
-          'let': {
-            "id": { $toString: "$_id" }
-          },
-          'pipeline': [
-            { "$match": { $expr: { $eq: ["$$id", "$requestId"] } } }
-          ],
-          'as': 'files'
-        }
-      }, {
-        '$unwind': '$user'
-      }, {
-        '$project': {
-          '_id': 0,
-        }
-      }
-    ]) */
+
   }
 
   static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
@@ -613,8 +556,8 @@ class Request extends Model {
           type: {$in: reqToSearch},
           status: RequestStatus.ACCETTATA,
           created_at: {
-            $gte: startDate.toDate(),
-            $lte: endDate.toDate()
+              $gte: startDate.toDate(),
+              $lte: endDate.toDate()
           }
         },
         {
@@ -622,22 +565,103 @@ class Request extends Model {
           type: RequestTypes.RISC_PROVVIGIONI,
           status: RequestStatus.ACCETTATA,
           created_at: {
-            $gt: commissionsStartDate.toDate(),
-            $lte: commissionsEndDate.toDate()
+              $gt: commissionsStartDate.toDate(),
+              $lte: commissionsEndDate.toDate()
           }
         }
       ]
     }
 
-    const data = await this.where(query)
-      .with("user")
-      .sort({
-        userId: 1,
-        type: 1
-      })
-      .fetch()
+    /* const data = await this.where(query)
+       .with("user")
+       .sort({
+         userId: 1,
+         type: 1
+       })
+       .fetch()*/
 
-    const jsonData = data.toJSON()
+    const data = await this.db.collection("requests")
+      .aggregate([
+        {
+          "$sort": {
+            userId: 1,
+            type: 1
+          }
+        },
+        {
+          "$match": query
+        },
+        {
+          '$lookup': {
+            'from': 'users',
+            'let': {
+              'userId': '$userId'
+            },
+            'as': 'user',
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {
+                    "$eq": ['$_id', '$$userId']
+                  }
+                }
+              },
+              {
+                '$project': {
+                  'id': 1,
+                  'firstName': 1,
+                  'lastName': 1,
+                  'email': 1,
+                  'contractNumber': 1,
+                  'referenceAgent': 1,
+                  'clubPack': 1,
+                }
+              },
+              {
+                '$lookup': {
+                  'from': 'users',
+                  'let': {
+                    'agentId': '$referenceAgent'
+                  },
+                  'as': "referenceAgentData",
+                  'pipeline': [
+                    {
+                      '$match': {
+                        '$expr': {
+                          '$eq': [
+                            '$_id', '$$agentId'
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      '$project': {
+                        'id': 1,
+                        'firstName': 1,
+                        'lastName': 1,
+                        'email': 1,
+                      }
+                    },
+                  ]
+                }
+              },
+              {
+                '$unwind': {
+                  'path': '$referenceAgentData',
+                  'preserveNullAndEmptyArrays': true
+                }
+              }
+            ],
+          }
+        },
+        {
+          '$unwind': {
+            'path': '$user'
+          }
+        }
+      ]).toArray()
+
+    const jsonData = data //data.toJSON()
 
     //  In fase di download, se una richiesta è classic, ma l'utente è gold, inserire quella richiesta nella pagina relativa ai gold.
     for (const entry of jsonData) {
