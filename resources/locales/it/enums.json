@@ -24,5 +24,28 @@
     "message_chat_message": "Hai un nuovo messaggio in una chat.",
     "message_communication": "Nuova comunicazione",
     "message_communication_message": "Hai una nuova comunicazione."
+  },
+  "RequestTypes": {
+    "admin": "Admin",
+    "versamento": "Versamento",
+    "risc_provvigioni": "Riscossione provvigioni",
+    "risc_capitale": "Prelievo deposito",
+    "risc_interessi": "Riscossione rendite (classic)",
+    "risc_interessi_brite": "Riscossione rendite Gold",
+    "risc_interessi_gold": "Riscossione rendite Gold (Fisico)",
+    "commission_manual_add": "Aggiunta provvigioni manuali ad agente"
+  },
+  "RequestStatus": {
+    "nuova": "Da Evadere",
+    "lavorazione": "In lavorazione",
+    "accettata": "Accettata",
+    "rifiutata": "Rifiutata",
+    "annullata": "Annullata"
+  },
+  "ClubPacks": {
+    "unsubscribed": "Non iscritto",
+    "basic": "Basic",
+    "fast": "Fast",
+    "premium": "Premium"
   }
 }
