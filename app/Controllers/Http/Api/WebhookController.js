@@ -9,6 +9,7 @@ const SignRequestModel = use("App/Models/SignRequest")
 /** @type {import("../../../Models/File")} */
 const FileModel = use("App/Models/File")
 const Event = use("Event")
+const Queue = use("QueueProvider")
 
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 
@@ -18,7 +19,7 @@ const {LogicalException} = require('@adonisjs/generic-exceptions')
 class WebhookController {
   async _onContractSigned(incomingData, signRequest) {
     /** @type {User} */
-    const user =  await signRequest.user().fetch()
+    const user = await signRequest.user().fetch()
 
     if (!user) {
       throw new Error("Can't find any user")
@@ -63,11 +64,11 @@ class WebhookController {
       })
     } catch (er) {
       // if (process.env.NODE_ENV !== 'development') {
-        if (er.response) {
-          throw new LogicalException(er.response.statusText, er.response.status)
-        } else {
-          throw er
-        }
+      if (er.response) {
+        throw new LogicalException(er.response.statusText, er.response.status)
+      } else {
+        throw er
+      }
       /*} else {
         console.error(er)
       }*/
@@ -94,7 +95,7 @@ class WebhookController {
     await user.save()
   }
 
-  async onSignRequest({request, response}) {
+  async _checkRequest(request, response) {
     /** @type {import("../../../../@types/SignRequest/Webhooks.d").WebhooksCall} */
     const incomingData = request.body
 
@@ -140,8 +141,17 @@ class WebhookController {
     if (incomingData.event_type === "declined") {
       await this._onContractDeclined(incomingData, signRequest)
     }
+  }
 
-    return response.ok()
+  async onSignRequest({request, response}) {
+    // Creates a random timer max 60 seconds
+    const randomTimer = Math.ceil(Math.random() + 60000);
+
+    setTimeout(async () => {
+      await this._checkRequest(request, response)
+    }, randomTimer)
+
+    response.ok()
   }
 }
 
