@@ -151,7 +151,7 @@ class WebhookController {
       await this._checkRequest(request, response)
     }, randomTimer)
 
-    response.ok()
+    return response.ok()
   }
 }
 
