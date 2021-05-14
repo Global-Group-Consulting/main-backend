@@ -21,6 +21,7 @@ const RequestException = require("../../../Exceptions/RequestException")
 const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
+const RequestTypes = require("../../../../enums/RequestTypes")
 const MovementTypes = require("../../../../enums/MovementTypes")
 const moment = require("moment")
 
@@ -84,6 +85,10 @@ class RequestController {
       incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
 
       incomingData.amount = 0;
+    }else{
+      if(!+incomingData.amount && +incomingData.type !==  RequestTypes.VERSAMENTO){
+        throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+      }
     }
 
     const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll;

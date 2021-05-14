@@ -7,10 +7,13 @@ const Config = use("Config")
 /** @type {import("../../../Models/Request")} */
 const RequestModel = use("App/Models/Request")
 const Helpers = use("Helpers")
+const Antl = use('Antl')
+const Env = use('Env')
 
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestTypes = require("../../../../enums/RequestTypes")
 const CurrencyType = require("../../../../enums/CurrencyType");
+const ClubPacks = require("../../../../enums/ClubPacks");
 
 const pdfFiller = require('pdffiller');
 const ExcelJS = require('exceljs');
@@ -94,6 +97,7 @@ class DocController {
         width: 18
       },
       {header: 'Tipo Richiesta', key: "type", style: columnsStyle, width: 23},
+      {header: 'Pacchetto club', key: "clubPack", style: columnsStyle, width: 15},
       {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
       //{header: 'BIC / Swift', key: "bic", style: columnsStyle, width: 15},
       {header: 'Note', key: "notes", style: columnsStyle, width: 50},
@@ -130,9 +134,11 @@ class DocController {
 
 
       acc.push({
+        id: row.userId.toString(),
         contractNumber: row.user.contractNumber,
         amount: row.amount,
-        type: RequestTypes.get(row.type).id,
+        type: Antl.compile('it', `enums.RequestTypes.${RequestTypes.get(row.type).id}`),
+        clubPack: Antl.compile('it', `enums.ClubPacks.${row.user.clubPack}`),
         name: row.user.firstName + " " + row.user.lastName,
         iban: iban.reduce((acc, curr) => {
           if (typeof curr === "string") {
@@ -146,7 +152,8 @@ class DocController {
           return acc
         }, []).join("\n").trim(),
         notes: row.notes,
-        referenceAgent: row.user.referenceAgent,
+        referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
+        referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
         created_at: moment(row.created_at).toDate(),
         completed_at: moment(row.completed_at).toDate(),
       })
@@ -156,6 +163,24 @@ class DocController {
 
     sheetRiscossioni.columns = columns;
     sheetRiscossioni.addRows(rows, "i");
+
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].userId) {
+        sheetRiscossioni.getCell('B' + (i + 2)).value = {
+          text: rows[i].name,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].id,
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
+
+      if (rows[i].referenceAgent) {
+        sheetRiscossioni.getCell('H' + (i + 2)).value = {
+          text: rows[i].referenceAgent,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
+    }
 
     const headerRow = sheetRiscossioni.getRow(1)
     headerRow.height = 30
@@ -212,7 +237,7 @@ class DocController {
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
     ]
     const rows = Object.values(data.reduce((acc, row) => {
-      const userId = row.user.id
+      const userId = row.user._id.toString()
       const iban = [];
 
       if (row.iban && row.user.contractIban && row.iban.toLowerCase() !== row.user.contractIban.toLowerCase()) {
@@ -232,6 +257,8 @@ class DocController {
           name: row.user.firstName + " " + row.user.lastName,
           amount: row.amount,
           type: RequestTypes.get(row.type).id,
+          referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
+          referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
           iban: iban.reduce((acc, curr) => {
             if (typeof curr === "string") {
               (!acc.includes(curr) && acc.push(curr));
@@ -255,6 +282,24 @@ class DocController {
 
     sheetResoconto.columns = columns;
     sheetResoconto.addRows(rows, "i");
+
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].userId) {
+        sheetResoconto.getCell('B' + (i + 2)).value = {
+          text: rows[i].name,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].userId.toString(),
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
+
+      if (rows[i].referenceAgent) {
+        sheetResoconto.getCell('E' + (i + 2)).value = {
+          text: rows[i].referenceAgent,
+          hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
+          tooltip: "Premi per aprire il profilo dell'utente"
+        };
+      }
+    }
 
     const headerRow = sheetResoconto.getRow(1)
     headerRow.height = 30
@@ -289,10 +334,10 @@ class DocController {
     workbook.modified = new Date();
 
     const sheetResoconto = this._generateResocontoSheet(workbook, data)
-    const sheetRiscossioniClassic = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_INTERESSI), "Riscossione Classic")
-    const sheetRiscossioniGold = this._generateRiscossioniSheet(workbook, data.filter(el => [RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE].includes(el.type)), "Riscossione Gold")
-    const sheetDeposito = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_CAPITALE), "Prelievo Deposito")
-    const sheetCommissions = this._generateRiscossioniSheet(workbook, data.filter(el => el.type === RequestTypes.RISC_PROVVIGIONI), "Risc. Provvigioni")
+    const sheetRiscossioniClassic = this._generateRiscossioniSheet(workbook, data.filter(el => +el.type === RequestTypes.RISC_INTERESSI), "Riscossione Classic")
+    const sheetRiscossioniGold = this._generateRiscossioniSheet(workbook, data.filter(el => [RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE].includes(+el.type)), "Riscossione Gold")
+    const sheetDeposito = this._generateRiscossioniSheet(workbook, data.filter(el => +el.type === RequestTypes.RISC_CAPITALE), "Prelievo Deposito")
+    const sheetCommissions = this._generateRiscossioniSheet(workbook, data.filter(el => +el.type === RequestTypes.RISC_PROVVIGIONI), "Risc. Provvigioni")
 
     const fileName = "report_requests_" + Date.now()
     const filePath = Helpers.tmpPath(fileName)
