@@ -237,7 +237,7 @@ class DocController {
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
     ]
     const rows = Object.values(data.reduce((acc, row) => {
-      const userId = row.user.id
+      const userId = row.user._id.toString()
       const iban = [];
 
       if (row.iban && row.user.contractIban && row.iban.toLowerCase() !== row.user.contractIban.toLowerCase()) {
