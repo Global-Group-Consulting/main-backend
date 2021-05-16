@@ -25,12 +25,15 @@ module.exports =
       throw new Error("Movement not found")
     }
 
+    const semesterId = (new Date()).getFullYear() + "_" + ((new Date()).getMonth() < 6 ? "1" : "2")
+
     /**
      * @type {BriteModel & Model}
      */
     const cratedMovement = await BriteModel.recapitalizationAdd({
       amountChange: movement.amountChange,
       userId: movement.userId,
+      semesterId
     })
 
     job.attrs.result = cratedMovement.toJSON()
