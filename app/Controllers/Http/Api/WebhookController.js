@@ -10,6 +10,7 @@ const SignRequestModel = use("App/Models/SignRequest")
 const FileModel = use("App/Models/File")
 const Event = use("Event")
 const Queue = use("QueueProvider")
+const Logger = use("Logger")
 
 const AccountStatuses = require("../../../../enums/AccountStatuses")
 
@@ -145,7 +146,17 @@ class WebhookController {
 
   async onSignRequest({request, response}) {
     // Creates a random timer max 60 seconds
-    const randomTimer = Math.ceil(Math.random() + 60000);
+    const randomTimer = Math.ceil(Math.random() * 60000);
+
+    /*
+    Sembra che a livello di db venga registrato correttamente l'importo attualmente
+    disponibile per l'utente, quindi forse potrei fare un controllo per vedere se l'utente
+    ha già un versamento iniziale, anche se in realtà dovrebbe già esserci questo tipo di
+    movimento.
+    */
+
+    Logger.info("[Webhooks] Received call at " + (new Date()).toISOString())
+    Logger.info(`[Webhooks] Trying to defer it by ${randomTimer}ms`)
 
     setTimeout(async () => {
       await this._checkRequest(request, response)
