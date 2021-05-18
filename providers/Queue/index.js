@@ -10,8 +10,6 @@ const cronParser = require('cron-parser');
 const Logger = use("Logger")
 const Helpers = use('Helpers');
 
-let agendaInstance = null
-
 class Queue {
   /**
    * @param {Adonis.Config} Config
@@ -19,7 +17,7 @@ class Queue {
   constructor(Config) {
     const appMongoConnection = Config.get("database.mongodb")
 
-    Logger.info("-- INITIATING QUEUE PROVIDER --")
+    this.logInfo("INITIATING QUEUE PROVIDER --")
 
     if (!appMongoConnection) {
       throw new Error("Missing MongoDb configuration.")
@@ -34,37 +32,43 @@ class Queue {
     this.Config = Config
 
     this.queuesList = {}
+    this.jobsList = {}
 
-    if (agendaInstance) {
-      /**
-       * @private
-       */
-      this._agenda = agendaInstance
+    /** @type {Agenda} */
+    this._agenda = new Agenda({
+      db: {
+        address: appMongoConnection.connectionString,
+        collection: "queueJobs",
+        options: {
+          useUnifiedTopology: true,
+          useFindAndModify: false,
+          useNewUrlParser: true
+        }
+      },
+      defaultLockLifetime: 5000,
+    });
 
-      Logger.info("-- USING EXISTING AGENDA INSTANCE --")
+    this._initQueues()
 
-    } else {
-
-      /** @type {Agenda} */
-      this._agenda = new Agenda({
-        db: {
-          address: appMongoConnection.connectionString,
-          collection: "queueJobs",
-          options: {
-            useUnifiedTopology: true
-          }
-        },
-        defaultLockLifetime: 5000,
-      });
-
-      agendaInstance = this._agenda
-      this._start()
-    }
-
+    this.initRecursiveJobs()
+      .then(() => {
+        this.logInfo("Started recursive jobs")
+      })
+      .catch(er => {
+        this.logError("Can't start recursive jobs", er)
+      })
   }
 
   get agenda() {
     return this._agenda
+  }
+
+  logInfo(message, ...attrs) {
+    Logger.info("[QueueProvider] " + message, ...attrs)
+  }
+
+  logError(message, ...attrs) {
+    Logger.error("[QueueProvider] " + message, ...attrs)
   }
 
   async _isReady() {
@@ -74,7 +78,9 @@ class Queue {
   /**
    * @private
    */
-  async _start() {
+  _initQueues() {
+    this.logInfo("Starting available queues")
+
     /**
      * @type {{}}
      */
@@ -85,7 +91,7 @@ class Queue {
       const queue = queuesList[queueName]
 
       if (!queue) {
-        Logger.error("Can't process unnamed queue", queue)
+        this.logError(`Can't process unknown queue "${queueName}"`)
 
         continue
       }
@@ -93,30 +99,33 @@ class Queue {
       const action = queue.action || upperFirst(camelCase(queueName))
       const jobPath = Helpers.appRoot() + `/${this.Config.get('queue.jobsPath')}/${action}`
 
-      try {
-        const job = require(jobPath + ".js")
+      this._agenda.define(queueName, queue.options || {}, (...attrs) => {
+        // Require the job workers only when are required for the first time.
+        // This to avoid singleton errors.
+        if (!this.jobsList[queueName]) {
 
-        if (typeof job !== "function") {
-          throw new Error("Invalid job type.")
+          try {
+            this.jobsList[queueName] = require(jobPath + ".js")
+          } catch (er) {
+            console.log(er)
+
+            if (er.code === "MODULE_NOT_FOUND") {
+              this.logError("Can't find the JobHandler for " + queueName + " at " + jobPath)
+            } else {
+              this.logError(er.message, er)
+            }
+          }
         }
 
-        this._agenda.define(queueName, queue.options || {}, job)
-
-        this.queuesList[queueName] = job
-      } catch (er) {
-        console.log(er)
-
-        if (er.code === "MODULE_NOT_FOUND") {
-          Logger.error("Can't find the JobHandler for " + queueName + " at " + jobPath)
-        } else {
-          Logger.error(er)
-        }
-      }
+        this.jobsList[queueName](...attrs)
+      })
     }
 
     this._addEventListeners()
 
-    await this._agenda.start()
+    this._agenda.start()
+      .then(() => this.logInfo("Agenda started"))
+      .catch((er) => this.logError("Can't start agenda", er))
   }
 
   /**
@@ -124,11 +133,11 @@ class Queue {
    */
   _addEventListeners() {
     this._agenda.on("start", /** @param {QueueProvider.Job} job */job => {
-      Logger.info(["Job STARTING", job.attrs.name].join(" - "))
+      this.logInfo(["Job STARTING", job.attrs.name].join(" - "))
     })
 
     this._agenda.on("success", async /** @param {QueueProvider.Job} job */(job) => {
-      Logger.info(["Job COMPLETED SUCCESSFULLY", job.attrs.name].join(" - "))
+      this.logInfo(["Job COMPLETED SUCCESSFULLY", job.attrs.name].join(" - "))
 
       await this._rescheduleCronJob(job)
     })
@@ -138,7 +147,7 @@ class Queue {
      @param {QueueProvider.Job} job
      */
     async (err, job) => {
-      Logger.info(["Job COMPLETED FAILING", job.attrs.name, err].join(" - "))
+      this.logInfo(["Job COMPLETED FAILING", job.attrs.name, err].join(" - "))
 
       await this._rescheduleCronJob(job)
     })
