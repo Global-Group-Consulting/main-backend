@@ -23,6 +23,8 @@ module.exports = {
     connectionString: Env.get('DB_CONNECTION_STRING', ''),
     connectionOptions: {
       useUnifiedTopology: true,
+      useFindAndModify: false,
+      useNewUrlParser: true
     },
     connection: {
       host: Env.get('DB_HOST', 'localhost'),
