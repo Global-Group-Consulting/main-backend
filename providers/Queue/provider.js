@@ -1,6 +1,6 @@
 'use strict'
 
-const {ServiceProvider} = require('@adonisjs/fold')
+const {ServiceProvider, ioc} = require('@adonisjs/fold')
 
 const Helpers = use("Helpers")
 
@@ -13,10 +13,12 @@ class QueueProvider extends ServiceProvider {
    * @return {void}
    */
   register() {
-    this.app.singleton('QueueProvider', () => {
-      const Config = this.app.use('Adonis/Src/Config')
+    ioc.singleton('QueueProvider', (app) => {
+      const Config = app.use('Adonis/Src/Config')
+      const Helpers = app.use("Helpers")
+      const Logger = app.use("Logger")
 
-      return new (require('.'))(Config)
+      return new (require("./index"))(Config, Logger, Helpers)
     })
   }
 
@@ -29,17 +31,17 @@ class QueueProvider extends ServiceProvider {
    * @return {void}
    */
   boot() {
-    if (!Helpers.isAceCommand()) {
+    /*   if (!Helpers.isAceCommand()) {
 
-      /**
-       * I import it where so that the provider can start immediately
-       *
-       * @type {import("./index")}
-       * */
-      const QueueProvider = this.app.use("QueueProvider")
+         /!**
+          * I import it where so that the provider can start immediately
+          *
+          * @type {import("./index")}
+          * *!/
+         /!*const QueueProvider = this.app.use("QueueProvider")
 
-      QueueProvider.initRecursiveJobs()
-    }
+         QueueProvider.initRecursiveJobs()*!/
+       }*/
   }
 }
 

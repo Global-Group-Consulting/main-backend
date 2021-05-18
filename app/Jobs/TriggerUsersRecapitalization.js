@@ -26,10 +26,6 @@ module.exports =
       })
     )
 
-    /* for (const user of userList.rows) {
-
-     }*/
-
     job.attrs.result = addedJobs;
 
     if (job.save) {
