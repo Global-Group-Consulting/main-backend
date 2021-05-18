@@ -24,6 +24,9 @@ module.exports = function (Route) {
     Route.put('/:id/approve', 'UserController.approve')
       .validator('users/UserApprove')
 
+    Route.patch('/:id/suspend', 'UserController.suspend')
+      .validator('users/UserSuspend')
+
     Route.post('/:id/sendEmailActivation', 'UserController.sendActivationEmail')
     // .validator('users/UserApprove')
 
