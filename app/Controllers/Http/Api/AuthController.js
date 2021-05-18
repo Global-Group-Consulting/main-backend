@@ -50,8 +50,9 @@ class AuthController {
 
     const user = await User.where({email: lowerEmail}).first()
 
-    if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)) {
-      throw new InvalidLoginException("Invalid user.")
+    if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)
+      || user.suspended) {
+      throw new InvalidLoginException("Utente non valido o sospeso.")
     }
 
     return response.json({
@@ -103,6 +104,12 @@ class AuthController {
 
   async refresh({request, auth}) {
     const refreshToken = request.input('refreshToken')
+
+    if (auth.user.suspended) {
+      await this.logout({auth})
+
+      throw new UserException("Account sospeso")
+    }
 
     const newToken = await auth.generateForRefreshToken(refreshToken, true)
 
@@ -160,8 +167,8 @@ class AuthController {
 
     const user = await User.checkExists("email", email)
 
-    if(user.account_status !== AccountStatuses.ACTIVE){
-      throw new UserException("User not found or account not active.")
+    if (user.account_status !== AccountStatuses.ACTIVE || user.suspended) {
+      throw new UserException("Utente non trovato o account non attivo o sospeso")
     }
 
     await Persona.forgotPassword(email)
