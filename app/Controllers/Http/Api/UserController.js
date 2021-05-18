@@ -177,6 +177,10 @@ class UserController {
     return signRequest
   }
 
+  _authUserAdmin(auth) {
+    return [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(auth.user.role)
+  }
+
   async create({request, response, auth}) {
     const incomingUser = request.only(User.updatableFields)
 
@@ -628,6 +632,28 @@ class UserController {
 
     // Save the user and wait for the signRequest webhooks
     await user.save()
+  }
+
+  async suspend({params, auth, request}) {
+    const authUserAdmin = this._authUserAdmin(auth)
+
+    if (!authUserAdmin) {
+      throw new AclGenericException("Permessi insufficienti")
+    }
+
+    const user = await User.find(params.id)
+
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+
+    user.suspended = Boolean(request.input("status"))
+
+    await user.save()
+
+    return {
+      suspended: user.suspended
+    }
   }
 }
 
