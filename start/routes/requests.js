@@ -8,6 +8,10 @@ module.exports = function (Route) {
       .validator("requests/create")
 
     Route
+      .post('/admin', 'RequestController.createByAdmin')
+      .validator("requests/createByAdmin")
+
+    Route
       .put('/:id', 'RequestController.update')
       .validator("requests/update")
 
