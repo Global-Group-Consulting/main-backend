@@ -19,6 +19,7 @@ const Event = use("Event")
 const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
 const RequestException = require("../../../Exceptions/RequestException")
 const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
+const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
 const RequestTypes = require("../../../../enums/RequestTypes")
@@ -85,8 +86,8 @@ class RequestController {
       incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
 
       incomingData.amount = 0;
-    }else{
-      if(!+incomingData.amount && +incomingData.type !==  RequestTypes.VERSAMENTO){
+    } else {
+      if (!+incomingData.amount && +incomingData.type !== RequestTypes.VERSAMENTO) {
         throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
       }
     }
@@ -117,6 +118,45 @@ class RequestController {
     }
 
     return newRequest
+  }
+
+  async createByAdmin({request, auth}) {
+    if (auth.user.role !== UserRoles.ADMIN) {
+      throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
+    }
+
+    /** @type {typeof import("../../../Validators/requests/create").rules} */
+    const incomingData = request.all()
+
+    /** @type {import("../../../../@types/User").User} */
+    const associatedUser = await UserModel.find(incomingData.userId)
+
+    if (!associatedUser) {
+      throw new UserNotFoundException()
+    }
+
+    if (!+incomingData.amount) {
+      throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+    }
+
+    const newRequest = await RequestModel.create({
+      ...incomingData,
+      createdBy: auth.user.id,
+      createdByAdmin: true
+    })
+
+    const files = request.files()
+
+    if (Object.keys(files).length > 0) {
+      await FileModel.store(files, associatedUser.id, auth.user._id, {
+        requestId: newRequest.id
+      })
+    }
+
+    Event.emit("request::new", newRequest)
+
+    return newRequest
+
   }
 
   /**

@@ -56,14 +56,21 @@ class Request extends Model {
     this.db = await Database.connect('mongodb')
 
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
-
-      // Auto approve some types of requests
-      if ([
+      const reqToAutoApprove = [
         RequestTypes.RISC_INTERESSI,
         RequestTypes.RISC_INTERESSI_BRITE,
         RequestTypes.RISC_INTERESSI_GOLD,
         RequestTypes.RISC_PROVVIGIONI,
-      ].includes(data.type)) {
+      ]
+      const adminReqToAutoApprove = [
+        RequestTypes.VERSAMENTO,
+        RequestTypes.RISC_CAPITALE,
+      ]
+
+      // Auto approve some types of requests
+      if (reqToAutoApprove.includes(data.type)
+        || (adminReqToAutoApprove.includes(data.type) && data.createdByAdmin)
+      ) {
         const typeData = RequestTypes.get(data.type)
 
         try {
@@ -82,6 +89,7 @@ class Request extends Model {
             const movementData = {
               userId: data.userId,
               movementType: typeData.movement,
+              requestType: data.type,
               amountChange: data.amount,
               interestPercentage: +user.contractPercentage,
             }
@@ -151,9 +159,9 @@ class Request extends Model {
         data.availableAmount = commissionMovement.currMonthCommissions
       }
 
-      if ([
-        RequestTypes.RISC_CAPITALE,
-        RequestTypes.VERSAMENTO].includes(data.type) && data.status === RequestStatus.ACCETTATA) {
+      if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)
+        && data.status === RequestStatus.ACCETTATA
+        && !data.createdByAdmin) {
         const typeData = RequestTypes.get(data.type)
 
         try {
@@ -162,6 +170,7 @@ class Request extends Model {
           const movementData = {
             userId: data.userId,
             movementType: data.initialMovement ? MovementTypes.INITIAL_DEPOSIT : typeData.movement,
+            requestType: data.type,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate
@@ -556,8 +565,8 @@ class Request extends Model {
           type: {$in: reqToSearch},
           status: RequestStatus.ACCETTATA,
           created_at: {
-              $gte: startDate.toDate(),
-              $lte: endDate.toDate()
+            $gte: startDate.toDate(),
+            $lte: endDate.toDate()
           }
         },
         {
@@ -565,8 +574,8 @@ class Request extends Model {
           type: RequestTypes.RISC_PROVVIGIONI,
           status: RequestStatus.ACCETTATA,
           created_at: {
-              $gt: commissionsStartDate.toDate(),
-              $lte: commissionsEndDate.toDate()
+            $gt: commissionsStartDate.toDate(),
+            $lte: commissionsEndDate.toDate()
           }
         }
       ]
