@@ -6,12 +6,14 @@ const Config = use("Config")
 
 /** @type {import("../../../Models/Request")} */
 const RequestModel = use("App/Models/Request")
+const UserModel = use("App/Models/User")
 const Helpers = use("Helpers")
 const Antl = use('Antl')
 const Env = use('Env')
 
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestTypes = require("../../../../enums/RequestTypes")
+const MovementTypes = require("../../../../enums/MovementTypes")
 const CurrencyType = require("../../../../enums/CurrencyType");
 const ClubPacks = require("../../../../enums/ClubPacks");
 
@@ -348,8 +350,10 @@ class DocController {
   }
 
   async getReceiptDeposit({request, auth, response}) {
-    const requestId = request.input("id")
-    let reqData = await RequestModel.findByIdOrMovementId(requestId)
+    const id = request.input("id")
+    const type = request.input("type")
+
+    let reqData = await RequestModel.findByIdOrMovementId(id, type)
 
     if (!reqData) {
       throw new Error("No request found")
@@ -360,11 +364,12 @@ class DocController {
       throw new Error("You don't have the permissions to read this file.")
     }
 
-    if (reqData.type !== RequestTypes.VERSAMENTO) {
-      throw new Error("Request is not of type DEPOSIT.")
+    if (reqData.type && reqData.type !== RequestTypes.VERSAMENTO
+      || reqData.movementType && reqData.movementType !== MovementTypes.DEPOSIT_ADDED) {
+      throw new Error("La richiesta o il movimento non è un VERSAMENTO.")
     }
 
-    const user = await reqData.user().fetch()
+    const user = await UserModel.find(reqData.userId)
     const reqNumber = formatContractNumber(user.contractNumber) + "_" + formatDate(reqData.created_at, true, "DD/MM/YY")
       .replace(/[\/:]/g, "")
       .replace(/ /g, "_")
@@ -375,11 +380,11 @@ class DocController {
       birth_date: formatDate(user.birthDate) || "",
       residence_place: formatResidencePlace(user),
       req_number: reqNumber,
-      amount: formatMoney(reqData.amount),
-      amount_text: formatWrittenNumbers(reqData.amount),
+      amount: formatMoney(reqData.amount || reqData.amountChange || 0),
+      amount_text: formatWrittenNumbers(reqData.amount || reqData.amountChange || 0),
       created_at: formatDate(reqData.created_at)
     }
-    const fileName = "receipt_deposit_" + reqData.id.toString()
+    const fileName = "receipt_deposit_" + reqData._id.toString()
     const filePath = Helpers.tmpPath(fileName)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 

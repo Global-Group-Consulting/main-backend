@@ -686,10 +686,20 @@ class Request extends Model {
     return jsonData
   }
 
-  static async findByIdOrMovementId(id) {
+  /**
+   *
+   * @param {string} id
+   * @param {"movement" | "request"} type
+   * @returns {Promise<any>}
+   */
+  static async findByIdOrMovementId(id, type) {
     const objId = castToObjectId(id)
 
-    return this.query().where({$or: [{_id: objId}, {movementId: objId}]}).first()
+    if (type === "request") {
+      return this.where({_id: objId}).first();
+    } else {
+      return MovementModel.where({_id: objId}).first();
+    }
   }
 
   static async getLastAutoWithdrawlRequest(userId) {
