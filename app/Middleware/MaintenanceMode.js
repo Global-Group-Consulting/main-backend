@@ -62,6 +62,11 @@ class MaintenanceMode {
       timeInterval = ["05:00", "22:00"]
     }
 
+    // If no setting exists, allow user.
+    if (!timeInterval) {
+      return next()
+    }
+
     const startTime = moment(timeInterval[0], "HH:mm")
     const endTime = moment(timeInterval[1], "HH:mm")
 
