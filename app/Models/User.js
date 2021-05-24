@@ -72,6 +72,7 @@ class User extends Model {
     'contractInitialPaymentMethod': '', // Bonifico, Assegno, Altro
     'contractInitialPaymentMethodOther': '', // quando l'utente seleziona "altro"
     'contractIban': '',
+    'contractNotes': '',
     'contractBic': '',
     'commissionsAssigned': {},
     'role': '',

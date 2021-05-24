@@ -622,6 +622,7 @@ class Request extends Model {
                   'lastName': 1,
                   'email': 1,
                   'contractNumber': 1,
+                  'contractNotes': 1,
                   'referenceAgent': 1,
                   'clubPack': 1,
                 }
