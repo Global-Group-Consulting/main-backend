@@ -1,6 +1,8 @@
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/receipt/deposit', 'DocController.getReceiptDeposit')
+      .validator("docs/DownloadReceipt")
+
     Route.get('/reports/requests', 'DocController.getRequestsReport')
 
   }).prefix('/api/docs')

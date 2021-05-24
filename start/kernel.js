@@ -25,6 +25,7 @@ const globalMiddleware = [
   'Adonis/Middleware/Shield',
   'Adonis/Middleware/AuthInit',
   'App/Middleware/ConvertEmptyStringsToNull',
+  "App/Middleware/MaintenanceMode"
 ]
 
 /*
@@ -47,7 +48,8 @@ const globalMiddleware = [
 const namedMiddleware = {
   auth: 'App/Middleware/AuthJwt',
   authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
-  guest: 'Adonis/Middleware/AllowGuestOnly'
+  guest: 'Adonis/Middleware/AllowGuestOnly',
+  //requestsBlock: 'App/Middleware/RequestsBlock',
 }
 
 /*
