@@ -103,6 +103,7 @@ class DocController {
       {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
       //{header: 'BIC / Swift', key: "bic", style: columnsStyle, width: 15},
       {header: 'Note', key: "notes", style: columnsStyle, width: 50},
+      {header: 'Note riscossione', key: "contractNotes", style: columnsStyle, width: 50},
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
       {
         header: 'Data richiesta', key: "created_at",
@@ -154,6 +155,7 @@ class DocController {
           return acc
         }, []).join("\n").trim(),
         notes: row.notes,
+        contractNotes: row.user.contractNotes,
         referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
         referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
         created_at: moment(row.created_at).toDate(),
@@ -176,7 +178,7 @@ class DocController {
       }
 
       if (rows[i].referenceAgent) {
-        sheetRiscossioni.getCell('H' + (i + 2)).value = {
+        sheetRiscossioni.getCell('I' + (i + 2)).value = {
           text: rows[i].referenceAgent,
           hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
           tooltip: "Premi per aprire il profilo dell'utente"
@@ -236,6 +238,7 @@ class DocController {
         width: 18
       },
       {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
+      {header: 'Note riscossione', key: "contractNotes", style: columnsStyle, width: 50},
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
     ]
     const rows = Object.values(data.reduce((acc, row) => {
@@ -272,6 +275,7 @@ class DocController {
 
             return acc
           }, []).join("\n").trim(),
+          contractNotes: row.user.contractNotes,
           created_at: moment(row.created_at).toDate(),
           completed_at: moment(row.completed_at).toDate(),
         }
@@ -295,7 +299,7 @@ class DocController {
       }
 
       if (rows[i].referenceAgent) {
-        sheetResoconto.getCell('E' + (i + 2)).value = {
+        sheetResoconto.getCell('F' + (i + 2)).value = {
           text: rows[i].referenceAgent,
           hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
           tooltip: "Premi per aprire il profilo dell'utente"

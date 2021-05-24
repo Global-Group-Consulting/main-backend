@@ -20,9 +20,6 @@ const Model = use('Model')
 
 const Event = use('Event')
 
-/** @type {typeof import('./Setting')} */
-const SettingModel = use('App/Models/Setting')
-
 /** @type {typeof import('./Movement')} */
 const MovementModel = use("App/Models/Movement")
 
