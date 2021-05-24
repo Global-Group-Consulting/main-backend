@@ -6,12 +6,14 @@ const Config = use("Config")
 
 /** @type {import("../../../Models/Request")} */
 const RequestModel = use("App/Models/Request")
+const UserModel = use("App/Models/User")
 const Helpers = use("Helpers")
 const Antl = use('Antl')
 const Env = use('Env')
 
 const UserRoles = require("../../../../enums/UserRoles")
 const RequestTypes = require("../../../../enums/RequestTypes")
+const MovementTypes = require("../../../../enums/MovementTypes")
 const CurrencyType = require("../../../../enums/CurrencyType");
 const ClubPacks = require("../../../../enums/ClubPacks");
 
@@ -101,6 +103,7 @@ class DocController {
       {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
       //{header: 'BIC / Swift', key: "bic", style: columnsStyle, width: 15},
       {header: 'Note', key: "notes", style: columnsStyle, width: 50},
+      {header: 'Note riscossione', key: "contractNotes", style: columnsStyle, width: 50},
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
       {
         header: 'Data richiesta', key: "created_at",
@@ -152,6 +155,7 @@ class DocController {
           return acc
         }, []).join("\n").trim(),
         notes: row.notes,
+        contractNotes: row.user.contractNotes,
         referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
         referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
         created_at: moment(row.created_at).toDate(),
@@ -174,7 +178,7 @@ class DocController {
       }
 
       if (rows[i].referenceAgent) {
-        sheetRiscossioni.getCell('H' + (i + 2)).value = {
+        sheetRiscossioni.getCell('I' + (i + 2)).value = {
           text: rows[i].referenceAgent,
           hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
           tooltip: "Premi per aprire il profilo dell'utente"
@@ -234,6 +238,7 @@ class DocController {
         width: 18
       },
       {header: 'IBAN', key: "iban", style: columnsStyle, width: 30},
+      {header: 'Note riscossione', key: "contractNotes", style: columnsStyle, width: 50},
       {header: 'Agente riferimento', key: "referenceAgent", style: columnsStyle, width: 25},
     ]
     const rows = Object.values(data.reduce((acc, row) => {
@@ -270,6 +275,7 @@ class DocController {
 
             return acc
           }, []).join("\n").trim(),
+          contractNotes: row.user.contractNotes,
           created_at: moment(row.created_at).toDate(),
           completed_at: moment(row.completed_at).toDate(),
         }
@@ -293,7 +299,7 @@ class DocController {
       }
 
       if (rows[i].referenceAgent) {
-        sheetResoconto.getCell('E' + (i + 2)).value = {
+        sheetResoconto.getCell('F' + (i + 2)).value = {
           text: rows[i].referenceAgent,
           hyperlink: Env.get("PUBLIC_URL") + "/users/profile/" + rows[i].referenceAgentId,
           tooltip: "Premi per aprire il profilo dell'utente"
@@ -348,8 +354,10 @@ class DocController {
   }
 
   async getReceiptDeposit({request, auth, response}) {
-    const requestId = request.input("id")
-    let reqData = await RequestModel.findByIdOrMovementId(requestId)
+    const id = request.input("id")
+    const type = request.input("type")
+
+    let reqData = await RequestModel.findByIdOrMovementId(id, type)
 
     if (!reqData) {
       throw new Error("No request found")
@@ -360,11 +368,12 @@ class DocController {
       throw new Error("You don't have the permissions to read this file.")
     }
 
-    if (reqData.type !== RequestTypes.VERSAMENTO) {
-      throw new Error("Request is not of type DEPOSIT.")
+    if (reqData.type && reqData.type !== RequestTypes.VERSAMENTO
+      || reqData.movementType && reqData.movementType !== MovementTypes.DEPOSIT_ADDED) {
+      throw new Error("La richiesta o il movimento non è un VERSAMENTO.")
     }
 
-    const user = await reqData.user().fetch()
+    const user = await UserModel.find(reqData.userId)
     const reqNumber = formatContractNumber(user.contractNumber) + "_" + formatDate(reqData.created_at, true, "DD/MM/YY")
       .replace(/[\/:]/g, "")
       .replace(/ /g, "_")
@@ -375,11 +384,11 @@ class DocController {
       birth_date: formatDate(user.birthDate) || "",
       residence_place: formatResidencePlace(user),
       req_number: reqNumber,
-      amount: formatMoney(reqData.amount),
-      amount_text: formatWrittenNumbers(reqData.amount),
+      amount: formatMoney(reqData.amount || reqData.amountChange || 0),
+      amount_text: formatWrittenNumbers(reqData.amount || reqData.amountChange || 0),
       created_at: formatDate(reqData.created_at)
     }
-    const fileName = "receipt_deposit_" + reqData.id.toString()
+    const fileName = "receipt_deposit_" + reqData._id.toString()
     const filePath = Helpers.tmpPath(fileName)
     const doc = await this._fillPdf("resources/fileTemplates/receipts_deposit_euro.pdf", filePath, docData)
 
