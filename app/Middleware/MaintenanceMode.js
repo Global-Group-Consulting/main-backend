@@ -21,12 +21,14 @@ class MaintenanceMode {
 
     const whitelistMethods = ["get"]
     const whitelistPaths = ["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]
-    const userAdmin = [UserRoles.ADMIN].includes(auth.user.role)
 
     // If the url is a whitelisted one, continue the request
     if (whitelistPaths.includes(url) || whitelistMethods.includes(callMethod)) {
       return next()
     }
+
+    const userAdmin = [UserRoles.ADMIN].includes(auth.user.role)
+
 
     // Maintenance mode message
     if (SettingsProvider.get("maintenanceMode")) {
