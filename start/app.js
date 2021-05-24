@@ -34,7 +34,8 @@ const providers = [
   path.join(__dirname, '..', 'providers', 'DocSigner', "provider"),
   path.join(__dirname, '..', 'providers', 'Queue', "provider"),
   path.join(__dirname, '..', 'providers', 'Acl', "provider"),
-  path.join(__dirname, '..', 'providers', 'Addresses', "provider")
+  path.join(__dirname, '..', 'providers', 'Addresses', "provider"),
+  path.join(__dirname, '..', 'providers', 'Settings', "provider")
 ]
 
 /*
