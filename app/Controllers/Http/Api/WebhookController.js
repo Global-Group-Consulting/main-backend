@@ -145,8 +145,8 @@ class WebhookController {
   }
 
   async onSignRequest({request, response}) {
-    // Creates a random timer max 60 seconds
-    const randomTimer = Math.ceil(Math.random() * 60000);
+    // Creates a random timer max 10 seconds
+    const randomTimer = Math.ceil(Math.random() * 5000);
 
     /*
     Sembra che a livello di db venga registrato correttamente l'importo attualmente
