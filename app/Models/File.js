@@ -118,6 +118,13 @@ class File extends Model {
     return castToObjectId(value)
   }
 
+  setUserId(value) {
+    return castToObjectId(value)
+  }
+
+  setLoadedBy(value) {
+    return castToObjectId(value)
+  }
 }
 
 module.exports = File
