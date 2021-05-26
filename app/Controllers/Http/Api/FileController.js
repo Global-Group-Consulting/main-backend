@@ -7,6 +7,7 @@
 const File = use("App/Models/File")
 const Drive = use('Drive')
 const Helpers = use('Helpers')
+const Config = use('Adonis/Src/Config')
 const path = require("path")
 const {Readable} = require('stream');
 
@@ -17,7 +18,7 @@ class FileController {
   /**
    * Save a Readable stream to local disk.
    * @private
-   * @param {Readable} file - Readable stream that will be saved.
+   * @param {{}} file - Readable stream that will be saved.
    * @param {string} pathname - Pathname in the disk.
    * @return {Promise} If successful returns a WritableStream.
    */
@@ -32,6 +33,30 @@ class FileController {
     });
   }
 
+  async _downloadFromLocal(file) {
+    return file.tmpPath;
+  }
+
+  async _downloadFromS3(file) {
+    const filePath = Helpers.tmpPath(``);
+    const s3File = await Drive.getObject(file._id.toString())
+
+    fs.mkdirSync(filePath, {recursive: true})
+
+    const readableInstanceStream = new Readable({
+      read() {
+        this.push(s3File.Body);
+        this.push(null);
+      },
+    });
+
+    const pathname = `${filePath}/${file.clientName}`;
+
+    console.log(filePath)
+
+    await this._saveStreamToFile(readableInstanceStream, pathname);
+  }
+
   async download({params, response}) {
     const {id} = params
 
@@ -43,37 +68,23 @@ class FileController {
       return response.badRequest('File not found');
     }
 
-    const filePath = Helpers.tmpPath(``);
-    const file = await Drive.getObject(id)
+    const driverIsLocal = Config.get("drive.default")
+    let pathName
 
-    fs.mkdirSync(filePath, {recursive: true})
+    if (driverIsLocal) {
+      pathName = await this._downloadFromLocal(dbFile)
+    } else {
+      pathName = await this._downloadFromS3(dbFile)
+    }
 
-    const readableInstanceStream = new Readable({
-      read() {
-        this.push(file.Body);
-        this.push(null);
-      },
-    });
-
-    const pathname = `${filePath}/${dbFile.clientName}`;
-
-    console.log(filePath)
-
-    await this._saveStreamToFile(readableInstanceStream, pathname);
-
-    /*response.response.writeHead(200, {
-      'Content-Type': dbFile.type + "/" + dbFile.subtype,
-      'Content-Disposition': 'inline; filename="' + dbFile.clientName + '"'
-    })*/
-
-    response.download(pathname)
+    response.download(pathName)
   }
 
   /**
    *
    * @param {{params: {id: string}, response: AdonisHttpResponse}} param0
    */
-  async delete({ params, response }) {
+  async delete({params, response}) {
     const {id} = params
 
     const dbFile = await File.find(id)
