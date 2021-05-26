@@ -106,12 +106,24 @@ class File extends Model {
     return removedFiles
   }
 
+  user() {
+    return this.belongsTo('App/Models/User', "userId", "_id")
+  }
+
   getId({_id}) {
     return _id.toString()
   }
 
-  user() {
-    return this.belongsTo('App/Models/User', "userId", "_id")
+  setRequestId(value) {
+    return castToObjectId(value)
+  }
+
+  setUserId(value) {
+    return castToObjectId(value)
+  }
+
+  setLoadedBy(value) {
+    return castToObjectId(value)
   }
 }
 
