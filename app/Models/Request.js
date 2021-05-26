@@ -769,7 +769,7 @@ class Request extends Model {
   }
 
   files() {
-    return this.belongsTo('App/Models/User', "requestId", "_id")
+    return this.hasMany('App/Models/File', "_id", "requestId")
   }
 
   movement() {

@@ -105,7 +105,7 @@ class AuthController {
   async refresh({request, auth}) {
     const refreshToken = request.input('refreshToken')
 
-    if (auth.user.suspended) {
+    if (auth.user && auth.user.suspended) {
       await this.logout({auth})
 
       throw new UserException("Account sospeso")

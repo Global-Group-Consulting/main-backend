@@ -20,10 +20,10 @@ class MaintenanceMode {
     const url = request.url();
 
     const whitelistMethods = ["get"]
-    const whitelistPaths = ["/api/auth/login", "/api/auth/refresh", "/api/auth/logout"]
+    const whitelistPaths = ["/api/auth/login", "/api/auth/refresh", "/api/auth/logout", "/api/webhooks/signRequest"]
 
     // If the url is a whitelisted one, continue the request
-    if (whitelistPaths.includes(url) || whitelistMethods.includes(callMethod)) {
+    if (whitelistPaths.includes(url) || whitelistMethods.includes(callMethod) || !auth.user) {
       return next()
     }
 
