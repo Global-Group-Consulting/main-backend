@@ -7,14 +7,21 @@
 const Queue = use("QueueProvider")
 const Env = use("Env")
 const Event = use("Event")
+const Antl = use('Antl')
 
 const UserModel = use("App/Models/User")
 const RequestModel = use("App/Models/Request")
+const SettingsProvider = use("SettingsProvider")
+
 const UserRoles = require("../../enums/UserRoles")
 const RequestTypes = require("../../enums/RequestTypes")
 const RequestStatus = require("../../enums/RequestStatus")
 const CommissionType = require("../../enums/CommissionType")
 const AgentTeamType = require("../../enums/AgentTeamType")
+
+const {
+  formatMoney,
+} = require("../Helpers/ModelFormatters")
 
 const Request = exports = module.exports = {
   addAgentCommission
@@ -33,6 +40,30 @@ Request.onAutoWithdrawlRecursiveCompleted = onAutoWithdrawlRecursiveCompleted
  */
 async function onNewRequest(request) {
   Event.emit("notification::requestNew", request)
+
+  if ([RequestTypes.RISC_INTERESSI_BRITE, RequestTypes.RISC_INTERESSI_GOLD].includes(request.type)) {
+    // Get this data from the settings
+    const clubRequestNotifyEmail = SettingsProvider.get("clubRequestNotifyEmail");
+
+    if (!clubRequestNotifyEmail) {
+      return;
+    }
+
+    //const receiverEmail = "richiestegold@globalgroup.consulting";
+    const user = await request.user().fetch();
+    const requestId = RequestTypes.get(request.type).id
+
+    await Queue.add("send_email", {
+      tmpl: "new_club_request",
+      data: {
+        email: clubRequestNotifyEmail,
+        username: user.firstName + " " + user.lastName,
+        requestType: Antl.compile('it', `enums.RequestTypes.${requestId}`),
+        amount: formatMoney(request.amount),
+        siteLink: Env.get('PUBLIC_URL') + "/requests#" + request._id.toString()
+      }
+    })
+  }
 }
 
 /**
