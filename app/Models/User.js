@@ -7,6 +7,8 @@ const Hash = use('Hash')
 const Model = use('Model')
 const File = use('App/Models/File')
 const Event = use('Event')
+const Database = use('Database')
+
 const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
 
 const ContractCounter = use('App/Controllers/Http/CountersController')
@@ -27,6 +29,7 @@ const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
 const arraySort = require('array-sort');
 const Mongoose = require("mongoose")
+const moment = require("moment")
 
 const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
 
@@ -96,6 +99,8 @@ class User extends Model {
     "cliente": "client",
   }
 
+  static db
+
   static get computed() {
     return ["id"]
   }
@@ -125,8 +130,10 @@ class User extends Model {
     }, [])
   }
 
-  static boot() {
+  static async boot() {
     super.boot()
+
+    this.db = await Database.connect("mongodb")
 
     this.addHook('beforeCreate', async (userData) => {
       userData.role = userData.role || UserRoles.CLIENTE
@@ -450,6 +457,95 @@ class User extends Model {
 
       return row
     })
+  }
+
+  /**
+   *
+   * @returns {Promise<{ thisMonth: number, last3Months: number, last6Months: number,  last12Months: number}>}
+   */
+  static async getNewUsersTotals() {
+    const users = await this.db.collection('users')
+      .aggregate([
+        {
+          // Cerca solo tra gli utenti che hanno la voce contractSignedAt
+          $match: {
+            "contractSignedAt": {$exists: true}
+          }
+        },
+        {
+          $addFields: {
+            activationDate: {
+              $convert: {
+                input: "$contractSignedAt",
+                to: "date"
+              }
+            }
+          }
+        }
+      ])
+      .toArray()
+
+    const dataToReturn = {
+      thisMonth: 0,
+      last3Months: 0,
+      last6Months: 0,
+      last12Months: 0,
+    }
+
+    const currMonth = moment().startOf("month")
+
+    for (let user of users) {
+      /**
+       *
+       * @type {string}
+       */
+      const activationDate = user.activationDate;
+
+      const isThisMonth = moment(activationDate).isBetween(currMonth, moment());
+      const last3Months = moment(activationDate).isBetween(moment(currMonth).subtract(3, "months"), moment());
+      const last6Months = moment(activationDate).isBetween(moment(currMonth).subtract(6, "months"), moment());
+      const last12Months = moment(activationDate).isBetween(moment(currMonth).subtract(12, "months"), moment());
+
+      (isThisMonth && dataToReturn.thisMonth++);
+      (last3Months && dataToReturn.last3Months++);
+      (last6Months && dataToReturn.last6Months++);
+      (last12Months && dataToReturn.last12Months++);
+    }
+
+    return dataToReturn
+  }
+
+  /**
+   * @returns {Promise<{draft: number, active: number, pendingAccess: number, pendingSignature: number, suspended: number}>}
+   */
+  static async getUsersStatusTotals() {
+    /**
+     * @type {{_id: {status: string}, suspended: number, count: number}[]}
+     */
+    const users = await this.db.collection('users')
+      .aggregate([
+        {
+          $group:
+            {
+              _id: {status: "$account_status"},
+              suspended: {$sum: {$cond: [{$eq: ["$suspended", true]}, 1, 0]}},
+              count: {$sum: 1}
+            }
+        }
+      ])
+      .toArray()
+
+    return {
+      draft: (users.find(el => el._id.status === AccountStatuses.DRAFT) || {}).count || 0,
+      active: (users.find(el => el._id.status === AccountStatuses.ACTIVE) || {}).count || 0,
+      pendingAccess: (users.find(el => el._id.status === AccountStatuses.APPROVED) || {}).count || 0,
+      pendingSignature: (users.find(el => el._id.status === AccountStatuses.PENDING_SIGNATURE) || {}).count || 0,
+      suspended: users.reduce((acc, el) => {
+        acc += el.suspended
+
+        return acc
+      }, 0)
+    }
   }
 
   /**

@@ -40,11 +40,19 @@ class DashboardController {
 
   async getForAdmin(user) {
     const pendingRequests = await RequestsModel.getPendingOnes(user.role)
-    //const pendingSignatures = await UserModel.getPendingSignatures()
+    const adminTotals = await MovementsModel.getAdminTotals();
+    const newUsersTotals = await UserModel.getNewUsersTotals();
+    const usersStatusTotals = await UserModel.getUsersStatusTotals();
 
     return {
       pendingRequests,
-      //pendingSignatures
+      totals: adminTotals,
+      newUsers: newUsersTotals,
+      usersStatus: usersStatusTotals,
+      agents: {},
+      club: {
+        //Statistiche del club con i totali per ogni semestre di tutte le tipologie, uscite, entrate, ecc.
+      }
     }
   }
 
