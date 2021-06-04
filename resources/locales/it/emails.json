@@ -45,5 +45,14 @@
       "row2": "nella tua area privata, alla sezione \"Richieste\", è ora disponibile il report per il mese di {month}. Accedi subito e scaricare il file Excel.",
       "btn_label": "Accedi al tuo account"
     }
+  },
+  "new_club_request": {
+    "subject": "Nuova richiesta di {requestType}! ",
+    "content": {
+      "title": "Nuova richiesta di {requestType}",
+      "row1": "Gentile <strong>Global Group Consulting</strong>,",
+      "row2": "l'utente <strong>{username}</strong> ha eseguito una nuova richiesta di <strong>{requestType}</strong> del valore di <strong>{amount}</strong>.<br><br>Per vedere ulteriori dettagli di questa richiesta, accedi alla tua area privata o clicca sul link sottostante.",
+      "btn_label": "Vai alla richiesta"
+    }
   }
 }
