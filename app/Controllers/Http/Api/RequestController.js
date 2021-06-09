@@ -216,6 +216,7 @@ class RequestController {
     const foundedRequest = await RequestModel.find(requestId)
     const incomingDate = request.input("paymentDocDate")
     const incomingAmount = request.input("paymentAmount")
+    const incomingGoldAmount = request.input("paymentGoldAmount")
 
     if (!foundedRequest) {
       throw new RequestNotFoundException()
@@ -259,6 +260,11 @@ class RequestController {
     if (!isNaN(incomingAmount) && foundedRequest.amount !== +incomingAmount) {
       foundedRequest.originalAmount = foundedRequest.amount;
       foundedRequest.amount = +incomingAmount;
+    }
+
+    if (!isNaN(incomingGoldAmount) && foundedRequest.goldAmount !== +incomingGoldAmount) {
+      foundedRequest.originalGoldAmount = foundedRequest.goldAmount;
+      foundedRequest.goldAmount = +incomingGoldAmount;
     }
 
     foundedRequest.status = RequestStatus.ACCETTATA

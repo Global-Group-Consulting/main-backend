@@ -6,6 +6,7 @@ const {WhitelistValidator} = require("../WhitelistValidator")
 
 const rules = {
   amount: "required",
+  goldAmount: "number",
   userId: "required|objectId",
   type: "required|number",
   wallet: "required|number",
