@@ -27,11 +27,13 @@ const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
+const CommissionType = require("../../enums/CommissionType")
 const arraySort = require('array-sort');
 const Mongoose = require("mongoose")
 const moment = require("moment")
 
 const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
+const {formatBySemester} = require("../Helpers/Utilities/formatBySemester.js")
 
 const {groupBy: _groupBy, omit: _omit, pick: _pick} = require("lodash")
 
@@ -464,55 +466,69 @@ class User extends Model {
    * @returns {Promise<{ thisMonth: number, last3Months: number, last6Months: number,  last12Months: number}>}
    */
   static async getNewUsersTotals() {
-    const users = await this.db.collection('users')
+    // Recupera la lista di tutti gli utenti attivati negli ultimi 12 mesi,
+    // partendo dal loro movimento iniziale che si trova nei movimenti di ogni utente
+    const users = await this.db.collection('movements')
       .aggregate([
         {
-          // Cerca solo tra gli utenti che hanno la voce contractSignedAt
-          $match: {
-            "contractSignedAt": {$exists: true}
+          '$match': {
+            'movementType': MovementTypes.INITIAL_DEPOSIT,
+            'created_at': {
+              '$gte': moment().startOf("month").subtract(12, "months").toDate(),
+            }
           }
-        },
-        {
-          $addFields: {
-            activationDate: {
-              $convert: {
-                input: "$contractSignedAt",
-                to: "date"
+        }, {
+          '$lookup': {
+            'from': 'users',
+            'let': {
+              'userId': '$userId'
+            },
+            'as': 'user',
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {
+                    '$eq': [
+                      '$_id', '$$userId'
+                    ]
+                  }
+                }
+              }, {
+                '$project': {
+                  'id': 1,
+                  'firstName': 1,
+                  'lastName': 1,
+                  'email': 1,
+                  'contractNumber': 1,
+                  'contractNotes': 1,
+                  'referenceAgent': 1,
+                  'clubPack': 1
+                }
+              }
+            ]
+          }
+        }, {
+          '$unwind': {
+            'path': '$user'
+          }
+        }, {
+          '$addFields': {
+            'user.activationDate': {
+              '$convert': {
+                'input': '$created_at',
+                'to': 'date'
               }
             }
+          }
+        }, {
+          '$replaceRoot': {
+            'newRoot': '$user'
           }
         }
       ])
       .toArray()
 
-    const dataToReturn = {
-      thisMonth: 0,
-      last3Months: 0,
-      last6Months: 0,
-      last12Months: 0,
-    }
-
-    const currMonth = moment().startOf("month")
-
-    for (let user of users) {
-      /**
-       *
-       * @type {string}
-       */
-      const activationDate = user.activationDate;
-
-      const isThisMonth = moment(activationDate).isBetween(currMonth, moment());
-      const last3Months = moment(activationDate).isBetween(moment(currMonth).subtract(3, "months"), moment());
-      const last6Months = moment(activationDate).isBetween(moment(currMonth).subtract(6, "months"), moment());
-      const last12Months = moment(activationDate).isBetween(moment(currMonth).subtract(12, "months"), moment());
-
-      (isThisMonth && dataToReturn.thisMonth++);
-      (last3Months && dataToReturn.last3Months++);
-      (last6Months && dataToReturn.last6Months++);
-      (last12Months && dataToReturn.last12Months++);
-    }
-
-    return dataToReturn
+    return formatBySemester(users, "activationDate")
   }
 
   /**
@@ -546,6 +562,209 @@ class User extends Model {
         return acc
       }, 0)
     }
+  }
+
+  static async getAgentsNewUsersTotals() {
+    /*
+    - Cerco tutte le commissioni di tipo NewDeposit
+    - Per ciascuna recupero il movimento relativo,
+    - Rifiltro in base al tipo di movimento che deve essere initialDeposit
+    - Per ciascun movimento recupero l'utente associato
+    - creo una nuova chiave da usare come return,
+    - ci aggiungo l'id dell'utente e la data di attivazione
+    - replaceRoot settando come dati solo la chiave appena creata (data)
+     */
+    const aggregation = [
+      {
+        '$match': {
+          'commissionType': CommissionType.NEW_DEPOSIT,
+          'indirectCommission': {
+            '$ne': true
+          }
+        }
+      }, {
+        '$lookup': {
+          'from': 'movements',
+          'localField': 'movementId',
+          'foreignField': '_id',
+          'as': 'movement'
+        }
+      }, {
+        '$unwind': {
+          'path': '$movement'
+        }
+      }, {
+        '$match': {
+          'movement.movementType': MovementTypes.INITIAL_DEPOSIT
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$_id', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'referenceAgent': 1,
+                'clubPack': 1
+              }
+            }
+          ]
+        }
+      }, {
+        '$unwind': {
+          'path': '$user'
+        }
+      }, {
+        '$addFields': {
+          /*"data.agent.firstName": "$user.firstName",
+          "data.agent.lastName": "$user.lastName",
+          "data.agent.email": "$user.email",
+          "data.agent.id": "$user._id",*/
+          "data.user.id": "$clientId",
+          "data.user.activationDate": "$created_at"
+        }
+      },/* {
+        '$replaceRoot': {
+          'newRoot': '$data'
+        }
+      }*/
+      {
+        '$group': {
+          '_id': '$userId',
+          'totalUsers': {
+            '$sum': 1
+          },
+          'agent': {
+            '$first': '$user'
+          },
+          'users': {
+            '$push': '$data.user'
+          }
+        }
+      }, {
+        '$sort': {
+          'totalUsers': -1
+        }
+      }
+    ];
+
+    /**
+     * @type {{_id: {agent:string }, totalUsers: number, agent: User, users: any[]}[]}
+     */
+    const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray();
+    const toReturn = agentsList.map((agent) => {
+      agent.users = formatBySemester(agent.users, "activationDate")
+
+      return agent;
+    })
+
+    return toReturn
+  }
+
+  static async getAgentsTotalEarnings() {
+    /*
+    - Cerco tutte le commissioni di tipo NewDeposit
+    - Per ciascuna recupero il movimento relativo,
+    - Rifiltro in base al tipo di movimento che deve essere initialDeposit
+    - Per ciascun movimento recupero l'utente associato
+    - creo una nuova chiave da usare come return,
+    - ci aggiungo l'id dell'utente e la data di attivazione
+    - replaceRoot settando come dati solo la chiave appena creata (data)
+     */
+    const aggregation = [
+      {
+        '$match': {
+          'commissionType': CommissionType.NEW_DEPOSIT,
+          'indirectCommission': {
+            '$ne': true
+          }
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'agent',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$_id', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'referenceAgent': 1,
+                'clubPack': 1
+              }
+            }
+          ]
+        }
+      }, {
+        '$unwind': {
+          'path': '$agent'
+        }
+      }, {
+        '$group': {
+          '_id': '$userId',
+          'totalAmount': {
+            '$sum': '$commissionOnValue'
+          },
+          'count': {
+            '$sum': 1
+          },
+          'agent': {
+            '$first': '$agent'
+          },
+          'totals': {
+            '$push': '$$ROOT'
+          }
+        }
+      }, {
+        '$sort': {
+          'totalAmount': -1
+        }
+      }
+    ];
+
+    /**
+     * @type {{_id: {agent:string }, totalUsers: number, agent: User, totals: any[]}[]}
+     */
+    const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray();
+    const toReturn = agentsList.map((agent) => {
+      agent.totals = formatBySemester(agent.totals, "created_at", {field: "commissionOnValue"})
+
+      return agent;
+    })
+
+
+    return toReturn
   }
 
   /**
