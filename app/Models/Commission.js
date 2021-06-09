@@ -39,6 +39,7 @@ class Commission extends Model {
   static db
 
   static async boot() {
+    super.boot()
     this.db = await Database.connect("mongodb")
   }
 

@@ -10,6 +10,7 @@ class requestsDelete extends WhitelistValidator {
       id: "objectId|required",
       paymentDocDate: "required|date",
       paymentAmount: "number",
+      paymentGoldAmount: "number",
     }
   }
 }

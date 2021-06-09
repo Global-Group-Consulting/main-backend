@@ -137,8 +137,13 @@ class Movement extends Model {
       throw new InvalidMovementException("The amount of the interest must be greater than 0.")
     }
 
-    if (data.amountChange > lastMovement.interestAmount) {
+    const amountChange = data.amountChange.toFixed(2);
+    const availableAmount = lastMovement.interestAmount.toFixed(2)
+
+    if (amountChange > availableAmount) {
       throw new InvalidMovementException("Can't collect more then the available interest.")
+    } else if (amountChange === availableAmount) {
+      data.amountChange = lastMovement.interestAmount;
     }
 
     data.deposit = lastMovement.deposit
