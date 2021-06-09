@@ -13,6 +13,7 @@ const {Types: MongoTypes} = require('mongoose');
 const {camelCase: _camelCase, upperFirst: _upperFirst} = require("lodash")
 
 const MovementTypes = require("../../enums/MovementTypes")
+const RequestTypes = require("../../enums/RequestTypes")
 const InvalidMovementException = require("../Exceptions/InvalidMovementException")
 const MovementErrorException = require("../Exceptions/MovementErrorException")
 
@@ -295,7 +296,7 @@ class Movement extends Model {
           {
             $group:
               {
-                _id: {movementType: "$movementType"},
+                _id: {movementType: "$movementType", requestType: "$requestType"},
                 totalAmount: {$sum: "$amountChange"},
                 count: {$sum: 1}
               }
@@ -328,6 +329,13 @@ class Movement extends Model {
       }, 0),
       withdrewInterests: data.reduce((acc, curr) => {
         if ([MovementTypes.INTEREST_COLLECTED].includes(curr._id.movementType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      withdrewInterestsClub: data.reduce((acc, curr) => {
+        if ([RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE].includes(curr._id.requestType)) {
           acc += curr.totalAmount
         }
 
