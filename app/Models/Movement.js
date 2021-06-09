@@ -7,9 +7,10 @@
 
 /** @type {LucidModel} */
 const Model = use('Model')
+const Database = use('Database')
 
-const { Types: MongoTypes } = require('mongoose');
-const { camelCase: _camelCase, upperFirst: _upperFirst } = require("lodash")
+const {Types: MongoTypes} = require('mongoose');
+const {camelCase: _camelCase, upperFirst: _upperFirst} = require("lodash")
 
 const MovementTypes = require("../../enums/MovementTypes")
 const InvalidMovementException = require("../Exceptions/InvalidMovementException")
@@ -18,12 +19,16 @@ const MovementErrorException = require("../Exceptions/MovementErrorException")
 const {castToObjectId, castToIsoDate} = require("../Helpers/ModelFormatters")
 
 class Movement extends Model {
+  static db
+
   static get computed() {
     return ["id"]
   }
 
-  static boot() {
+  static async boot() {
     super.boot()
+
+    this.db = await Database.connect('mongodb')
 
     this.addHook("beforeCreate",
       /** @param { MovementInstance } data */
@@ -175,7 +180,7 @@ class Movement extends Model {
   }
 
   static async getInitialInvestment(id) {
-    const result = await Movement.where({ userId: id, movementType: MovementTypes.INITIAL_DEPOSIT }).first()
+    const result = await Movement.where({userId: id, movementType: MovementTypes.INITIAL_DEPOSIT}).first()
 
     return result
   }
@@ -189,7 +194,10 @@ class Movement extends Model {
       userId = new MongoTypes.ObjectId(userId)
     }
 
-    return await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, userId }).sort({ created_at: -1 }).first()
+    return await Movement.where({
+      movementType: MovementTypes.INTEREST_RECAPITALIZED,
+      userId
+    }).sort({created_at: -1}).first()
   }
 
   static async getPastRecapitalizations(userId) {
@@ -197,7 +205,10 @@ class Movement extends Model {
       userId = new MongoTypes.ObjectId(userId)
     }
 
-    const data = await Movement.where({ movementType: MovementTypes.INTEREST_RECAPITALIZED, userId }).sort({ created_at: -1 }).fetch()
+    const data = await Movement.where({
+      movementType: MovementTypes.INTEREST_RECAPITALIZED,
+      userId
+    }).sort({created_at: -1}).fetch()
 
     return data.rows
   }
@@ -212,7 +223,7 @@ class Movement extends Model {
       id = new MongoTypes.ObjectId(id)
     }
 
-    return await Movement.where({ userId: id }).sort({ "created_at": -1 }).first()
+    return await Movement.where({userId: id}).sort({"created_at": -1}).first()
   }
 
   static async getAll(id) {
@@ -220,7 +231,7 @@ class Movement extends Model {
       id = new MongoTypes.ObjectId(id)
     }
 
-    return await Movement.where({ userId: id }).sort({ "created_at": -1 }).fetch()
+    return await Movement.where({userId: id}).sort({"created_at": -1}).fetch()
   }
 
   static async getMonthMovements(id) {
@@ -239,7 +250,7 @@ class Movement extends Model {
       minDate = lastRecapitalization.created_at
     }
 
-    const movements = await Movement.where({ userId: id, "created_at": { $gt: minDate } }).fetch()
+    const movements = await Movement.where({userId: id, "created_at": {$gt: minDate}}).fetch()
 
     const toReturn = {
       depositCollected: 0,
@@ -269,6 +280,60 @@ class Movement extends Model {
     }
 
     return toReturn
+  }
+
+  /**
+   *
+   * @returns {Promise<{deposit: number, interests: number, withdrewDeposit: number, withdrewInterests: number}>}
+   */
+  static async getAdminTotals() {
+    /**
+     * @type {{_id: {movementType: number}, totalAmount: number, count: number}[]}
+     */
+    const data = (await this.db.collection("movements")
+        .aggregate([
+          {
+            $group:
+              {
+                _id: {movementType: "$movementType"},
+                totalAmount: {$sum: "$amountChange"},
+                count: {$sum: 1}
+              }
+          }
+        ])
+        .toArray()
+    )
+
+    return {
+      deposit: data.reduce((acc, curr) => {
+        if ([MovementTypes.DEPOSIT_ADDED, MovementTypes.INITIAL_DEPOSIT].includes(curr._id.movementType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      interests: data.reduce((acc, curr) => {
+        if ([MovementTypes.INTEREST_RECAPITALIZED].includes(curr._id.movementType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      withdrewDeposit: data.reduce((acc, curr) => {
+        if ([MovementTypes.DEPOSIT_COLLECTED].includes(curr._id.movementType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      withdrewInterests: data.reduce((acc, curr) => {
+        if ([MovementTypes.INTEREST_COLLECTED].includes(curr._id.movementType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+    }
   }
 
 
