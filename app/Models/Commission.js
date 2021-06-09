@@ -17,8 +17,8 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
-
 const Event = use('Event')
+const Database = use('Database')
 
 /** @type {typeof import('./Movement')} */
 const MovementModel = use("App/Models/Movement")
@@ -36,6 +36,13 @@ const AgentTeamType = require("../../enums/AgentTeamType")
 const moment = require("moment")
 
 class Commission extends Model {
+  static db
+
+  static async boot() {
+    super.boot()
+    this.db = await Database.connect("mongodb")
+  }
+
   static async fetchAll() {
     return this.all()
   }
@@ -475,7 +482,7 @@ class Commission extends Model {
     // so that the user can create a new request for the current month
     if (!autoWithdrawlAllRecursively) {
       Event.emit('request::autoWithdrawl:completed', autoWithdrawlAll, result.amountChange)
-    }else {
+    } else {
       Event.emit('request::autoWithdrawlRecursive:completed', autoWithdrawlAll, result.amountChange, result._id)
     }
 
@@ -517,6 +524,58 @@ class Commission extends Model {
       .fetch()
   }
 
+  /**
+   * @returns {Promise<{total: number, withdrew: number, reinvested: number}>}
+   */
+  static async getAdminTotals() {
+    /**
+     * @type {{_id: {commissionType: number}, totalAmount: number, count: number}[]}
+     */
+    const data = (await this.db.collection("commissions")
+        .aggregate([
+          {
+            '$group': {
+              '_id': {
+                'commissionType': '$commissionType'
+              },
+              'totalAmount': {
+                '$sum': '$amountChange'
+              },
+              'count': {
+                '$sum': 1
+              }
+            }
+          }
+        ])
+        .toArray()
+    )
+
+    return {
+      total: data.reduce((acc, curr) => {
+        if ([CommissionType.NEW_DEPOSIT, CommissionType.TOTAL_DEPOSIT, CommissionType.MANUAL_ADD, CommissionType.MANUAL_TRANSFER, CommissionType.ANNUAL_DEPOSIT]
+          .includes(curr._id.commissionType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      withdrew: data.reduce((acc, curr) => {
+        if ([CommissionType.COMMISSIONS_COLLECTED].includes(curr._id.commissionType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0),
+      reinvested: data.reduce((acc, curr) => {
+        if ([CommissionType.COMMISSIONS_TO_REINVEST].includes(curr._id.commissionType)) {
+          acc += curr.totalAmount
+        }
+
+        return acc
+      }, 0)
+    }
+  }
+
   user() {
     return this.hasOne("App/Models/User", "clientId", "_id")
       .setVisible(["_id", "firstName", "lastName", "role"])
@@ -539,4 +598,5 @@ class Commission extends Model {
   }
 }
 
-module.exports = Commission
+module
+  .exports = Commission

@@ -7,6 +7,8 @@ const Hash = use('Hash')
 const Model = use('Model')
 const File = use('App/Models/File')
 const Event = use('Event')
+const Database = use('Database')
+
 const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
 
 const ContractCounter = use('App/Controllers/Http/CountersController')
@@ -25,10 +27,13 @@ const UserRoles = require("../../enums/UserRoles")
 const PersonTypes = require("../../enums/PersonTypes")
 const AccountStatuses = require("../../enums/AccountStatuses")
 const MovementTypes = require("../../enums/MovementTypes")
+const CommissionType = require("../../enums/CommissionType")
 const arraySort = require('array-sort');
 const Mongoose = require("mongoose")
+const moment = require("moment")
 
 const {castToObjectId, castToNumber, castToIsoDate, castToBoolean} = require("../Helpers/ModelFormatters.js")
+const {formatBySemester} = require("../Helpers/Utilities/formatBySemester.js")
 
 const {groupBy: _groupBy, omit: _omit, pick: _pick} = require("lodash")
 
@@ -96,6 +101,8 @@ class User extends Model {
     "cliente": "client",
   }
 
+  static db
+
   static get computed() {
     return ["id"]
   }
@@ -125,8 +132,10 @@ class User extends Model {
     }, [])
   }
 
-  static boot() {
+  static async boot() {
     super.boot()
+
+    this.db = await Database.connect("mongodb")
 
     this.addHook('beforeCreate', async (userData) => {
       userData.role = userData.role || UserRoles.CLIENTE
@@ -450,6 +459,312 @@ class User extends Model {
 
       return row
     })
+  }
+
+  /**
+   *
+   * @returns {Promise<{ thisMonth: number, last3Months: number, last6Months: number,  last12Months: number}>}
+   */
+  static async getNewUsersTotals() {
+    // Recupera la lista di tutti gli utenti attivati negli ultimi 12 mesi,
+    // partendo dal loro movimento iniziale che si trova nei movimenti di ogni utente
+    const users = await this.db.collection('movements')
+      .aggregate([
+        {
+          '$match': {
+            'movementType': MovementTypes.INITIAL_DEPOSIT,
+            'created_at': {
+              '$gte': moment().startOf("month").subtract(12, "months").toDate(),
+            }
+          }
+        }, {
+          '$lookup': {
+            'from': 'users',
+            'let': {
+              'userId': '$userId'
+            },
+            'as': 'user',
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {
+                    '$eq': [
+                      '$_id', '$$userId'
+                    ]
+                  }
+                }
+              }, {
+                '$project': {
+                  'id': 1,
+                  'firstName': 1,
+                  'lastName': 1,
+                  'email': 1,
+                  'contractNumber': 1,
+                  'contractNotes': 1,
+                  'referenceAgent': 1,
+                  'clubPack': 1
+                }
+              }
+            ]
+          }
+        }, {
+          '$unwind': {
+            'path': '$user'
+          }
+        }, {
+          '$addFields': {
+            'user.activationDate': {
+              '$convert': {
+                'input': '$created_at',
+                'to': 'date'
+              }
+            }
+          }
+        }, {
+          '$replaceRoot': {
+            'newRoot': '$user'
+          }
+        }
+      ])
+      .toArray()
+
+    return formatBySemester(users, "activationDate")
+  }
+
+  /**
+   * @returns {Promise<{draft: number, active: number, pendingAccess: number, pendingSignature: number, suspended: number}>}
+   */
+  static async getUsersStatusTotals() {
+    /**
+     * @type {{_id: {status: string}, suspended: number, count: number}[]}
+     */
+    const users = await this.db.collection('users')
+      .aggregate([
+        {
+          $group:
+            {
+              _id: {status: "$account_status"},
+              suspended: {$sum: {$cond: [{$eq: ["$suspended", true]}, 1, 0]}},
+              count: {$sum: 1}
+            }
+        }
+      ])
+      .toArray()
+
+    return {
+      draft: (users.find(el => el._id.status === AccountStatuses.DRAFT) || {}).count || 0,
+      active: (users.find(el => el._id.status === AccountStatuses.ACTIVE) || {}).count || 0,
+      pendingAccess: (users.find(el => el._id.status === AccountStatuses.APPROVED) || {}).count || 0,
+      pendingSignature: (users.find(el => el._id.status === AccountStatuses.PENDING_SIGNATURE) || {}).count || 0,
+      suspended: users.reduce((acc, el) => {
+        acc += el.suspended
+
+        return acc
+      }, 0)
+    }
+  }
+
+  static async getAgentsNewUsersTotals() {
+    /*
+    - Cerco tutte le commissioni di tipo NewDeposit
+    - Per ciascuna recupero il movimento relativo,
+    - Rifiltro in base al tipo di movimento che deve essere initialDeposit
+    - Per ciascun movimento recupero l'utente associato
+    - creo una nuova chiave da usare come return,
+    - ci aggiungo l'id dell'utente e la data di attivazione
+    - replaceRoot settando come dati solo la chiave appena creata (data)
+     */
+    const aggregation = [
+      {
+        '$match': {
+          'commissionType': CommissionType.NEW_DEPOSIT,
+          'indirectCommission': {
+            '$ne': true
+          }
+        }
+      }, {
+        '$lookup': {
+          'from': 'movements',
+          'localField': 'movementId',
+          'foreignField': '_id',
+          'as': 'movement'
+        }
+      }, {
+        '$unwind': {
+          'path': '$movement'
+        }
+      }, {
+        '$match': {
+          'movement.movementType': MovementTypes.INITIAL_DEPOSIT
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$_id', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'referenceAgent': 1,
+                'clubPack': 1
+              }
+            }
+          ]
+        }
+      }, {
+        '$unwind': {
+          'path': '$user'
+        }
+      }, {
+        '$addFields': {
+          /*"data.agent.firstName": "$user.firstName",
+          "data.agent.lastName": "$user.lastName",
+          "data.agent.email": "$user.email",
+          "data.agent.id": "$user._id",*/
+          "data.user.id": "$clientId",
+          "data.user.activationDate": "$created_at"
+        }
+      },/* {
+        '$replaceRoot': {
+          'newRoot': '$data'
+        }
+      }*/
+      {
+        '$group': {
+          '_id': '$userId',
+          'totalUsers': {
+            '$sum': 1
+          },
+          'agent': {
+            '$first': '$user'
+          },
+          'users': {
+            '$push': '$data.user'
+          }
+        }
+      }, {
+        '$sort': {
+          'totalUsers': -1
+        }
+      }
+    ];
+
+    /**
+     * @type {{_id: {agent:string }, totalUsers: number, agent: User, users: any[]}[]}
+     */
+    const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray();
+    const toReturn = agentsList.map((agent) => {
+      agent.users = formatBySemester(agent.users, "activationDate")
+
+      return agent;
+    })
+
+    return toReturn
+  }
+
+  static async getAgentsTotalEarnings() {
+    /*
+    - Cerco tutte le commissioni di tipo NewDeposit
+    - Per ciascuna recupero il movimento relativo,
+    - Rifiltro in base al tipo di movimento che deve essere initialDeposit
+    - Per ciascun movimento recupero l'utente associato
+    - creo una nuova chiave da usare come return,
+    - ci aggiungo l'id dell'utente e la data di attivazione
+    - replaceRoot settando come dati solo la chiave appena creata (data)
+     */
+    const aggregation = [
+      {
+        '$match': {
+          'commissionType': CommissionType.NEW_DEPOSIT,
+          'indirectCommission': {
+            '$ne': true
+          }
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'agent',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$_id', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'referenceAgent': 1,
+                'clubPack': 1
+              }
+            }
+          ]
+        }
+      }, {
+        '$unwind': {
+          'path': '$agent'
+        }
+      }, {
+        '$group': {
+          '_id': '$userId',
+          'totalAmount': {
+            '$sum': '$commissionOnValue'
+          },
+          'count': {
+            '$sum': 1
+          },
+          'agent': {
+            '$first': '$agent'
+          },
+          'totals': {
+            '$push': '$$ROOT'
+          }
+        }
+      }, {
+        '$sort': {
+          'totalAmount': -1
+        }
+      }
+    ];
+
+    /**
+     * @type {{_id: {agent:string }, totalUsers: number, agent: User, totals: any[]}[]}
+     */
+    const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray();
+    const toReturn = agentsList.map((agent) => {
+      agent.totals = formatBySemester(agent.totals, "created_at", {field: "commissionOnValue"})
+
+      return agent;
+    })
+
+
+    return toReturn
   }
 
   /**
