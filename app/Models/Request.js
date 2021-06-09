@@ -816,6 +816,10 @@ class Request extends Model {
     return +value
   }
 
+  setGoldAmount(value) {
+    return +value
+  }
+
   setCompletedAt(value) {
     return castToIsoDate(value)
   }
