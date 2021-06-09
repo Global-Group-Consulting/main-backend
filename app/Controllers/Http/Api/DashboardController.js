@@ -19,8 +19,9 @@ const UserRoles = require("../../../../enums/UserRoles")
 
 class DashboardController {
 
-  async getByRole({auth, response, params}) {
+  async getByRole({auth, response, params, request}) {
     const reqId = params.id
+    const onlyStatistics = request.all().onlyStatistics === "true"
     let user = auth.user
 
     if (reqId) {
@@ -35,33 +36,39 @@ class DashboardController {
       return response.badRequest("Role not handled.")
     }
 
-    return this[`getFor${methodName}`](user.toJSON())
+    return this[`getFor${methodName}`](user.toJSON(), onlyStatistics)
   }
 
-  async getForAdmin(user) {
-    const pendingRequests = await RequestsModel.getPendingOnes(user.role)
-    const adminTotals = await MovementsModel.getAdminTotals();
-    const newUsersTotals = await UserModel.getNewUsersTotals();
-    const usersStatusTotals = await UserModel.getUsersStatusTotals();
+  async getForAdmin(user, onlyStatistics) {
+    const toReturn = {}
 
-    return {
-      pendingRequests,
-      totals: adminTotals,
-      newUsers: newUsersTotals,
-      usersStatus: usersStatusTotals,
-      agents: {},
-      club: {
-        //Statistiche del club con i totali per ogni semestre di tutte le tipologie, uscite, entrate, ecc.
-      }
+    if (!onlyStatistics) {
+      toReturn.pendingRequests = await RequestsModel.getPendingOnes(user.role)
+    } else {
+      toReturn.systemTotals = await MovementsModel.getAdminTotals();
+      toReturn.commissionTotals = await CommissionModel.getAdminTotals();
+      toReturn.usersStatus = await UserModel.getUsersStatusTotals();
+      toReturn.newUsers = await UserModel.getNewUsersTotals();
+      toReturn.agentsNewUsers = await UserModel.getAgentsNewUsersTotals();
+      toReturn.agentsTotalEarnings = await UserModel.getAgentsTotalEarnings();
     }
+
+    return toReturn;
   }
 
-  async getForServClienti(user) {
-    const usersToValidate = await UserModel.getUsersToValidate(user.role)
+  async getForServClienti(user, onlyStatistics) {
+    const toReturn = {}
 
-    return {
-      usersToValidate
+    if (onlyStatistics) {
+      toReturn.systemTotals = await MovementsModel.getAdminTotals();
+      toReturn.commissionTotals = await CommissionModel.getAdminTotals();
+      toReturn.usersStatus = await UserModel.getUsersStatusTotals();
+      toReturn.newUsers = await UserModel.getNewUsersTotals();
+      toReturn.agentsNewUsers = await UserModel.getAgentsNewUsersTotals();
+      toReturn.agentsTotalEarnings = await UserModel.getAgentsTotalEarnings();
     }
+
+    return toReturn;
   }
 
   async getForCliente(user) {
