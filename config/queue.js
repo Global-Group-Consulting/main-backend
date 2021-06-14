@@ -21,7 +21,7 @@ const queueConfig = {
     user_recapitalization: {
       options: {
         concurrency: 5,
-        lockLimit: 5
+        lockLimit: 5,
       }
     },
     user_recapitalization_brites: {

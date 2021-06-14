@@ -14,10 +14,14 @@ const QueueProvider = use("QueueProvider")
 module.exports =
   /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
   async function (job) {
-    const userList = await UserModel.getUsersToRecapitalize()
+    const userList = await UserModel.getUsersToRecapitalize(job.attrs.data.createdAt)
     const addedJobs = []
 
-    console.log("--- starting trigger")
+    userList.rows = userList.rows.filter(user => {
+      return user.$relations.movements.rows.length === 0
+    })
+
+    console.log("   --- Starting trigger user recapitalization for " + userList.rows.length)
 
     await Promise.all(
       userList.rows.map(async (user) => {

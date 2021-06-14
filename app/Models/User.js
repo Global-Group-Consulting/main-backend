@@ -331,7 +331,15 @@ class User extends Model {
     return User.where({
       role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
       account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
-    }).fetch()
+    })
+      .with("movements", async q => {
+        // recupero anche i movimenti per cercare di capire se per caso c'è una doppia ricapitalizzazione
+        q.where({
+          movementType: MovementTypes.INTEREST_RECAPITALIZED,
+          created_at: {$gt: moment().startOf("month").toDate(),}
+        })
+      })
+      .fetch()
   }
 
   /**
@@ -781,9 +789,9 @@ class User extends Model {
     return this.hasMany('App/Models/Token')
   }
 
-  // movements() {
-  //   return this.hasMany('App/Models/Movement', "_id", "userId")
-  // }
+  movements() {
+    return this.hasMany('App/Models/Movement', "_id", "userId")
+  }
 
   files() {
     return this.hasMany('App/Models/File', "_id", "userId")

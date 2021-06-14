@@ -58,8 +58,11 @@ module.exports =
     await QueueProvider.add("user_recapitalization_brites", {movementId: job.attrs.result._id})
 
     // Avoid adding this job if the percentage of the user is equal or higher to 4, because the agent would get anything
-    if (user.referenceAgent && cratedMovement.interestPercentage < 4) {
-      await QueueProvider.add("agent_commissions_on_total_deposit", {movementId: job.attrs.result._id, agentId: user.referenceAgent})
+    if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
+      await QueueProvider.add("agent_commissions_on_total_deposit", {
+        movementId: job.attrs.result._id,
+        agentId: user.referenceAgent
+      })
     }
 
     if (user.role === UserRoles.AGENTE) {
