@@ -315,8 +315,39 @@ class User extends Model {
       .fetch()
   }
 
-  static async getAgents() {
-    return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
+  static async getAgentsForCommissionsBlock() {
+    const data = await this.db.collection('users')
+      .aggregate([
+        {
+          '$match': {
+            'role': {'$in': [UserRoles.AGENTE]},
+            'account_status': {'$in': [AccountStatuses.ACTIVE]}
+          }
+        }, {
+          '$lookup': {
+            'from': 'commissions',
+            'let': {
+              'userId': '$_id'
+            },
+            'as': 'commissions',
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {'$eq': ['$userId', '$$userId']},
+                  'commissionType': CommissionType.COMMISSIONS_TO_REINVEST,
+                  'created_at': {'$gte': moment().startOf("month").toDate()}
+                }
+              }
+            ]
+          }
+        }
+      ])
+      .toArray();
+
+    // Filtrare solo quelli senza movimenti
+    return data.filter(user => user.commissions.length === 0);
+
+    //return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
   }
 
   static async getServClienti() {
@@ -328,18 +359,49 @@ class User extends Model {
   }
 
   static async getUsersToRecapitalize() {
-    return User.where({
-      role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
-      account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
-    })
-      .with("movements", async q => {
-        // recupero anche i movimenti per cercare di capire se per caso c'è una doppia ricapitalizzazione
-        q.where({
-          movementType: MovementTypes.INTEREST_RECAPITALIZED,
-          created_at: {$gt: moment().startOf("month").toDate(),}
-        })
-      })
-      .fetch()
+    const data = await this.db.collection('users')
+      .aggregate([
+        {
+          '$match': {
+            'role': {'$in': [UserRoles.CLIENTE, UserRoles.AGENTE]},
+            'account_status': {'$in': [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+          }
+        }, {
+          '$lookup': {
+            'from': 'movements',
+            'let': {
+              'userId': '$_id'
+            },
+            'as': 'movements',
+            'pipeline': [
+              {
+                '$match': {
+                  '$expr': {'$eq': ['$userId', '$$userId']},
+                  'movementType': MovementTypes.INTEREST_RECAPITALIZED,
+                  'created_at': {'$gte': moment().startOf("month").toDate()}
+                }
+              }
+            ]
+          }
+        }
+      ])
+      .toArray();
+
+    // Filtrare solo quelli senza movimenti
+    return data.filter(user => user.movements.length === 0);
+
+    /* return User.where({
+       role: {$in: [UserRoles.CLIENTE, UserRoles.AGENTE]},
+       account_status: {$in: [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+     })
+       .with("movements", async q => {
+         // recupero anche i movimenti per cercare di capire se per caso c'è una doppia ricapitalizzazione
+         q.where({
+           movementType: MovementTypes.INTEREST_RECAPITALIZED,
+           created_at: {$gt:,}
+         })
+       })
+       .fetch()*/
   }
 
   /**

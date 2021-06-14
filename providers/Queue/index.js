@@ -118,7 +118,7 @@ class Queue {
           }
         }
 
-        return this.jobsList[queueName](job)
+        return this.jobsList[queueName](job, this)
       })
     }
 

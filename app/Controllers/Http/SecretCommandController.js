@@ -4,7 +4,7 @@ const QueueProvider = use("QueueProvider")
 
 class SecretCommandController {
   async triggerCommissionsBlock() {
-    const jobResult = await QueueProvider.add("trigger_commissions_block_month")({
+    const jobResult = await QueueProvider.add("trigger_commissions_block_month",{
       attrs: {
         data: {}
       }
@@ -15,7 +15,7 @@ class SecretCommandController {
 
   async triggerUsersRecapitalization() {
     try {
-      const jobResult = await QueueProvider.add("trigger_users_recapitalization")({
+      const jobResult = await QueueProvider.add("trigger_users_recapitalization", {
         attrs: {
           data: {}
         }
