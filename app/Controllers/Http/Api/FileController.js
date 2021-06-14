@@ -55,6 +55,8 @@ class FileController {
     console.log(filePath)
 
     await this._saveStreamToFile(readableInstanceStream, pathname);
+
+    return pathname
   }
 
   async download({params, response}) {
@@ -68,7 +70,7 @@ class FileController {
       return response.badRequest('File not found');
     }
 
-    const driverIsLocal = Config.get("drive.default")
+    const driverIsLocal = Config.get("drive.default") === "local"
     let pathName
 
     if (driverIsLocal) {
