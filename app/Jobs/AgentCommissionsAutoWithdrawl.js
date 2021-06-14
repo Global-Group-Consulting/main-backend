@@ -1,12 +1,14 @@
 /** @type {typeof import('../Models/Commission')} */
 const CommissionModel = use('App/Models/Commission')
 
-/** @type {typeof import("../../providers/Queue")} */
-const QueueProvider = use("QueueProvider")
-
+/**
+ *
+ * @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job
+ * @param {typeof import("../../providers/Queue")} QueueProvider
+ * @returns {Promise<void>}
+ */
 module.exports =
-  /** @param {import("../../@types/QueueProvider").QueueJob} job */
-  async function (job) {
+  async function (job, QueueProvider) {
     const {
       id,
       autoWithdrawlAll,

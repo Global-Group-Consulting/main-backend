@@ -1,25 +1,23 @@
 /** @type {typeof import("../Models/User")} */
 const UserModel = use("App/Models/User")
 
-/** @type {typeof import("../../providers/Queue")} */
-const QueueProvider = use("QueueProvider")
-
 /**
  * Each 1st of the month, the remaining commissions for an agent,
  * must be blocked and reset, so that the agent can restart accumulating new commissions.
  *
  * Once blocked, this commissions will be later (16th of each month) processed and reinvested
- *
- * @param job
+ * @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job
+ * @param {typeof import("../../providers/Queue")} QueueProvider
  * @returns {Promise<void>}
  */
 module.exports =
-  /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
-  async function (job) {
-    const agentsList = await UserModel.getAgents()
+  async function (job, QueueProvider) {
+    const agentsList = await UserModel.getAgentsForCommissionsBlock()
     const addedJobs = []
 
-    for (const agent of agentsList.rows) {
+    console.log("   --- Starting trigger Agents Commission block for " + agentsList.length)
+
+    for (const agent of agentsList) {
       let newJob
 
       /*

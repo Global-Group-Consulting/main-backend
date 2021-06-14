@@ -16,6 +16,7 @@
 /** @type {typeof import('@adonisjs/framework/src/Route/Manager')} */
 const Route = use('Route')
 const Logger = use("Logger")
+const Env = use("Env")
 
 const AclRoutes = require('./routes/acl')
 const AuthRoutes = require('./routes/auth')
@@ -47,7 +48,7 @@ SettingsRoutes(Route)
 UserRoutes(Route)
 WebhooksRoutes(Route)
 
-const secretRoutePath = Buffer.from(Date.now().toString()).toString('base64')
+const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64')
 
 
 Route.group(() => {
