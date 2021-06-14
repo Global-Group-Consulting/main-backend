@@ -99,10 +99,11 @@ class Queue {
       const action = queue.action || upperFirst(camelCase(queueName))
       const jobPath = Helpers.appRoot() + `/${this.Config.get('queue.jobsPath')}/${action}`
 
-      this._agenda.define(queueName, queue.options || {}, (...attrs) => {
+      this._agenda.define(queueName, queue.options || {}, async (job) => {
         // Require the job workers only when are required for the first time.
         // This to avoid singleton errors.
         if (!this.jobsList[queueName]) {
+          console.log("DEFINED JOB", queueName)
 
           try {
             this.jobsList[queueName] = require(jobPath + ".js")
@@ -117,7 +118,7 @@ class Queue {
           }
         }
 
-        this.jobsList[queueName](...attrs)
+        return this.jobsList[queueName](job, this)
       })
     }
 
@@ -187,12 +188,12 @@ class Queue {
    * @param {{createdAt?: any, tmpl: string, data?: any}} [data]
    * @returns {Promise<QueueProvider.Job>}
    */
-  async add(queueName, data) {
+  async add(queueName, data = {}) {
     await this._checkQueueExistence(queueName)
 
     data.createdAt = new Date()
 
-    return await this._agenda.now(queueName, data);
+    return this._agenda.now(queueName, data);
   }
 
   /**

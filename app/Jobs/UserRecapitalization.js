@@ -7,9 +7,6 @@ const MovementModel = use("App/Models/Movement")
 /** @type {typeof import("../Models/User")} */
 const UserModel = use("App/Models/User")
 
-/** @type {typeof import("../../providers/Queue")} */
-const QueueProvider = use("QueueProvider")
-
 const MovementTypes = require("../../enums/MovementTypes")
 const UserRoles = require("../../enums/UserRoles")
 
@@ -22,12 +19,12 @@ const UserRoles = require("../../enums/UserRoles")
  * If the user is an agent, trigger `agent_commissions_reinvest` which will reinvest the commissions of the previous
  * month
  *
- * @param job
+ * @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job
+ * @param {typeof import("../../providers/Queue")} QueueProvider
  * @returns {Promise<void>}
  */
 module.exports =
-  /** @param {import("../../@types/QueueProvider/QueueJob.d").QueueJob} job */
-  async function (job) {
+  async function (job, QueueProvider) {
     const userId = job.attrs.data.userId
     /**
      * @type {User}
@@ -58,8 +55,11 @@ module.exports =
     await QueueProvider.add("user_recapitalization_brites", {movementId: job.attrs.result._id})
 
     // Avoid adding this job if the percentage of the user is equal or higher to 4, because the agent would get anything
-    if (user.referenceAgent && cratedMovement.interestPercentage < 4) {
-      await QueueProvider.add("agent_commissions_on_total_deposit", {movementId: job.attrs.result._id, agentId: user.referenceAgent})
+    if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
+      await QueueProvider.add("agent_commissions_on_total_deposit", {
+        movementId: job.attrs.result._id,
+        agentId: user.referenceAgent
+      })
     }
 
     if (user.role === UserRoles.AGENTE) {

@@ -1,7 +1,5 @@
 /** @typedef {import("../../@types/QueueProvider/QueueJob").QueueJob} Job */
 
-/** @type {typeof import("../../providers/Queue")} */
-const QueueProvider = use("QueueProvider")
 
 const PeriodicEmailsModel = use("App/Models/PeriodicEmails")
 const UserModel = use("App/Models/User")
@@ -66,8 +64,9 @@ async function getReceiversList(receiversRoles) {
 
 /**
  * @param {Job} job
+ * @param {typeof import("../../providers/Queue")} QueueProvider
  */
-module.exports = async function (job) {
+module.exports = async function (job, QueueProvider) {
   /**
    *
    * @type {{rows: import("../../@types/QueueProvider/PeriodicEmail").PeriodicEmail[]}}
