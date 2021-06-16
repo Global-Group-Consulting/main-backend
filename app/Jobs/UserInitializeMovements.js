@@ -33,7 +33,7 @@ module.exports =
       If the user cont5ract has been imported, generates the initial movement and avoid generating any agent commission,
       because this is an already existing user.
        */
-      if (user.contractImported || user.contractInitialInvestment === 0) {
+      if (user.contractImported) {
         const result = await MovementModel.create({
           userId: user,
           movementType: MovementTypes.INITIAL_DEPOSIT,
