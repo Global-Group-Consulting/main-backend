@@ -574,7 +574,7 @@ class Request extends Model {
           type: RequestTypes.RISC_PROVVIGIONI,
           status: RequestStatus.ACCETTATA,
           created_at: {
-            $gt: commissionsStartDate.toDate(),
+            $gte: commissionsStartDate.toDate(),
             $lte: commissionsEndDate.toDate()
           }
         }
