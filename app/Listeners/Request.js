@@ -201,6 +201,10 @@ async function addAgentCommission(user, movementId) {
     /** @type {User} */
     const directAgent = await user.referenceAgentData().fetch()
 
+    if (!directAgent) {
+      return
+    }
+
     /** @type {User} */
     let referenceAgent = directAgent
 

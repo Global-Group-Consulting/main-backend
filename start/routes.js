@@ -55,6 +55,7 @@ Route.group(() => {
   Route.post("/commissions_block", "SecretCommandController.triggerCommissionsBlock")
   Route.post("/recapitalization", "SecretCommandController.triggerUsersRecapitalization")
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
+  //Route.post("/recapitalize_user", "SecretCommandController.recapitalizeUser")
 }).prefix('/' + secretRoutePath)
   .middleware("authSuperAdmin")
 
