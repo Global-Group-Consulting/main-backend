@@ -581,6 +581,8 @@ class Request extends Model {
       ]
     }
 
+    console.log(query);
+
     /* const data = await this.where(query)
        .with("user")
        .sort({
