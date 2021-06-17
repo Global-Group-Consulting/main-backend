@@ -581,7 +581,7 @@ class Request extends Model {
       ]
     }
 
-    console.log(query);
+    console.log(JSON.stringify(query));
 
     /* const data = await this.where(query)
        .with("user")
