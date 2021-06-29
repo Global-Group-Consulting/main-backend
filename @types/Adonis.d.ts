@@ -1,5 +1,7 @@
 // @ts-ignore
 import {AclProvider} from "Acl/AclProvider.d"
+import {AgentBrites} from "./AgentBrites";
+import SettingsProvider from "../providers/Settings/index";
 
 declare namespace Adonis {
   type WorkInProgress = any
@@ -507,3 +509,5 @@ declare function use(namespace: AdonisNamespaces.Schema): Adonis.WorkInProgress
 declare function use(namespace: AdonisNamespaces.Server): Adonis.Server
 declare function use(namespace: AdonisNamespaces.View): Adonis.View
 declare function use(namespace: AdonisNamespaces.Ws): Adonis.WorkInProgress
+declare function use(namespace: "App/Models/AgentBrites"): AgentBrites
+declare function use(namespace: "SettingsProvider"): SettingsProvider

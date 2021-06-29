@@ -8,6 +8,7 @@ const Queue = use("QueueProvider")
 const Env = use("Env")
 const Event = use("Event")
 const Antl = use('Antl')
+const AgentBrite = use("App/Models/AgentBrite")
 
 const UserModel = use("App/Models/User")
 const RequestModel = use("App/Models/Request")
@@ -113,6 +114,11 @@ async function onAutoWithdrawlCompleted(requestId, amountChange) {
   request.cancelReason = "request completed because not recursive"
   request.completed_at = new Date().toISOString()
   request.autoWithdrawlAllRevoked = true;
+
+  // If i'm here, the request is about collection commissions, so no need to check if i must add brites.
+  RequestModel.calcRightAmount(request);
+
+  request.briteMovementId = await AgentBrite.addBrites(request)
 
   await request.save()
 
