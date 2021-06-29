@@ -4,7 +4,9 @@
 const Model = use('Model')
 
 const SettingTypes = require("../../enums/SettingTypes")
-const {castToObjectId, castToBoolean} = require("../Helpers/ModelFormatters")
+const {castToObjectId, castToBoolean, castToNumber} = require("../Helpers/ModelFormatters")
+
+const {camelCase} = require("lodash")
 
 /*
 Settings da includere
@@ -66,14 +68,29 @@ class Setting extends Model {
       existingSetting = new Setting()
     }
 
+    const setterMethodName = camelCase("set_" + data.name)
+
+    if (setterMethodName in existingSetting) {
+      data.value = existingSetting[setterMethodName](data.value)
+    }
+
     existingSetting.merge(data);
     await existingSetting.save()
 
     return existingSetting
   }
 
+
   setMaintenanceMode(mode) {
     return castToBoolean(mode)
+  }
+
+  setRequestMinAmount(value) {
+    return castToNumber(value);
+  }
+
+  setRequestBritePercentage(value) {
+    return castToNumber(value);
   }
 }
 

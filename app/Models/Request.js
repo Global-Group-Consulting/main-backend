@@ -6,7 +6,6 @@
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
-const Database = use('Database')
 
 /** @type {typeof import("./User")} */
 const UserModel = use('App/Models/User')
@@ -15,6 +14,7 @@ const UserModel = use('App/Models/User')
 const MovementModel = use("App/Models/Movement")
 /** @type {typeof import("./Commission")} */
 const CommissionModel = use("App/Models/Commission")
+const AgentBrite = use("App/Models/AgentBrite")
 
 const {Types: MongoTypes} = require('mongoose');
 const moment = require("moment")
@@ -44,8 +44,6 @@ const modelFields = {
 }
 
 class Request extends Model {
-  static db
-
   static get hidden() {
     return ['_id', "__v"]
   }
@@ -53,7 +51,8 @@ class Request extends Model {
   static async boot() {
     super.boot()
 
-    this.db = await Database.connect('mongodb')
+    this.addTrait('RequestAmount');
+    this.addTrait('RawDbConnection');
 
     this.addHook("beforeCreate", /** @param {IRequest} data */async (data) => {
       const reqToAutoApprove = [
@@ -84,6 +83,8 @@ class Request extends Model {
             */
             if (!data.autoWithdrawlAll) {
               generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
+
+              Request.calcRightAmount(data);
             }
           } else {
             const movementData = {
@@ -91,6 +92,10 @@ class Request extends Model {
               movementType: typeData.movement,
               requestType: data.type,
               amountChange: data.amount,
+              amountEuro: data.amountEuro,
+              amountBrite: data.amountBrite,
+              briteConversionPercentage: data.briteConversionPercentage,
+              requestId: data._id,
               interestPercentage: +user.contractPercentage,
             }
 

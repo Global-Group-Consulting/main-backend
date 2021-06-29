@@ -2,6 +2,7 @@
 
 /** @typedef {import('@adonisjs/framework/src/Params')} Params */
 /** @typedef {import("../../../../@types/HttpResponse").AdonisHttpResponse} AdonisHttpResponse */
+/** @typedef {import("../../../../@types/Request").Request} IRequest */
 
 const {Types: MongoTypes} = require('mongoose');
 
@@ -14,6 +15,7 @@ const MovementModel = require('../../../Models/Movement')
 /** @type {import("../../../Models/Request")} */
 const UserModel = use("App/Models/User")
 const FileModel = use("App/Models/File")
+const AgentBrite = use("App/Models/AgentBrite")
 const Event = use("Event")
 
 const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
@@ -24,11 +26,15 @@ const UserRoles = require("../../../../enums/UserRoles")
 const RequestStatus = require("../../../../enums/RequestStatus")
 const RequestTypes = require("../../../../enums/RequestTypes")
 const MovementTypes = require("../../../../enums/MovementTypes")
+const CurrencyType = require("../../../../enums/CurrencyType")
 const moment = require("moment")
 
+/**
+ * @type {import("../../../../@types/SettingsProvider").SettingsProvider}
+ */
+const SettingsProvider = use("SettingsProvider")
 
 class RequestController {
-
   async readAll({auth, transform}) {
     const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
     const sorting = {"created_at": -1, "updated_at": -1, "completed_at": -1}
@@ -75,28 +81,67 @@ class RequestController {
     const incomingData = request.all()
     /** @type {import("../../../../@types/User").User} */
     const associatedUser = await UserModel.find(incomingData.userId)
+    const settingsLimit = SettingsProvider.get("requestMinAmount");
+    const settingsPercentage = SettingsProvider.get("requestBritePercentage");
 
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
 
-    // cast to boolean
+    incomingData.briteConversionPercentage = 0;
+
+    /*
+    If the request is of type RISC_PROVVIGIONI, must calculate the percentage the user can collect
+    and generate the brites movement
+     */
+    /*if (+incomingData.type === RequestTypes.RISC_PROVVIGIONI && settingsLimit !== null && settingsPercentage !== null && !incomingData.autoWithdrawlAll) {
+      incomingData.amountOriginal = incomingData.amount;
+
+      /!*
+       If the amount is bigger than the limit, must calculate only a percentage to convert to brite,
+       otherwise convert all to brites.
+       *!/
+      if (incomingData.amount > settingsLimit) {
+        const briteAmount = incomingData.amount * settingsPercentage / 100;
+
+        incomingData.amountBrite = briteAmount * 2;
+        incomingData.amountEuro = incomingData.amount - briteAmount;
+        incomingData.briteConversionPercentage = settingsPercentage
+      } else {
+        incomingData.amountBrite = incomingData.amount * 2;
+        incomingData.briteConversionPercentage = 100
+        incomingData.currency = CurrencyType.BRITE
+      }
+
+      // In tutti i casi genera un nuovo movimento brite
+    }*/
+
+    // cast to boolean  - No more required.
     if (incomingData.autoWithdrawlAll) {
-      incomingData.autoWithdrawlAll = incomingData.autoWithdrawlAll === "true"
-      incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
+      //incomingData.autoWithdrawlAll = incomingData.autoWithdrawlAll === "true"
+      //incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
 
       incomingData.amount = 0;
     } else {
-      if (!+incomingData.amount && +incomingData.type !== RequestTypes.VERSAMENTO) {
+      if (!+incomingData.amount && ![RequestTypes.VERSAMENTO].includes(+incomingData.type)) {
         throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
       }
     }
 
     const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll;
 
+    /**
+     * @type {IRequest}
+     */
     const newRequest = await RequestModel.create({
       ...incomingData
     })
+
+    if (incomingData.type === RequestTypes.RISC_PROVVIGIONI && !isAutoWithdrawlRequest) {
+      newRequest.briteMovementId = await AgentBrite.addBrites(newRequest)
+
+      await newRequest.save();
+    }
 
     const files = request.files()
 

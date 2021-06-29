@@ -20,6 +20,7 @@ const Env = use("Env")
 
 const AclRoutes = require('./routes/acl')
 const AuthRoutes = require('./routes/auth')
+const AgentBrites = require('./routes/agentBrites')
 const ClubRoutes = require('./routes/club')
 const CommissionsRoutes = require('./routes/commissions')
 const CommunicationsRoutes = require('./routes/communications')
@@ -36,6 +37,7 @@ Route.on('/').render('welcome')
 
 AclRoutes(Route)
 AuthRoutes(Route)
+AgentBrites(Route)
 ClubRoutes(Route)
 CommissionsRoutes(Route)
 CommunicationsRoutes(Route)
@@ -57,7 +59,7 @@ Route.group(() => {
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
   //Route.post("/recapitalize_user", "SecretCommandController.recapitalizeUser")
 }).prefix('/' + secretRoutePath)
-  .middleware("authSuperAdmin")
+  //.middleware("authSuperAdmin")
 
 Logger.info("*** Generated secret routes at /" + secretRoutePath + "/")
 

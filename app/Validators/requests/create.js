@@ -1,8 +1,8 @@
 'use strict'
 
-const {WhitelistValidator} = require("../WhitelistValidator")
-
 /** @typedef {import("../../../@types/Request").Request} RequestModel} */
+
+const {WhitelistValidator} = require("../WhitelistValidator")
 
 const rules = {
   amount: "required",
@@ -25,6 +25,18 @@ class requestsCreate extends WhitelistValidator {
    */
   get rules() {
     return rules
+  }
+
+  get sanitizationRules() {
+    return {
+      amount: "to_float",
+      goldAmount: "to_float",
+      type: "to_int",
+      wallet: "to_int",
+      currency: "to_int",
+      autoWithdrawlAll: "to_boolean",
+      autoWithdrawlAllRecursively: "to_boolean",
+    }
   }
 }
 

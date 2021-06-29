@@ -2,13 +2,15 @@
 
 /** @type {import('@adonisjs/framework/src/Server')} */
 const Server = use('Server')
-
+const {sanitizor} = use('Validator')
 const Persona = use('Persona')
 const Antl = use('Antl')
 
 const moment = require('moment')
 const {get: _get, template: _template, templateSettings: _templateSettings} = require('lodash')
 const randtoken = require('rand-token')
+
+const {cast} = require("consis/lib")
 
 /*
 |--------------------------------------------------------------------------
@@ -157,4 +159,13 @@ Antl.compile = function (locale, key, data) {
   })
 
   return tmplString(data || {})
+}
+
+
+sanitizor.toFloat = function (value) {
+  return cast.float(value)
+}
+
+sanitizor.toBoolean = function (value) {
+  return cast.bool(value)
 }

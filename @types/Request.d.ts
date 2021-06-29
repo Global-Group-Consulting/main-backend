@@ -2,17 +2,26 @@ import RequestStatus from "../enums/RequestStatus"
 import RequestTypes from "../enums/RequestTypes"
 import WalletTypes from "../enums/WalletTypes"
 import CurrencyType from "../enums/CurrencyType"
+import {ObjectId} from "mongodb";
 
 export interface Request {
+  _id: ObjectId
   userId: string
   status: typeof RequestStatus
   type: typeof RequestTypes
   wallet: typeof WalletTypes
+
   amount: number
+  amountOriginal: number
+  amountBrite: number
+  amountEuro: number
+  briteConversionPercentage: number
+
   availableAmount: number
   currency: typeof CurrencyType
   notes: string
   movementId: string
+  briteMovementId: string
   targetUserId: string
 
   created_at: Date
