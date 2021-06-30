@@ -130,37 +130,43 @@ class DocController {
 
       (row.iban && iban.push(row.iban.toLowerCase()));
       (row.user.contractIban && iban.push({
-          iban: row.user.contractIban.toLowerCase(),
-          bic: row.user.contractBic
-        })
-      );
+        iban: row.user.contractIban.toLowerCase(),
+        bic: row.user.contractBic
+      }));
 
+      let amount = row.amount
 
-      acc.push({
-        id: row.userId.toString(),
-        contractNumber: row.user.contractNumber,
-        amount: row.amount,
-        type: Antl.compile('it', `enums.RequestTypes.${RequestTypes.get(row.type).id}`),
-        clubPack: Antl.compile('it', `enums.ClubPacks.${row.user.clubPack}`),
-        name: row.user.firstName + " " + row.user.lastName,
-        iban: iban.reduce((acc, curr) => {
-          if (typeof curr === "string") {
-            (!acc.includes(curr) && acc.push(curr));
-          } else {
-            if (!acc.includes(curr.iban)) {
-              acc.push(curr.iban + (curr.bic ? ` (BIC: ${curr.bic})` : ''));
+      if (row.briteConversionPercentage) {
+        amount = row.amountEuro || 0
+      }
+
+      if (amount > 0) {
+        acc.push({
+          id: row.userId.toString(),
+          contractNumber: row.user.contractNumber,
+          amount,
+          type: Antl.compile('it', `enums.RequestTypes.${RequestTypes.get(row.type).id}`),
+          clubPack: Antl.compile('it', `enums.ClubPacks.${row.user.clubPack}`),
+          name: row.user.firstName + " " + row.user.lastName,
+          iban: iban.reduce((acc, curr) => {
+            if (typeof curr === "string") {
+              (!acc.includes(curr) && acc.push(curr));
+            } else {
+              if (!acc.includes(curr.iban)) {
+                acc.push(curr.iban + (curr.bic ? ` (BIC: ${curr.bic})` : ''));
+              }
             }
-          }
 
-          return acc
-        }, []).join("\n").trim(),
-        notes: row.notes,
-        contractNotes: row.user.contractNotes,
-        referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
-        referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
-        created_at: moment(row.created_at).toDate(),
-        completed_at: moment(row.completed_at).toDate(),
-      })
+            return acc
+          }, []).join("\n").trim(),
+          notes: row.notes,
+          contractNotes: row.user.contractNotes,
+          referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
+          referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
+          created_at: moment(row.created_at).toDate(),
+          completed_at: moment(row.completed_at).toDate(),
+        })
+      }
 
       return acc
     }, [])
@@ -255,12 +261,18 @@ class DocController {
         })
       );
 
+      let amount = row.amount
+
+      if (row.briteConversionPercentage) {
+        amount = row.amountEuro || 0
+      }
+
       if (!acc[userId]) {
         acc[userId] = {
           userId,
           contractNumber: row.user.contractNumber,
           name: row.user.firstName + " " + row.user.lastName,
-          amount: row.amount,
+          amount,
           type: RequestTypes.get(row.type).id,
           referenceAgent: row.user.referenceAgentData ? row.user.referenceAgentData.firstName + " " + row.user.referenceAgentData.lastName : "",
           referenceAgentId: row.user.referenceAgent ? row.user.referenceAgent.toString() : '',
@@ -280,7 +292,7 @@ class DocController {
           completed_at: moment(row.completed_at).toDate(),
         }
       } else {
-        acc[userId].amount += row.amount
+        acc[userId].amount += amount
       }
 
       return acc

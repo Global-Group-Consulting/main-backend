@@ -123,7 +123,7 @@ class Commission extends Model {
     })
   }
 
-  static _getLastMonthCollectedCommissions(userId, lastReinvestedCommissions) {
+  static async _getLastMonthCollectedCommissions(userId, lastReinvestedCommissions) {
     userId = castToObjectId(userId)
 
     if (!lastReinvestedCommissions) {
@@ -133,7 +133,7 @@ class Commission extends Model {
     const startDate = moment(lastReinvestedCommissions.created_at)// this._getMomentDate(1).subtract(1, "months")
     const endDate = moment(lastReinvestedCommissions.created_at).endOf("month")
 
-    return this.where({
+    const data = await this.where({
       userId,
       commissionType: CommissionType.COMMISSIONS_COLLECTED,
       created_at: {
@@ -141,6 +141,25 @@ class Commission extends Model {
         $lt: endDate.toDate()
       }
     }).fetch()
+
+    const toReturn = {
+      total: 0,
+      totalBrite: 0,
+      totalEuro: 0,
+    }
+
+    data.rows.forEach((el) => {
+      toReturn.total += el.amountChange;
+
+      if (el.briteConversionPercentage) {
+        toReturn.totalBrite += el.amountBrite || 0
+        toReturn.totalEuro += el.amountEuro || 0
+      } else {
+        toReturn.totalEuro += el.amountChange
+      }
+    })
+
+    return toReturn
   }
 
   static async _getClientsYearDeposits(userId) {
@@ -439,7 +458,7 @@ class Commission extends Model {
     return commissionsToReinvest
   }
 
-  static async collectCommissions(userId, collectAmount, autoWithdrawlAll) {
+  static async collectCommissions(userId, collectAmount, autoWithdrawlAll, request = null) {
     if (!collectAmount) {
       throw new CommissionException("The collect amount must be greater then 0.")
     }
@@ -466,11 +485,21 @@ class Commission extends Model {
       throw new CommissionException("There requested amount is higher than the available amount.")
     }
 
-    const newCommissionMovement = await this._create({
+    const newMovement = {
       userId: agent._id,
       commissionType: CommissionType.COMMISSIONS_COLLECTED,
       amountChange: collectAmount,
-    }, lastCommission)
+    }
+
+    if (request) {
+      newMovement.amountEuro = request.amountEuro;
+      newMovement.amountBrite = request.amountBrite;
+      newMovement.briteConversionPercentage = request.briteConversionPercentage;
+      newMovement.currency = request.currency;
+      newMovement.requestId = request._id;
+    }
+
+    const newCommissionMovement = await this._create(newMovement, lastCommission)
 
     return newCommissionMovement
   }
@@ -481,7 +510,7 @@ class Commission extends Model {
     // If the request is not recursive trigger an event that will set it to completed,
     // so that the user can create a new request for the current month
     if (!autoWithdrawlAllRecursively) {
-      Event.emit('request::autoWithdrawl:completed', autoWithdrawlAll, result.amountChange)
+      Event.emit('request::autoWithdrawl:completed', autoWithdrawlAll, result.amountChange, result._id)
     } else {
       Event.emit('request::autoWithdrawlRecursive:completed', autoWithdrawlAll, result.amountChange, result._id)
     }
@@ -511,7 +540,7 @@ class Commission extends Model {
     return {
       monthCommissions: lastCommission ? lastCommission.currMonthCommissions : 0,
       reinvestedCommissions: lastReinvestedCommissions ? lastReinvestedCommissions.amountChange : 0,
-      collectedCommissions: collectedCommissions ? collectedCommissions.rows.reduce((acc, curr) => acc + curr.amountChange, 0) : 0,
+      collectedCommissions: collectedCommissions,
       clientsTotalDeposit: clientsTotalDeposit.rows.reduce((acc, curr) => acc + curr.commissionOnValue, 0),
     }
 

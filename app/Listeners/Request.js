@@ -12,6 +12,7 @@ const AgentBrite = use("App/Models/AgentBrite")
 
 const UserModel = use("App/Models/User")
 const RequestModel = use("App/Models/Request")
+const CommissionModel = use("App/Models/Commission")
 const SettingsProvider = use("SettingsProvider")
 
 const UserRoles = require("../../enums/UserRoles")
@@ -105,8 +106,9 @@ async function onApproved(approvedRequest) {
  * @param {number} amountChange
  * @returns {Promise<void>}
  */
-async function onAutoWithdrawlCompleted(requestId, amountChange) {
+async function onAutoWithdrawlCompleted(requestId, amountChange, commissionId) {
   const request = await RequestModel.find(requestId);
+  const commission = await CommissionModel.find(request.movementId || commissionId)
 
   // Update the request state
   request.amount = amountChange
@@ -121,6 +123,18 @@ async function onAutoWithdrawlCompleted(requestId, amountChange) {
   request.briteMovementId = await AgentBrite.addBrites(request)
 
   await request.save()
+
+  // Updated commission data so that i can know what happened
+  if (commission) {
+    commission.amountEuro = request.amountEuro;
+    commission.amountBrite = request.amountBrite;
+    commission.briteConversionPercentage = request.briteConversionPercentage;
+    commission.currency = request.currency;
+    commission.requestId = request._id;
+
+    await commission.save()
+  }
+
 
   // Reset the users data
   const associatedUser = await request.user().fetch()

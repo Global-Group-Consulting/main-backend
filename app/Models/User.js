@@ -345,7 +345,7 @@ class User extends Model {
       .toArray();
 
     // Filtrare solo quelli senza movimenti
-    return data.filter(user => user.commissions.length === 0);
+    return data.filter(user => user.commissions.length >= 0);
 
     //return User.where({role: UserRoles.AGENTE, account_status: AccountStatuses.ACTIVE}).fetch()
   }
