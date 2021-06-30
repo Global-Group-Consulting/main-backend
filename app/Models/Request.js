@@ -66,6 +66,10 @@ class Request extends Model {
         RequestTypes.RISC_CAPITALE,
       ]
 
+      const id = new MongoTypes.ObjectId()
+
+      data._id = id;
+
       // Auto approve some types of requests
       if (reqToAutoApprove.includes(data.type)
         || (adminReqToAutoApprove.includes(data.type) && data.createdByAdmin)
@@ -82,9 +86,9 @@ class Request extends Model {
              this should be generated in a second moment.
             */
             if (!data.autoWithdrawlAll) {
-              generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount)
-
               Request.calcRightAmount(data);
+
+              generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount, null, data)
             }
           } else {
             const movementData = {
