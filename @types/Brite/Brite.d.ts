@@ -22,6 +22,8 @@ export interface Brite {
   movementId: ObjectId
   userId: ObjectId
 
+  clubPack: string
+
   // User that has created this movement in case is manual
   created_by: ObjectId
 

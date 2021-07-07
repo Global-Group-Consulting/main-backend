@@ -24,6 +24,27 @@ class BriteModel extends BasicModel {
   }
 
   /**
+   * @returns {{year: number, month: number, semester: number}}
+   */
+  static get currentSemester() {
+    const year = moment().year();
+    const semester = moment().month() < 6 ? 1 : 2;
+    const month = semester === 1 ? 0 : 6;
+
+    return {year, month, semester};
+  }
+
+  /**
+   * @returns {string}
+   */
+  static get currentSemesterString() {
+    const currSemesterObj = this.currentSemester;
+
+    return currSemesterObj.year + "_" + currSemesterObj.semester;
+  }
+
+
+  /**
    * Manually add brites to a user
    *
    * @param data
@@ -35,7 +56,7 @@ class BriteModel extends BasicModel {
       movementType: BriteMovementTypes.DEPOSIT_ADDED,
       // i'm using the  current date as a reference.
       // Maybe could be useful to ask the user what date want's to use
-      referenceSemester: data.semesterId || moment().month() < 6 ? 1 : 2
+      referenceSemester: +data.semesterId.split("_")[1] || (moment().month() < 6 ? 1 : 2)
     })
   }
 
@@ -83,6 +104,7 @@ class BriteModel extends BasicModel {
     const result = await UsersModel.query()
       .where({gold: true})
       .with("brites")
+      .with("referenceAgentData")
       .setVisible(["firstName", "lastName", "id", "email", "gold", "clubPack", "clubCardNumber", "role"])
       .sort({lastName: 1, firstName: 1})
       .fetch()
@@ -126,11 +148,27 @@ class BriteModel extends BasicModel {
   }
 
   static async getBlocksDataForUSer(userId, userBrites) {
+    const currSemester = this.currentSemester
+
+    const minExpiration = moment().set({month: currSemester.month}).startOf("month").toDate();
+
     /**
      * @type {VanillaSerializer}
      */
-    const userMovements = userBrites || (await this.where({userId: castToObjectId(userId)})
-      .sort({created_at: -1}).fetch()).rows
+    const userMovements = userBrites || (await this.where({
+      userId: castToObjectId(userId),
+      expiresAt: {$gte: minExpiration}
+    }).sort({created_at: -1}).fetch()).rows
+
+    /**
+     * @type {Record<string, {briteTotal: number, briteUsed: number, briteAvailable: number,
+              usableFrom: Date, expiresAt: Date,
+              byPack: {unsubscribed: number,
+                        basic: number,
+                        fast: number,
+                        premium: number
+                      }}>}
+     */
     const toReturn = {}
 
     for (let i = 0; i < userMovements.length; i++) {
@@ -146,7 +184,15 @@ class BriteModel extends BasicModel {
         toReturn[semesterName] = {
           briteTotal: 0,
           briteUsed: 0,
-          briteAvailable: 0
+          briteAvailable: 0,
+          usableFrom: movement.usableFrom,
+          expiresAt: movement.expiresAt,
+          byPack: {
+            unsubscribed: 0,
+            basic: 0,
+            fast: 0,
+            premium: 0,
+          }
         }
       }
 
@@ -158,17 +204,29 @@ class BriteModel extends BasicModel {
           // Calculate the total brites available only by summing the positive movements
           toReturn[semesterName].briteTotal += movement.amountChange
 
+          if (movement.clubPack) {
+            toReturn[semesterName].byPack[movement.clubPack] += movement.amountChange;
+          }
+
           break;
         case BriteMovementTypes.DEPOSIT_COLLECTED:
         case BriteMovementTypes.DEPOSIT_REMOVED:
         case BriteMovementTypes.DEPOSIT_TRANSFERED: {
           toReturn[semesterName].briteUsed += movement.amountChange
           toReturn[semesterName].briteAvailable -= movement.amountChange
+
+          if (movement.clubPack) {
+            toReturn[semesterName].byPack[movement.clubPack] -= movement.amountChange;
+          }
         }
       }
     }
 
     return toReturn
+  }
+
+  user() {
+    return this.belongsTo("App/Models/User", "userId", "_id")
   }
 
 }

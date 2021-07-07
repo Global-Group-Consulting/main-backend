@@ -2,9 +2,12 @@
 
 /**@typedef {import('../../../../@types/Brite/Brite').Brite} Brite */
 
+const User = use("App/Models/User")
 const BriteHook = exports = module.exports = {}
 const moment = require("moment");
+const {calcBritesUsage} = require("../../../Helpers/Brites/CalcBritesUsage");
 const BriteMovementTypes = require("../../../../enums/BriteMovementTypes")
+
 
 /**
  * @param {Brite} modelInstance
@@ -29,27 +32,7 @@ BriteHook.beforeCreate = async (modelInstance) => {
     }
   }
 
-  const createdAt = moment(modelInstance.created_at)
-  let usableFrom
-  let expiresAt
-
-  const semesterData = modelInstance.semesterId.split("_")
-  const semesterYear = +semesterData[0]
-
-  usableFrom = moment().set({date: 1, month: modelInstance.referenceSemester === 1 ? 0 : 6, year: semesterYear})
-  expiresAt = moment(usableFrom).add(1, "year")
-
-  // If remove type, copy the usableFrom and expiresAt from the last movement
-  // I should get this dates from the right semester
-/*  if (isRemoveType) {
-    usableFrom = moment().set({date: 1, month: modelInstance.referenceSemester === 1 ? 0 : 6, year: semesterYear})
-    expiresAt = moment(usableFrom).add(1, "year")
-  } else {
-    usableFrom = modelInstance.referenceSemester === 1 ?
-      moment().set({date: 1, month: 6, year: createdAt.year()}) :
-      moment().set({date: 1, month: 0, year: createdAt.year() + 1})
-    expiresAt = moment(usableFrom).add(1, "year")
-  }*/
+  const {usableFrom, expiresAt} = calcBritesUsage(modelInstance.semesterId)
 
   modelInstance.deposit = newDeposit
   modelInstance.depositOld = oldDeposit
@@ -59,4 +42,9 @@ BriteHook.beforeCreate = async (modelInstance) => {
   // is easier
   modelInstance.usableFrom = usableFrom.toDate()
   modelInstance.expiresAt = expiresAt.toDate()
+
+  const user = await User.find(modelInstance.userId);
+
+  // Store the relative user active pack
+  modelInstance.clubPack = user.clubPack;
 }
