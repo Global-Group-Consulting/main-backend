@@ -61,22 +61,36 @@ const queueConfig = {
       }
     },
 
+    transfer_agent_commissions: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+    transfer_agent_clients: {
+      options: {
+        concurrency: 5,
+        lockLimit: 5
+      }
+    },
+
     trigger_commissions_block_month: {},
     trigger_users_recapitalization: {},
-    trigger_periodic_emails: {}
+    trigger_periodic_emails: {},
+
   },
   recursiveJobs: [
     {
       queue: "trigger_commissions_block_month",
-      recursion: Env.get("TRIGGER_COMMISSION_BLOCK", "* 10 0 1 * *")
+      recursion: Env.get("TRIGGER_COMMISSION_BLOCK", "1 10 0 1 * *")
     },
     {
       queue: "trigger_users_recapitalization",
-      recursion: Env.get("TRIGGER_RECAPITALIZATION", "* 10 0 16 * *")
+      recursion: Env.get("TRIGGER_RECAPITALIZATION", "1 10 0 16 * *")
     },
     {
       queue: "trigger_periodic_emails",
-      recursion: Env.get("TRIGGER_PERIODIC_EMAILS", "* * 6 16 * *")
+      recursion: Env.get("TRIGGER_PERIODIC_EMAILS", "1 10 6 16 * *")
     }
   ]
 }

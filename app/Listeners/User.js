@@ -77,17 +77,43 @@ User.onApproved = async (user) => {
   Event.emit("notification::userApproved", user)
 }
 
-User.onUpdate = async (user) => {
+/**
+ *
+ * @param {{user: User, roleChangeData: {newAgent: string, commissionsReceiver: string}}} data
+ * @returns {Promise<void>}
+ */
+User.onUpdate = async (data) => {
   const channel = Ws.getChannel('account')
   const subscribers = channel.getTopicSubscriptions("account")
   const topic = channel.topic("account")
 
+  // Must transfer clients and commissions
+  if (data.roleChangeData) {
+
+    //if (data.roleChangeData.commissionsReceiver) {
+    // EDvent if there is no receiver for the commission, i must set them to 0.
+      await Queue.add("transfer_agent_commissions", {
+        oldAgent: data.user._id.toString(),
+        newAgent: data.roleChangeData.commissionsReceiver
+      })
+    //}
+
+    //if (data.roleChangeData.newAgent) {
+    // Even if there isn't a new agent, i reset the agent for its clients
+      await Queue.add("transfer_agent_clients", {
+        oldAgent: data.user._id.toString(),
+        newAgent: data.roleChangeData.newAgent || null
+      })
+    //}
+  }
+
+
   // if no one is listening, so the `topic('subscriptions')` method will return `null`
   if (topic) {
-    const userEntry = Array.from(subscribers).find(_sub => _sub.user._id.toString() === user._id.toString())
+    const userEntry = Array.from(subscribers).find(_sub => _sub.user._id.toString() === data.user._id.toString())
 
     if (userEntry) {
-      topic.emitTo('accountUpdated', user, [userEntry.id])
+      topic.emitTo('accountUpdated', data.user, [userEntry.id])
     }
   }
 }
