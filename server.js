@@ -1,6 +1,9 @@
 'use strict'
 
 const fs = require("fs")
+const path = require("path")
+const https = require('https')
+const {Ignitor} = require('@adonisjs/ignitor')
 
 /*
 |--------------------------------------------------------------------------
@@ -19,14 +22,21 @@ const fs = require("fs")
 |     Make sure to pass relative path from the project root.
 */
 
+// Certificate
+const options = {
+  key: fs.readFileSync(path.resolve(__dirname, 'key.pem')),
+  cert: fs.readFileSync(path.resolve(__dirname, 'cert.pem'))
+}
+
 if (!fs.existsSync("tmp")) {
   fs.mkdirSync("tmp")
 }
 
-const {Ignitor} = require('@adonisjs/ignitor')
 
 new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
   .wsServer()
-  .fireHttpServer()
+  .fireHttpServer((handler) => {
+    return https.createServer(options, handler)
+  })
   .catch(console.error)
