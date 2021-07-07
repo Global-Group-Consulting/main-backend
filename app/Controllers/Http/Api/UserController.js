@@ -209,11 +209,14 @@ class UserController {
 
   async update({request, params, auth, response}) {
     const incomingUser = request.only(User.updatableFields)
+    const roleChangeData = request.input("roleChangeData");
     const incompleteData = request.input("incompleteData")
     /**
      * @type {User}
      */
     const user = await User.find(params.id)
+    const userRoleChanged = incomingUser.role && incomingUser.role !== user.role
+    const userWasAgent = userRoleChanged && user.role === UserRoles.AGENTE
 
     // If still in draft OR the auth user is a superAdmin, allow to change the email
     // otherwise, avoid it.
@@ -273,7 +276,16 @@ class UserController {
       await File.store(files, user._id, auth.user._id)
     }
 
-    Event.emit("user::updated", result)
+    const toEmit = {
+      user: result
+    }
+
+    // If the role has changed and the user was an agent
+    if (userWasAgent || true) {
+      toEmit.roleChangeData = roleChangeData
+    }
+
+    Event.emit("user::updated", toEmit)
 
     return result.full()
   }
@@ -654,6 +666,14 @@ class UserController {
     return {
       suspended: user.suspended
     }
+  }
+
+  async transferAgentUsers(oldAgent, newAgent) {
+
+  }
+
+  async transferAgentCommissions(oldAgent, newAgent) {
+
   }
 }
 
