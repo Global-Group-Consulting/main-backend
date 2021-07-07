@@ -125,9 +125,14 @@ class Commission extends Model {
 
   static async _getLastMonthCollectedCommissions(userId, lastReinvestedCommissions) {
     userId = castToObjectId(userId)
+    const toReturn = {
+      total: 0,
+      totalBrite: 0,
+      totalEuro: 0,
+    }
 
     if (!lastReinvestedCommissions) {
-      return null
+      return toReturn
     }
 
     const startDate = moment(lastReinvestedCommissions.created_at)// this._getMomentDate(1).subtract(1, "months")
@@ -141,12 +146,6 @@ class Commission extends Model {
         $lt: endDate.toDate()
       }
     }).fetch()
-
-    const toReturn = {
-      total: 0,
-      totalBrite: 0,
-      totalEuro: 0,
-    }
 
     data.rows.forEach((el) => {
       toReturn.total += el.amountChange;
@@ -213,6 +212,7 @@ class Commission extends Model {
       case CommissionType.COMMISSIONS_TO_REINVEST:
       case CommissionType.COMMISSIONS_COLLECTED:
       case CommissionType.MANUAL_TRANSFER_DONER:
+      case CommissionType.MANUAL_WITHDRAWAL:
         dataToCreate.currMonthCommissions -= dataToCreate.amountChange
 
         break;
@@ -357,6 +357,7 @@ class Commission extends Model {
       await this._create({
         movementId: null,
         userId: data.referenceAgent,
+        receiverId: data.userId,
         clientId: null,
         commissionType: CommissionType.MANUAL_TRANSFER_DONER,
         availableAmount: data.refAgentAvailableAmount,
@@ -382,6 +383,27 @@ class Commission extends Model {
       commissionType: data.commissionType || CommissionType.MANUAL_ADD,
       referenceAgent: data.referenceAgent,
       refAgentAvailableAmount: data.refAgentAvailableAmount,
+      dateReference: moment().toDate(),
+      amountChange: data.amountChange,
+      commissionOnValue: null,
+      commissionPercentage: null,
+      indirectCommission: false,
+      teamCommissionType: "",
+      notes: data.notes || "",
+      created_by: data.created_by
+    }, lastCommission);
+  }
+
+  /**
+   * @param {{userId: string, amountChange: number, notes?: string, created_by: string}} data
+   * @returns {Promise<Commission>}
+   */
+  static async manualWithdrawal(data){
+    const lastCommission = await this._getLastCommission(data.userId)
+
+    return this._create({
+      userId: data.userId,
+      commissionType: CommissionType.MANUAL_WITHDRAWAL,
       dateReference: moment().toDate(),
       amountChange: data.amountChange,
       commissionOnValue: null,
@@ -623,6 +645,10 @@ class Commission extends Model {
   }
 
   setClientId(value) {
+    return castToObjectId(value)
+  }
+
+  setReceiverId(value) {
     return castToObjectId(value)
   }
 }
