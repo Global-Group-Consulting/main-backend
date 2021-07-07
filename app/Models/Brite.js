@@ -150,7 +150,7 @@ class BriteModel extends BasicModel {
   static async getBlocksDataForUSer(userId, userBrites) {
     const currSemester = this.currentSemester
 
-    const minExpiration = moment().set({month: currSemester.month}).startOf("month").toDate();
+    const minExpiration = moment().toDate();
 
     /**
      * @type {VanillaSerializer}
