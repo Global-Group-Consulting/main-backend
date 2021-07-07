@@ -37,6 +37,8 @@ new Ignitor(require('@adonisjs/fold'))
   .appRoot(__dirname)
   .wsServer()
   .fireHttpServer((handler) => {
-    return https.createServer(options, handler)
+    if (process.env.NODE_ENV === "development") {
+      return https.createServer(options, handler)
+    }
   })
   .catch(console.error)
