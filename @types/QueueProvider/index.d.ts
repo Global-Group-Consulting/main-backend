@@ -18,6 +18,9 @@ export type QueuesList =
   | "agent_commissions_on_total_deposit" // For the reference agent, calculate the commissions based on the user's new deposit
   | "agent_commissions_auto_withdrawl" // For an agent, check if exists any autoWithdrawl request and execute it
 
+  | "transfer_agent_commissions"
+  | "transfer_agent_clients"
+
 export type QueueConfig = {
   name?: string,
   options?: {
