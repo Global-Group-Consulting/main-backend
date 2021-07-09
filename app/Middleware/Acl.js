@@ -15,8 +15,6 @@ class Acl {
    */
   async handle({request, auth}, next, properties) {
     const permissions = properties.map(perm => perm.replace(/!/g, ":"))
-
-    debugger
     const canAccess = await AclProvider.checkPermissions(permissions, auth);
 
     if (!canAccess) {

@@ -127,19 +127,19 @@ class MagazineController {
       /** @type {[]} */
       const uploadedFile = await File.store(files, null, auth.user._id)
 
-      const fileId = uploadedFile.find(file => file.fieldName === "pdfFile")._id
-      const coverFileId = uploadedFile.find(file => file.fieldName === "coverFile")._id
+      const pdfFile = uploadedFile.find(file => file.fieldName === "pdfFile")
+      const coverFile = uploadedFile.find(file => file.fieldName === "coverFile")
 
-      if (fileId) {
+      if (pdfFile) {
         await File.deleteAllWith(magazine.fileId.toString());
 
-        magazine.fileId = fileId;
+        magazine.fileId = pdfFile._id;
       }
 
-      if (coverFileId) {
+      if (coverFile) {
         await File.deleteAllWith(magazine.coverFileId.toString());
 
-        magazine.coverFileId = coverFileId;
+        magazine.coverFileId = coverFile._id;
       }
     }
 
