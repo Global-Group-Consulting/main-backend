@@ -9,14 +9,14 @@ module.exports = function (Route) {
     Route.get("/current", "MagazineController.current")
 
     Route.post("/", "MagazineController.store")
-      .validator('magazine/Create')
+      .validator('magazine/create')
       .middleware(setAclMiddleware(MagazinePermissions.MAGAZINE_WRITE))
 
     Route.get("/:id", "MagazineController.show")
       .middleware(setAclMiddleware(MagazinePermissions.MAGAZINE_READ))
 
     Route.patch("/:id", "MagazineController.update")
-      .validator('magazine/Update')
+      .validator('magazine/update')
       .middleware(setAclMiddleware(MagazinePermissions.MAGAZINE_WRITE))
 
     Route.delete("/:id", "MagazineController.destroy")
