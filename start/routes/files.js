@@ -1,10 +1,10 @@
 module.exports = function (Route) {
   Route.group(() => {
-    Route
-      .get('/:id', 'FileController.download')
+    Route.get('/:id/meta', 'FileController.show')
 
-    Route
-      .delete('/:id', 'FileController.delete')
+    Route.get('/:id', 'FileController.download')
+
+    Route.delete('/:id', 'FileController.delete')
 
     // Only for testing purposes
     /*Route

@@ -59,6 +59,18 @@ class FileController {
     return pathname
   }
 
+  async show({params, response}) {
+    const {id} = params
+
+    const dbFile = await File.find(id)
+
+    if (!dbFile) {
+      return response.badRequest('File not found');
+    }
+
+    return dbFile;
+  }
+
   async download({params, response}) {
     const {id} = params
 

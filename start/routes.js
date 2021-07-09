@@ -32,6 +32,7 @@ const RequestsRoutes = require('./routes/requests.js')
 const SettingsRoutes = require('./routes/settings.js')
 const UserRoutes = require('./routes/users.js')
 const WebhooksRoutes = require('./routes/webhooks.js')
+const MagazineRoutes = require('./routes/magazine.js')
 
 Route.on('/').render('welcome')
 
@@ -49,6 +50,7 @@ RequestsRoutes(Route)
 SettingsRoutes(Route)
 UserRoutes(Route)
 WebhooksRoutes(Route)
+MagazineRoutes(Route)
 
 const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64')
 
