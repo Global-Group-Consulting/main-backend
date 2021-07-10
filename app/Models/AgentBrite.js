@@ -6,6 +6,7 @@
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
+const AgentBriteException = use('App/Exceptions/AgentBriteException')
 
 const AgentBritesType = require("../../enums/AgentBritesType")
 const {castToObjectId} = require("../Helpers/ModelFormatters")
@@ -58,7 +59,7 @@ class AgentBrite extends Model {
    * @param {import("../../@types/Request").Request} request
    * @return {ObjectId}
    */
-  static async addBrites(request) {
+  static async addBritesFromRequest(request) {
     /**
      * @type {AgentBrites}
      */
@@ -77,6 +78,48 @@ class AgentBrite extends Model {
     })
 
     return newMovement._id
+  }
+
+  /**
+   * @param {{amount: number, userId: string, motivation: string}} payload
+   * @return {Promise<void>}
+   */
+  static async add(payload) {
+    /** @type {AgentBrites} */
+    const lastMovement = await this.lastMovement(payload.userId);
+    const oldDeposit = lastMovement && lastMovement.deposit ? lastMovement.deposit : 0;
+
+    return this._create({
+      amount: payload.amount,
+      type: AgentBritesType.MANUAL_ADD,
+      deposit: oldDeposit + payload.amount, //new deposit
+      oldDeposit,
+      motivation: payload.motivation,
+      userId: castToObjectId(payload.userId),
+    })
+  }
+
+  /**
+   * @param {{amount: number, userId: string, motivation: string}} payload
+   * @return {Promise<void>}
+   */
+  static async remove(payload) {
+    /** @type {AgentBrites} */
+    const lastMovement = await this.lastMovement(payload.userId);
+    const oldDeposit = lastMovement && lastMovement.deposit ? lastMovement.deposit : 0;
+
+    if (payload.amount > oldDeposit) {
+      throw new AgentBriteException("There requested amount is higher than the available amount.")
+    }
+
+    return this._create({
+      amount: payload.amount,
+      type: AgentBritesType.MANUAL_REMOVE,
+      deposit: oldDeposit - payload.amount, //new deposit
+      oldDeposit,
+      motivation: payload.motivation,
+      userId: castToObjectId(payload.userId),
+    })
   }
 
   /**

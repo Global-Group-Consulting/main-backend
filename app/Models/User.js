@@ -957,6 +957,13 @@ class User extends Model {
     return AclRolesModel.getAllPermissions(this.roles, this.directPermissions)
   }
 
+  isAdmin() {
+    return [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+this.role)
+  }
+
+  isAgent() {
+    return [UserRoles.AGENTE].includes(+this.role)
+  }
 
   get_id(value) {
     return value.toString()

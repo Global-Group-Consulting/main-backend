@@ -3,6 +3,7 @@
 
 /** @type {typeof import("../../../../@types/AgentBrites").AgentBrites} */
 const AgentBrite = use("App/Models/AgentBrite");
+const AgentBriteException = use('App/Exceptions/AgentBriteException')
 
 /** @type {import("../../../../@types/Acl/AclProvider").AclProvider} */
 const AclProvider = use('AclProvider')
@@ -38,32 +39,64 @@ class AgentBriteController {
   /**
    * Add new brites
    * @param {Request} request
+   * @param {{id: string}} params
    */
-  async add({request}) {
+  async add({request, params}) {
+    const userId = params.id;
+    /**
+     * @type {{amount: number, motivation: string, type: string}}
+     */
+    const incomingData = request.only(["amount", "motivation", "type"])
 
+    if (incomingData.type !== AgentBritesType.MANUAL_ADD) {
+      throw new AgentBriteException("The requested type is different from the expected one.")
+    }
+
+    return await AgentBrite.add({
+      amount: incomingData.amount,
+      motivation: incomingData.motivation,
+      userId
+    })
   }
 
   /**
    * Removes existing brites
    * @param {Request} request
+   * @param {{id: string}} params
    */
-  async remove({request}) {
+  async remove({request, params}) {
+    const userId = params.id;
+    /**
+     * @type {{amount: number, motivation: string, type: string}}
+     */
+    const incomingData = request.only(["amount", "motivation", "type"])
 
+    if (incomingData.type !== AgentBritesType.MANUAL_REMOVE) {
+      throw new AgentBriteException("The requested type is different from the expected one.")
+    }
+
+    return await AgentBrite.remove({
+      amount: incomingData.amount,
+      motivation: incomingData.motivation,
+      userId
+    })
   }
 
   async statistics({params, auth}) {
-
-    const userRole = auth.user.role
+    const paramsId = params.id;
     let userId = auth.user._id
 
     let hasSubAgents = false
 
-    if (auth.user.role === UserRoles.AGENTE) {
+    if (auth.user.isAgent()) {
       hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
     }
 
-    if (([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) || hasSubAgents) && params["id"]) {
-      userId = params["id"]
+    // If the user is not an admin or a reference agent, and is required a user id, block it.
+    if ((auth.user.isAdmin() || hasSubAgents) && paramsId) {
+      userId = paramsId;
+    } else if (paramsId) {
+      throw new AclForbiddenException();
     }
 
     return await AgentBrite.getStatistics(userId)

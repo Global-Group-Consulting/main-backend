@@ -138,7 +138,7 @@ class RequestController {
     })
 
     if (incomingData.type === RequestTypes.RISC_PROVVIGIONI && !isAutoWithdrawlRequest) {
-      newRequest.briteMovementId = await AgentBrite.addBrites(newRequest)
+      newRequest.briteMovementId = await AgentBrite.addBritesFromRequest(newRequest)
 
       await newRequest.save();
     }

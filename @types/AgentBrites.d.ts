@@ -24,5 +24,9 @@ export class AgentBrites extends AgentsBriteModel {
   created_at: Date
   updated_at: Date
 
-  static async addBrites(data: Request): Promise<ObjectId>
+  static async addBritesFromRequest(data: Request): Promise<ObjectId>
+
+  static async add(payload: { amount: string, userId: string, motivation: string }): Promise<ObjectId>
+
+  static async remove(payload: { amount: string, userId: string, motivation: string }): Promise<ObjectId>
 }
