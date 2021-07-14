@@ -33,6 +33,7 @@ Request.onNewRequest = onNewRequest
 Request.onApproved = onApproved
 Request.onCancelled = onCancelled
 Request.onRejected = onRejected
+Request.onReverted = onReverted
 Request.onAutoWithdrawlCompleted = onAutoWithdrawlCompleted
 Request.onAutoWithdrawlRecursiveCompleted = onAutoWithdrawlRecursiveCompleted
 
@@ -82,6 +83,10 @@ async function onRejected(request) {
  */
 async function onCancelled(request) {
   Event.emit("notification::requestCancelled", request)
+}
+
+async function onReverted(request) {
+
 }
 
 /**
