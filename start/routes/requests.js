@@ -37,6 +37,10 @@ module.exports = function (Route) {
       .put('/:id/cancel', 'RequestController.cancel')
       .validator("requests/reject")
 
+    Route
+      .put('/:id/revert', 'RequestController.revert')
+      .validator("requests/reject")
+
   }).prefix('/api/requests')
     .middleware('auth')
     .namespace('Api')

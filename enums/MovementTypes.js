@@ -1,4 +1,4 @@
-const { BasicEnum } = require('../classes/BasicEnum')
+const {BasicEnum} = require('../classes/BasicEnum')
 
 /**
  * @enum
@@ -11,14 +11,17 @@ class MovementTypes extends BasicEnum {
     this.INITIAL_DEPOSIT = 1
     this.DEPOSIT_ADDED = 2
     this.INTEREST_RECAPITALIZED = 3
+
     // Prelievi
     this.INTEREST_COLLECTED = 4
     this.DEPOSIT_COLLECTED = 5
     this.COMMISSION_COLLECTED = 6
+
     // Storno operazioni
     this.CANCEL_INTEREST_COLLECTED = 7
     this.CANCEL_DEPOSIT_COLLECTED = 8
     this.CANCEL_COMMISSION_COLLECTED = 9
+    this.CANCEL_DEPOSIT_ADDED = 11
 
     this.COMMISSIONS_REINVESTMENT = 10
 
@@ -27,7 +30,8 @@ class MovementTypes extends BasicEnum {
         id: "initialDeposit"
       },
       [this.DEPOSIT_ADDED]: {
-        id: "depositAdded"
+        id: "depositAdded",
+        cancel: this.CANCEL_DEPOSIT_ADDED
       },
       [this.INTEREST_RECAPITALIZED]: {
         id: "interestRecapitalized"
@@ -55,6 +59,9 @@ class MovementTypes extends BasicEnum {
       },
       [this.COMMISSIONS_REINVESTMENT]: {
         id: "commissionsReinvestment"
+      },
+      [this.CANCEL_DEPOSIT_ADDED]: {
+        id: "cancelDepositAdded"
       },
     }
   }
