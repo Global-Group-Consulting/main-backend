@@ -44,7 +44,10 @@ class Movement extends Model {
         const movementTypeId = MovementTypes.get(data.movementType).id
         /** @type {IMovement} */
         const lastMovement = await Movement.getLast(data.userId)
-        const cancelType = [MovementTypes.CANCEL_COMMISSION_COLLECTED, MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED]
+        const cancelType = [MovementTypes.CANCEL_COMMISSION_COLLECTED,
+          MovementTypes.CANCEL_DEPOSIT_COLLECTED,
+          MovementTypes.CANCEL_DEPOSIT_ADDED,
+          MovementTypes.CANCEL_INTEREST_COLLECTED]
           .includes(data.movementType)
 
         if (cancelType) {
@@ -185,6 +188,15 @@ class Movement extends Model {
    */
   static async _handleCancelDepositCollected(data, lastMovement) {
     data.deposit = lastMovement.deposit + data.amountChange
+    data.interestAmount = lastMovement.interestAmount
+  }
+
+  /**
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
+   */
+  static async _handleCancelDepositAdded(data, lastMovement) {
+    data.deposit = lastMovement.deposit - data.amountChange
     data.interestAmount = lastMovement.interestAmount
   }
 

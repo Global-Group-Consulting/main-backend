@@ -48,6 +48,12 @@ class Request extends Model {
     return ['_id', "__v"]
   }
 
+  static get revertableRequests() {
+    return [
+      RequestTypes.VERSAMENTO,
+    ]
+  }
+
   static async boot() {
     super.boot()
 
@@ -349,11 +355,13 @@ class Request extends Model {
       // .with("files")
       .sort(sorting)
       .fetch()
-
   }
 
   static async allWithUserPaginated(sorting, page = 1, perPage = 25) {
-    return this.db.collection("requests")
+    /**
+     * @type {Request[]}
+     */
+    const data = await this.db.collection("requests")
       .aggregate([
         {
           "$sort": sorting
@@ -428,6 +436,24 @@ class Request extends Model {
           }
         }
       ]).toArray()
+
+    const minDate = moment().date() > 15
+      ? moment().set({date: 16}).startOf("day")
+      : moment().set({month: moment().month() - 1, date: 16}).startOf("day")
+
+    return data.map(_entry => {
+      _entry.canCancel = false
+
+      if (_entry.status === RequestStatus.ACCETTATA
+        && this.revertableRequests.includes(_entry.type)
+        && moment(_entry.completed_at).isAfter(minDate)
+        && !_entry.initialMovement
+      ) {
+        _entry.canCancel = true
+      }
+
+      return _entry
+    })
   }
 
   /**
@@ -438,7 +464,7 @@ class Request extends Model {
     /** @type {IMovement} */
     const lastRecapitalization = await MovementModel.getLastRecapitalization(userId)
 
-    /** @type {{rows: IRequest[]}} */
+    /** @type {Request} */
     const data = await Request
       .where({userId: {$in: [userId.toString(), userId.constructor.name === "ObjectID" ? userId : new MongoTypes.ObjectId(userId)]}})
       .with("targetUser", query => {
@@ -458,9 +484,10 @@ class Request extends Model {
       _entry.canCancel = false
 
       const jsonData = _entry.toJSON()
+      const cancellableMovements = [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.COMMISSION_COLLECTED, MovementTypes.DEPOSIT_ADDED]
 
       if (_entry.status === RequestStatus.ACCETTATA && jsonData.movement && jsonData.completed_at
-        && [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.COMMISSION_COLLECTED].includes(+jsonData.movement.movementType)) {
+        && cancellableMovements.includes(+jsonData.movement.movementType)) {
         _entry.canCancel = moment(_entry.completed_at).isAfter(moment(lastRecapitalization.created_at))
       }
 
@@ -742,17 +769,19 @@ class Request extends Model {
       throw new MovementErrorException("Movement not found.")
     }
 
+    // checks if the movement has already been cancelled
     const movementCancelRef = await MovementModel.where({cancelRef: movementRef._id}).first()
 
     if (movementCancelRef) {
       throw new MovementErrorException("Movement already canceled.")
     }
 
+    // Get the movement type eto generate for cancelling this request
     const movementType = MovementTypes.get(movementRef.movementType).cancel
     const jsonData = movementRef.toJSON()
 
     if (!movementType) {
-      throw new MovementError("Can't cancel this type of movement.")
+      throw new MovementErrorException("Can't cancel this type of movement.")
     }
 
     delete jsonData._id
@@ -769,9 +798,21 @@ class Request extends Model {
         interestPercentage: +user.contractPercentage
       })
 
-      this.movementId = movement._id
+      if (movement.cancelRef) {
+        const relativeCommission = await CommissionModel.where({movementId: movement.cancelRef}).fetch()
+
+        for (let commission of relativeCommission.rows) {
+          //throw new MovementErrorException("Can't find the relative commission");
+          await commission.cancel(movement._id);
+        }
+      }
+
+      // Aggiorna i dati sulla richiesta attuale
+      this.originalMovementId = this.movementId;
+      this.movementId = movement._id;
+      this.cancelled = true;
     } catch (er) {
-      throw new Error("Can't cancel this request.", er.message)
+      throw new MovementErrorException("Can't cancel this request. " + er.message)
     }
   }
 

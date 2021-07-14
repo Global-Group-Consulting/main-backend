@@ -396,6 +396,43 @@ class RequestController {
 
     return foundedRequest
   }
+
+  /**
+   * Metodo che effettua lo storno di una richiesta, lato admin.
+   * Deve controllare anche il movimento relativo a quella richiesta,
+   * oltre che le eventuali provvigioni generate.
+   *
+   * @param {Request} request
+   * @param {{id: string}} params
+   * @param {Response} response
+   * @return {Promise<void>}
+   */
+  async revert({request, params, response}) {
+    /** @type {string} */
+    const requestId = params.id
+
+    /** @type {Comprehend.SentimentScore.Mixed} */
+    const reason = request.input("reason")
+
+    /** @type {IRequest} */
+    const reqToRevert = await RequestModel.find(requestId)
+
+    if (!reqToRevert) {
+      throw new RequestNotFoundException()
+    }
+
+    if (!RequestModel.revertableRequests.includes(reqToRevert.type)) {
+      return response.badRequest("Can't revert this type of request.")
+    }
+
+    reqToRevert.status = RequestStatus.ANNULLATA
+    reqToRevert.cancelReason = reason || ""
+    reqToRevert.completed_at = moment().toDate()
+
+    await reqToRevert.save();
+
+    Event.emit("request::reverted", reqToRevert)
+  }
 }
 
 module.exports = RequestController

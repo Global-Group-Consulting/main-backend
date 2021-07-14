@@ -211,6 +211,7 @@ class Commission extends Model {
         break
       case CommissionType.COMMISSIONS_TO_REINVEST:
       case CommissionType.COMMISSIONS_COLLECTED:
+      case CommissionType.CANCEL_COMMISSIONS_NEW_DEPOSIT:
       case CommissionType.MANUAL_TRANSFER_DONER:
       case CommissionType.MANUAL_WITHDRAWAL:
         dataToCreate.currMonthCommissions -= dataToCreate.amountChange
@@ -398,7 +399,7 @@ class Commission extends Model {
    * @param {{userId: string, amountChange: number, notes?: string, created_by: string}} data
    * @returns {Promise<Commission>}
    */
-  static async manualWithdrawal(data){
+  static async manualWithdrawal(data) {
     const lastCommission = await this._getLastCommission(data.userId)
 
     return this._create({
@@ -630,6 +631,31 @@ class Commission extends Model {
   user() {
     return this.hasOne("App/Models/User", "clientId", "_id")
       .setVisible(["_id", "firstName", "lastName", "role"])
+  }
+
+  /**
+   *
+   * @param {ObjectOd} newMovementId
+   * @return {Promise<Commission>}
+   */
+  async cancel(newMovementId) {
+    const lastCommission = await Commission._getLastCommission(this.userId)
+
+    return Commission._create({
+      userId: this.userId,
+      clientId: this.clientId,
+      commissionType: CommissionType.CANCEL_COMMISSIONS_NEW_DEPOSIT,
+      dateReference: moment().toDate(),
+      amountChange: this.amountChange,
+      commissionOnValue: this.commissionOnValue,
+      commissionPercentage: this.commissionPercentage,
+      indirectCommission: this.indirectCommission,
+      teamCommissionType: this.teamCommissionType,
+      notes: this.notes,
+      created_by: this.created_by,
+      movementId: newMovementId,
+      refCommission: this.movementId
+    }, lastCommission);
   }
 
   setMovementId(value) {

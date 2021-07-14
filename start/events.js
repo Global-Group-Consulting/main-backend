@@ -27,6 +27,7 @@ Event.on("request::new", "Request.onNewRequest")
 Event.on("request::approved", "Request.onApproved")
 Event.on("request::rejected", "Request.onRejected")
 Event.on("request::cancelled", "Request.onCancelled")
+Event.on("request::reverted", "Request.onReverted")
 Event.on("request::autoWithdrawl:completed", "Request.onAutoWithdrawlCompleted")
 Event.on("request::autoWithdrawlRecursive:completed", "Request.onAutoWithdrawlRecursiveCompleted")
 
