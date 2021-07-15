@@ -148,8 +148,7 @@ class Request extends Model {
       }
 
       // Store the current available amount for future reference
-      if ([
-        RequestTypes.RISC_CAPITALE,
+      if ([RequestTypes.RISC_CAPITALE,
         RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
 
@@ -169,9 +168,15 @@ class Request extends Model {
           data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
         }
       } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER].includes(data.type)) {
-        const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
 
-        data.availableAmount = commissionMovement.currMonthCommissions
+        if (data.type === RequestTypes.COMMISSION_MANUAL_TRANSFER) {
+          const commissionMovement = await CommissionModel._getLastCommission(data.userId)
+          data.availableAmount = commissionMovement.currMonthCommissions
+        } else {
+          const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
+          data.availableAmount = commissionMovement.currMonthCommissions
+        }
+
       }
 
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)
