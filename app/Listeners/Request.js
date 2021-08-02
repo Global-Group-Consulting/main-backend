@@ -125,7 +125,11 @@ async function onAutoWithdrawlCompleted(requestId, amountChange, commissionId) {
   // If i'm here, the request is about collection commissions, so no need to check if i must add brites.
   RequestModel.calcRightAmount(request);
 
-  request.briteMovementId = await AgentBrite.addBrites(request)
+  try {
+    request.briteMovementId = await AgentBrite.addBritesFromRequest(request)
+  } catch (er) {
+    console.log(er)
+  }
 
   await request.save()
 
