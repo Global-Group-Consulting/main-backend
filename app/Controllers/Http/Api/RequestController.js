@@ -165,6 +165,12 @@ class RequestController {
     return newRequest
   }
 
+  /**
+   *
+   * @param request
+   * @param auth
+   * @return {Promise<*>}
+   */
   async createByAdmin({request, auth}) {
     if (auth.user.role !== UserRoles.ADMIN) {
       throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
@@ -187,6 +193,10 @@ class RequestController {
     let newRequest = null;
 
     if (+incomingData.type === RequestTypes.RISC_MANUALE_INTERESSI) {
+      if(!auth.user.superAdmin){
+        throw new AclGenericException("Permessi insufficienti!")
+      }
+
       const movementData = {
         userId: incomingData.userId,
         movementType: MovementTypes.MANUAL_INTEREST_COLLECTED,
