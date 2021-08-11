@@ -165,6 +165,12 @@ class RequestController {
     return newRequest
   }
 
+  /**
+   *
+   * @param request
+   * @param auth
+   * @return {Promise<*>}
+   */
   async createByAdmin({request, auth}) {
     if (auth.user.role !== UserRoles.ADMIN) {
       throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
@@ -184,21 +190,42 @@ class RequestController {
       throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
     }
 
-    const newRequest = await RequestModel.create({
-      ...incomingData,
-      createdBy: auth.user.id,
-      createdByAdmin: true
-    })
+    let newRequest = null;
 
-    const files = request.files()
+    if (+incomingData.type === RequestTypes.RISC_MANUALE_INTERESSI) {
+      if(!auth.user.superAdmin){
+        throw new AclGenericException("Permessi insufficienti!")
+      }
 
-    if (Object.keys(files).length > 0) {
-      await FileModel.store(files, associatedUser.id, auth.user._id, {
-        requestId: newRequest.id
+      const movementData = {
+        userId: incomingData.userId,
+        movementType: MovementTypes.MANUAL_INTEREST_COLLECTED,
+        requestType: incomingData.type,
+        amountChange: incomingData.amount,
+        createdBy: auth.user.id,
+        createdByAdmin: true,
+        interestPercentage: associatedUser.contractPercentage,
+        notes: incomingData.notes
+      }
+
+      newRequest = await MovementModel.create(movementData);
+    } else {
+      newRequest = await RequestModel.create({
+        ...incomingData,
+        createdBy: auth.user.id,
+        createdByAdmin: true
       })
-    }
 
-    Event.emit("request::new", newRequest)
+      const files = request.files()
+
+      if (Object.keys(files).length > 0) {
+        await FileModel.store(files, associatedUser.id, auth.user._id, {
+          requestId: newRequest.id
+        })
+      }
+
+      Event.emit("request::new", newRequest)
+    }
 
     return newRequest
 
