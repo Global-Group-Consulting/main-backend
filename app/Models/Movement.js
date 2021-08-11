@@ -17,7 +17,7 @@ const RequestTypes = require("../../enums/RequestTypes")
 const InvalidMovementException = require("../Exceptions/InvalidMovementException")
 const MovementErrorException = require("../Exceptions/MovementErrorException")
 
-const {castToObjectId, castToIsoDate} = require("../Helpers/ModelFormatters")
+const {castToObjectId, castToIsoDate, castToNumber} = require("../Helpers/ModelFormatters")
 
 class Movement extends Model {
   static db
@@ -198,6 +198,15 @@ class Movement extends Model {
   static async _handleCancelDepositAdded(data, lastMovement) {
     data.deposit = lastMovement.deposit - data.amountChange
     data.interestAmount = lastMovement.interestAmount
+  }
+
+  /**
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
+   */
+  static async _handleManualInterestCollected(data, lastMovement) {
+    data.deposit = lastMovement.deposit
+    data.interestAmount = lastMovement.interestAmount - data.amountChange
   }
 
   static async getInitialInvestment(id) {
@@ -386,6 +395,14 @@ class Movement extends Model {
 
   getId() {
     return this._id.toString()
+  }
+
+  setAmountChange(value) {
+    return castToNumber(value)
+  }
+
+  setRequestType(value) {
+    return castToNumber(value)
   }
 
   setUserId(value) {
