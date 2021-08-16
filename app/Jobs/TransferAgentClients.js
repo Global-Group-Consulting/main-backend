@@ -27,7 +27,7 @@ module.exports =
     /*   .where('referenceAgent', castToObjectId(data.oldAgent))*/
     /*   .update({'referenceAgent': castToObjectId(data.newAgent)})*/
 
-    job.attrs.result = result.result;
+    job.attrs.result = 'ok';
 
     await job.save()
   }
