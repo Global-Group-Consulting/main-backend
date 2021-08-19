@@ -663,6 +663,7 @@ class Commission extends Model {
 
     if (filters.endDate) {
       endDate = moment(filters.endDate)
+        .add(1, "day")
         .set(timeToUse)
     }
 
