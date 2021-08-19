@@ -611,7 +611,7 @@ class Movement extends Model {
         {
           '$addFields': {
             'created_at': {
-              '$first': '$movements.created_at'
+              "$arrayElemAt": ["$movements.created_at", 0]
             }
           }
         },
