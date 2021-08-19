@@ -628,6 +628,249 @@ class Commission extends Model {
     }
   }
 
+  /**
+   *
+   * @param {{type: 'withdrawals' | 'commissions', startDate: string, endDate: string, movementType?: number, user?: IUser, referenceAgent?: IUser}} filters
+   * @return {Promise<*>}
+   */
+  static async getReportsData(filters) {
+    let startDate = null;
+    let endDate = null;
+
+    const type = filters.type
+    const commissionsToSearch = [CommissionType.COMMISSIONS_COLLECTED]
+    const momentDate = moment()
+
+    startDate = moment(momentDate).subtract(1, "months").set({
+      date: type === 'withdrawals' ? 16 : 1,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
+    endDate = moment(momentDate).set({
+      date: 1,
+      hour: 23,
+      minute: 59,
+      second: 59,
+    }).subtract(1, "days")
+
+    if (filters.startDate) {
+      startDate = moment(filters.startDate)
+    }
+
+    if (filters.endDate) {
+      endDate = moment(filters.endDate)
+    }
+
+    const query = {
+      commissionType: {$in: commissionsToSearch},
+      created_at: {
+        $gte: startDate.toDate(),
+        $lte: endDate.toDate()
+      },
+    }
+
+    if (filters.user) {
+      query.userId = castToObjectId(filters.user)
+    }
+
+    if (filters.referenceAgent) {
+      query['user.referenceAgent'] = castToObjectId(filters.referenceAgent)
+    }
+
+    const joinUserWithRefAgent = [
+      {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  "$eq": ['$_id', '$$userId']
+                }
+              }
+            },
+            {
+              "$addFields": {
+                "id": "$_id"
+              }
+            },
+            {
+              '$project': {
+                '_id': 0,
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'contractIban': 1,
+                'referenceAgent': 1,
+                'clubPack': 1,
+                'gold': 1,
+              }
+            },
+            {
+              '$lookup': {
+                'from': 'users',
+                'let': {
+                  'agentId': '$referenceAgent'
+                },
+                'as': "referenceAgentData",
+                'pipeline': [
+                  {
+                    '$match': {
+                      '$expr': {
+                        '$eq': [
+                          '$_id', '$$agentId'
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$addFields": {
+                      "id": "$_id"
+                    }
+                  },
+                  {
+                    '$project': {
+                      'id': 1,
+                      '_id': 0,
+                      'firstName': 1,
+                      'lastName': 1,
+                      'email': 1,
+                    }
+                  },
+                ]
+              }
+            },
+            {
+              '$unwind': {
+                'path': '$referenceAgentData',
+                'preserveNullAndEmptyArrays': true
+              }
+            }
+          ],
+        }
+      },
+      {
+        '$unwind': {
+          'path': '$user',
+        }
+      }
+    ]
+    const joinRequest = [
+      {
+        '$lookup': {
+          'from': 'requests',
+          'let': {
+            'requestId': '$requestId',
+            'movementId': '$_id'
+          },
+          'as': 'request',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  $or: [
+                    {"$eq": ['$_id', '$$requestId']},
+                    {"$eq": ['$movementId', '$$movementId']}
+                  ]
+                }
+              }
+            },
+            {
+              "$addFields": {
+                "id": "$_id"
+              }
+            },
+          ],
+        }
+      },
+      {
+        '$unwind': {
+          'path': '$request',
+          'preserveNullAndEmptyArrays': true
+        }
+      }
+    ]
+
+    const data = await this.db.collection("commissions")
+      .aggregate([
+        {
+          "$sort": {
+            created_at: -1
+          }
+        },
+        ...joinUserWithRefAgent,
+        {
+          "$match": query
+        },
+        ...joinRequest,
+        {
+          '$group': {
+            '_id': {
+              'user': '$userId',
+              'requestType': '$request.type',
+              'commissionType': "$commissionType"
+            },
+            'movements': {
+              '$push': '$$ROOT'
+            },
+            'amount': {
+              '$sum': {
+                $cond: {
+                  if: {
+                    $or: [
+                      {$not: ['$briteConversionPercentage']}
+                    ]
+                  },
+                  then: "$amountChange",
+                  else: "$request.amountEuro"
+                }
+              }
+            },
+            user: {
+              $addToSet: "$user"
+            },
+            reqNotes: {
+              $push: "$request.notes"
+            }
+          }
+        },
+        {
+          '$unwind': {
+            'path': '$user',
+          }
+        },
+        {
+          '$addFields': {
+            'created_at': {
+              '$first': '$movements.created_at'
+            }
+          }
+        },
+        {
+          '$addFields': {
+            'type': filters.type
+          }
+        },
+        {
+          "$sort": {
+            'user.lastName': 1,
+            'user.firstName': 1,
+            '_id.requestType': 1
+          }
+        }
+      ]).toArray()
+
+    return data
+  }
+
   user() {
     return this.hasOne("App/Models/User", "clientId", "_id")
       .setVisible(["_id", "firstName", "lastName", "role"])

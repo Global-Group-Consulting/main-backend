@@ -50,6 +50,7 @@ const globalMiddleware = [
 const namedMiddleware = {
   auth: 'App/Middleware/AuthJwt',
   authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
+  authAdmin: 'App/Middleware/AuthAdmin',
   guest: 'Adonis/Middleware/AllowGuestOnly',
   acl: 'App/Middleware/Acl',
   //requestsBlock: 'App/Middleware/RequestsBlock',

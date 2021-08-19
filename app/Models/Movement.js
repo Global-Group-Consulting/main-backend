@@ -18,6 +18,8 @@ const InvalidMovementException = require("../Exceptions/InvalidMovementException
 const MovementErrorException = require("../Exceptions/MovementErrorException")
 
 const {castToObjectId, castToIsoDate, castToNumber} = require("../Helpers/ModelFormatters")
+const moment = require("moment");
+const RequestStatus = require("../../enums/RequestStatus");
 
 class Movement extends Model {
   static db
@@ -373,6 +375,302 @@ class Movement extends Model {
     }
   }
 
+  /**
+   *
+   * @param {{type: 'withdrawals' | 'commissions', startDate: string, endDate: string, movementType?: number, user?: IUser, referenceAgent?: IUser}} filters
+   * @return {Promise<*>}
+   */
+  static async getReportsData(filters) {
+    /*
+    il report deve contenere 3 tab
+    - Riscossione provvigioni
+      - dal 1 al 30 del mese precedente (quelle riscosse che non sono state bloccate il 1)
+    - Riscossioni rendite classic
+      - Riscossione degli interessi maturati dal 16 al 15
+    - Riscossione rendite gold
+      - Riscossione degli interessi maturati dal 16 al 15
+      - Inserire sia gold che brite (aggiuhngere colonna che mostra uno o l'altro)
+      - In fase di download, se una richiesta è classic, ma l'utente è gold, inserire quella richiesta nella pagina relativa ai gold.
+
+
+    Il giorno 16, mandare agli admin un email che li invita a scaricare il report del mese con i versamenti da effettuare.
+
+
+    Aggiungere le seguenti colonne:
+    Importo
+    Tipo richiesta (nome + gold o fisico)
+    Nome Cognome
+    IBAN
+    BIC
+    Note
+    Agente riferimento
+     */
+
+    let startDate = null;
+    let endDate = null;
+    const type = filters.type
+    const movementsToSearch = (filters.movementType) ? [filters.movementType] : [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED]
+    const momentDate = moment()
+
+    startDate = moment(momentDate).subtract(1, "months").set({
+      date: type === 'withdrawals' ? 16 : 1,
+      hour: 0,
+      minute: 0,
+      second: 0,
+    })
+    endDate = moment(momentDate).set({
+      date: type === 'withdrawals' ? 15 : 1,
+      hour: 23,
+      minute: 59,
+      second: 59,
+    })
+
+    if (type === 'commissions') {
+      endDate = endDate.subtract(1, "days")
+    }
+
+    if (filters.startDate) {
+      startDate = moment(filters.startDate)
+    }
+
+    if (filters.endDate) {
+      endDate = moment(filters.endDate)
+    }
+
+    const query = {
+      movementType: {$in: movementsToSearch},
+      created_at: {
+        $gte: startDate.toDate(),
+        $lte: endDate.toDate()
+      },
+    }
+
+    if (filters.user) {
+      query.userId = castToObjectId(filters.user)
+    }
+
+    if (filters.referenceAgent) {
+      query['user.referenceAgent'] = castToObjectId(filters.referenceAgent)
+    }
+
+    const joinUserWithRefAgent = [
+      {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  "$eq": ['$_id', '$$userId']
+                }
+              }
+            },
+            {
+              "$addFields": {
+                "id": "$_id"
+              }
+            },
+            {
+              '$project': {
+                '_id': 0,
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'contractIban': 1,
+                'referenceAgent': 1,
+                'clubPack': 1,
+                'gold': 1,
+              }
+            },
+            {
+              '$lookup': {
+                'from': 'users',
+                'let': {
+                  'agentId': '$referenceAgent'
+                },
+                'as': "referenceAgentData",
+                'pipeline': [
+                  {
+                    '$match': {
+                      '$expr': {
+                        '$eq': [
+                          '$_id', '$$agentId'
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "$addFields": {
+                      "id": "$_id"
+                    }
+                  },
+                  {
+                    '$project': {
+                      'id': 1,
+                      '_id': 0,
+                      'firstName': 1,
+                      'lastName': 1,
+                      'email': 1,
+                    }
+                  },
+                ]
+              }
+            },
+            {
+              '$unwind': {
+                'path': '$referenceAgentData',
+                'preserveNullAndEmptyArrays': true
+              }
+            }
+          ],
+        }
+      },
+      {
+        '$unwind': {
+          'path': '$user',
+        }
+      }
+    ]
+    const joinRequest = [
+      {
+        '$lookup': {
+          'from': 'requests',
+          'let': {
+            'movementId': '$_id'
+          },
+          'as': 'request',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  "$eq": ['$movementId', '$$movementId']
+                }
+              }
+            },
+            {
+              "$addFields": {
+                "id": "$_id"
+              }
+            },
+          ],
+        }
+      },
+      {
+        '$unwind': {
+          'path': '$request',
+          'preserveNullAndEmptyArrays': true
+        }
+      }
+    ]
+
+    const data = await this.db.collection("movements")
+      .aggregate([
+        {
+          "$sort": {
+            created_at: -1
+          }
+        },
+        ...joinUserWithRefAgent,
+        {
+          "$match": query
+        },
+        ...joinRequest,
+        {
+          '$group': {
+            '_id': {
+              'user': '$userId',
+              'requestType': '$request.type',
+              'movementType': "$movementType"
+            },
+            'movements': {
+              '$push': '$$ROOT'
+            },
+            'amount': {
+              '$sum': '$amountChange'
+            },
+            user: {
+              $addToSet: "$user"
+            },
+            reqNotes: {
+              $push: "$request.notes"
+            }
+          }
+        },
+        {
+          '$unwind': {
+            'path': '$user',
+          }
+        },
+        {
+          '$addFields': {
+            'created_at': {
+              '$first': '$movements.created_at'
+            }
+          }
+        },
+        {
+          '$addFields': {
+            'type': filters.type
+          }
+        },
+        {
+          "$sort": {
+            'user.lastName': 1,
+            'user.firstName': 1,
+            '_id.requestType': 1
+          }
+        }
+      ]).toArray()
+
+    /**
+     * @type {{_id: string, users: any[]}[]}
+     */
+    const jsonData = data //data.toJSON()
+    const toReturn = {}
+
+    // Must check cancelled movements
+
+    const cancellationMovements = jsonData.filter(entry => [MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED].includes(entry._id.movementType))
+    const normalMovements = jsonData.filter(entry => ![MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED].includes(entry._id.movementType))
+
+    const toCancel = []
+
+    // check the movements that have been cancelled
+    for (const entry of cancellationMovements) {
+      entry.movements.forEach(cancelMovement => {
+        const cancelRef = cancelMovement.cancelRef.toString()
+
+        toCancel.push(cancelRef)
+      })
+    }
+
+
+    // Remove the movements that has been cancelled
+    normalMovements.map(entry => {
+      entry.movements = entry.movements.filter((movement, i) => {
+        const movementId = movement._id.toString()
+        const mustReturn = !toCancel.includes(movementId)
+
+        if (!mustReturn) {
+          entry.amount -= movement.amountChange
+        }
+
+        return mustReturn
+      })
+
+      return entry
+    })
+
+    // Return only groups that has an amount greater than 0
+    return normalMovements.filter(entry => entry.amount > 0)
+  }
 
   async user() {
     // return await UserModel.where({ "_id": this.userId }).first()
