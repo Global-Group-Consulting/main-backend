@@ -669,7 +669,32 @@ class Movement extends Model {
     })
 
     // Return only groups that has an amount greater than 0
-    return normalMovements.filter(entry => entry.amount > 0)
+    return normalMovements
+      .filter(entry => entry.amount > 0)
+      .filter(entry => {
+        let mustReturn = true
+
+        if (filters.amountRange) {
+          const amountMin = filters.amountRange.min
+          const amountMax = filters.amountRange.max
+
+          const amountFilter = {
+            min: true,
+            max: true
+          }
+
+          if (amountMin) {
+            amountFilter["min"] = entry.amount >= +amountMin
+          }
+          if (amountMax) {
+            amountFilter["max"] = entry.amount <= +amountMax
+          }
+
+          mustReturn = amountFilter.min && amountFilter.max;
+        }
+
+        return mustReturn
+      })
   }
 
   async user() {
