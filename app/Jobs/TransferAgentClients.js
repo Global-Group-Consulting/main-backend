@@ -16,10 +16,10 @@ module.exports =
      * @type {{oldAgent: string, newAgent: string}}
      */
     const data = job.attrs.data
-    const result = await db.collection('users').update(
+    const result = await db.collection('users').updateMany(
       {'referenceAgent': castToObjectId(data.oldAgent)}, //search
-      {'referenceAgent': castToObjectId(data.newAgent)}, // new data
-      {multi: true} // options
+      [{"$set": {'referenceAgent': castToObjectId(data.newAgent)}}], // new data
+      {} // options
     )
 
 
@@ -27,7 +27,7 @@ module.exports =
     /*   .where('referenceAgent', castToObjectId(data.oldAgent))*/
     /*   .update({'referenceAgent': castToObjectId(data.newAgent)})*/
 
-    job.attrs.result = result;
+    job.attrs.result = 'ok';
 
     await job.save()
   }
