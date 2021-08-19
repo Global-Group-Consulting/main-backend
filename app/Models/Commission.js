@@ -641,25 +641,29 @@ class Commission extends Model {
     const commissionsToSearch = [CommissionType.COMMISSIONS_COLLECTED]
     const momentDate = moment()
 
-    startDate = moment(momentDate).subtract(1, "months").set({
-      date: type === 'withdrawals' ? 16 : 1,
+    const timeToUse = {
       hour: 0,
-      minute: 0,
+      minute: 30,
       second: 0,
+    }
+
+    startDate = moment(momentDate).subtract(1, "months").set({
+      date: 1,
+      ...timeToUse
     })
     endDate = moment(momentDate).set({
       date: 1,
-      hour: 23,
-      minute: 59,
-      second: 59,
-    }).subtract(1, "days")
+      ...timeToUse
+    })
 
     if (filters.startDate) {
       startDate = moment(filters.startDate)
+        .set(timeToUse)
     }
 
     if (filters.endDate) {
       endDate = moment(filters.endDate)
+        .set(timeToUse)
     }
 
     const query = {
@@ -868,7 +872,30 @@ class Commission extends Model {
         }
       ]).toArray()
 
-    return data
+    return data.filter(entry => {
+      let mustReturn = true
+
+      if (filters.amountRange) {
+        const amountMin = filters.amountRange.min
+        const amountMax = filters.amountRange.max
+
+        const amountFilter = {
+          min: true,
+          max: true
+        }
+
+        if (amountMin) {
+          amountFilter["min"] = entry.amount >= +amountMin
+        }
+        if (amountMax) {
+          amountFilter["max"] = entry.amount <= +amountMax
+        }
+
+        mustReturn = amountFilter.min && amountFilter.max;
+      }
+
+      return mustReturn
+    })
   }
 
   user() {
