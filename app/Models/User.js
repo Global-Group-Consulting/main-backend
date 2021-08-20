@@ -206,6 +206,8 @@ class User extends Model {
         el.clientsCount = await el.clients().count()
       }
 
+      await el.withEarnings()
+
       return el
     }))
 
@@ -427,6 +429,8 @@ class User extends Model {
       if (el.role === UserRoles.AGENTE) {
         el.clientsCount = await el.clients().count()
       }
+
+      await el.withEarnings()
 
       return el
     }))
@@ -853,6 +857,19 @@ class User extends Model {
 
   movements() {
     return this.hasMany('App/Models/Movement', "_id", "userId")
+  }
+
+  async withEarnings() {
+    const movement = await MovementModel.where({userId: this._id})
+      .sort({created_at: -1})
+      .first()
+
+    this.earnings = {
+      deposit: movement ? movement.deposit : 0,
+      interests: movement ? movement.interestAmount : 0
+    }
+
+    return this
   }
 
   files() {
