@@ -49,6 +49,7 @@ class BriteController {
     return BriteModel.getClubUsers()
   }
 
+
   /**
    * @param {Adonis.Http.Request} request
    * @param {{}} auth
