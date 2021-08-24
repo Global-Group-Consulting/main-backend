@@ -9,18 +9,21 @@ const BasicModel = require('../../classes/BasicModel')
 
 /** @type {typeof import('./user')} */
 const UsersModel = use('App/Models/User')
+const Database = use('Database')
 
 const BriteMovementTypes = require("../../enums/BriteMovementTypes")
 const moment = require("moment");
 
 const {castToObjectId} = require("../Helpers/ModelFormatters")
+const dashboardStatistics = require("./Club/dashboardStatistics")
 
 class BriteModel extends BasicModel {
-  static boot() {
+  static async boot() {
     super.boot()
 
-    this.addHook("beforeCreate", "Club/BriteHook.beforeCreate")
+    this.db = await Database.connect("mongodb")
 
+    this.addHook("beforeCreate", "Club/BriteHook.beforeCreate")
   }
 
   /**
@@ -223,6 +226,10 @@ class BriteModel extends BasicModel {
     }
 
     return toReturn
+  }
+
+  static async getDashboardStatistics() {
+    return dashboardStatistics.call(this)
   }
 
   user() {
