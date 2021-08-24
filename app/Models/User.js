@@ -626,15 +626,15 @@ class User extends Model {
       .toArray()
 
     return {
-      draft: (users.find(el => el._id.status === AccountStatuses.DRAFT) || {}).count || 0,
-      active: (users.find(el => el._id.status === AccountStatuses.ACTIVE) || {}).count || 0,
-      pendingAccess: (users.find(el => el._id.status === AccountStatuses.APPROVED) || {}).count || 0,
-      pendingSignature: (users.find(el => el._id.status === AccountStatuses.PENDING_SIGNATURE) || {}).count || 0,
-      suspended: users.reduce((acc, el) => {
+      draft: (users.find(el => el._id.status === AccountStatuses.DRAFT) || {}),
+      active: (users.find(el => el._id.status === AccountStatuses.ACTIVE) || {}),
+      pendingAccess: (users.find(el => el._id.status === AccountStatuses.APPROVED) || {}),
+      pendingSignature: (users.find(el => el._id.status === AccountStatuses.VALIDATED) || {}),
+      /*suspended: users.reduce((acc, el) => {
         acc += el.suspended
 
         return acc
-      }, 0)
+      }, 0)*/
     }
   }
 
