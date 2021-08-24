@@ -1,6 +1,12 @@
+const {setAclMiddleware} = require("../../app/Helpers/Acl");
+const {ClubPermissions} = require("../../app/Helpers/Acl/enums/club.permissions");
+
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/users', 'BriteController.readUsers')
+
+    Route.get('/dashboard/semesters', 'ClubController.dashboardSemesters')
+      .middleware(setAclMiddleware(ClubPermissions.CLUB_READ))
 
     Route.get('/:id', 'BriteController.read')
       .validator('App/Validators/Club/Read')
