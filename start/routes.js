@@ -56,6 +56,7 @@ WebhooksRoutes(Route)
 MagazineRoutes(Route)
 ReportsRoutes(Route)
 FiltersRoutes(Route)
+// Set this route at the end due to the use of the wildcard
 ProxyRoutes(Route)
 
 const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64')
@@ -67,7 +68,7 @@ Route.group(() => {
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
   //Route.post("/recapitalize_user", "SecretCommandController.recapitalizeUser")
 }).prefix('/' + secretRoutePath)
-  //.middleware("authSuperAdmin")
+//.middleware("authSuperAdmin")
 
 Logger.info("*** Generated secret routes at /" + secretRoutePath + "/")
 

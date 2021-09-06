@@ -1,8 +1,8 @@
 module.exports = function (Route) {
   Route.group(() => {
-    Route.any('/club', 'ProxyController.club')
+  Route.any('*', 'ProxyController.handle')
 
-  }).prefix('/api/external')
+  }).prefix('/api/ext')
     .middleware('auth')
     .namespace('Api')
 }

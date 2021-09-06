@@ -13,18 +13,24 @@ class ProxyException extends LogicalException {
   constructor(er) {
     let message = er.message;
     let statusCode = StatusCodes.BAD_REQUEST;
+    let code = null
 
     if (er.response) {
       if (er.response.data) {
         message = er.response.data.message;
         statusCode = er.response.data.statusCode
+        code = er.response.data.error
       } else {
         message = er.response.statusText;
         statusCode = er.response.status
       }
     }
 
-    super(message, statusCode)
+    if (er.code === "ECONNREFUSED") {
+      return super("Can't connect to server", StatusCodes.SERVICE_UNAVAILABLE, er.code)
+    }
+
+    super(message, statusCode, code)
   }
 }
 
