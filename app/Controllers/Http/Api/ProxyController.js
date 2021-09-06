@@ -33,14 +33,16 @@ class ProxyController {
     let result;
 
     try {
+      const reqBody = req.all()
+
       result = await axios.request({
         url: url + req.url().replace("/api/external" + prefix, ""),
         method: req.method(),
         headers: headers,
         data: {
-          ...req.all(),
-          _client_secret: "",
-          _server_secret: "",
+          ...reqBody,
+          _client_secret: reqBody.key,
+          _server_secret: Env.get("SERVER_KEY"),
           _auth_user: user
         }
       })
