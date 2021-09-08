@@ -390,7 +390,11 @@ class Movement extends Model {
       movementType: {$in: movementsToSearch},
       created_at: {
         $gte: startDate.toDate(),
-        $lte: endDate.toDate()
+        $lte: endDate.set({
+          hour: 23,
+          minute: 59,
+          second: 59,
+        }).toDate()
       },
     }
 
