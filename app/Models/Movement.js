@@ -406,6 +406,30 @@ class Movement extends Model {
       query['user.referenceAgent'] = castToObjectId(filters.referenceAgent)
     }
 
+    if (filters.clubPack) {
+      if (filters.clubPack === "unsubscribed") {
+        query["$or"] = [
+          {
+            "user.clubPack": {"$eq": null}
+          },
+          {
+            "user.clubPack": {"$exists": false}
+          },
+          {
+            "user.clubPack": {"$eq": "unsubscribed"}
+          }
+        ]
+      } else {
+        query["$and"] = [
+          {
+            "user.clubPack": {"$exists": true}
+          }, {
+            "user.clubPack": {"$ne": "unsubscribed"}
+          }
+        ]
+      }
+    }
+
     const joinUserWithRefAgent = [
       {
         '$lookup': {
@@ -598,9 +622,11 @@ class Movement extends Model {
     // check the movements that have been cancelled
     for (const entry of cancellationMovements) {
       entry.movements.forEach(cancelMovement => {
-        const cancelRef = cancelMovement.cancelRef.toString()
+        if (cancelMovement.cancelRef) {
+          const cancelRef = cancelMovement.cancelRef.toString()
 
-        toCancel.push(cancelRef)
+          toCancel.push(cancelRef)
+        }
       })
     }
 
