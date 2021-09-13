@@ -114,6 +114,12 @@ class FileController {
     return response.ok()
   }
 
+  async deleteBulk({request}) {
+    const filesToDelete = request.input("filesToDelete");
+
+    return File.deleteAllWith(filesToDelete)
+  }
+
   // Only for testing purposes
   async upload({request, auth}) {
     const userId = auth.user._id

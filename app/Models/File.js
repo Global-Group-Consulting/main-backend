@@ -90,8 +90,13 @@ class File extends Model {
   }
 
 
-  static async deleteAllWith(value, field = "_id") {
-    const filesToRemove = await File.where({[field]: castToObjectId(value)}).fetch()
+  static async deleteAllWith(toDeleteIds, field = "_id") {
+    if (!(toDeleteIds instanceof Array)) {
+      toDeleteIds = [toDeleteIds]
+    }
+
+    const query = toDeleteIds.map(el => castToObjectId(el))
+    const filesToRemove = await File.where({[field]: {$in: query}}).fetch()
     const removedFiles = []
 
     if (!filesToRemove) {
@@ -99,7 +104,7 @@ class File extends Model {
     }
 
     for (const file of filesToRemove.rows) {
-      await Drive.delete(value)
+      await Drive.delete(file._id.toString())
       removedFiles.push(await file.delete())
     }
 

@@ -20,7 +20,7 @@ class SecretKey extends Model {
       .first();
 
     if (!client) {
-      throw new AclGenericException()
+      throw new AclGenericException("Invalid client key")
     }
 
     return client.secretKey

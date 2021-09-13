@@ -4,7 +4,10 @@ module.exports = function (Route) {
 
     Route.get('/:id', 'FileController.download')
 
+    Route.delete('/', 'FileController.deleteBulk')
+
     Route.delete('/:id', 'FileController.delete')
+
 
     // Only for testing purposes
     /*Route
@@ -12,6 +15,6 @@ module.exports = function (Route) {
 
 
   }).prefix('/api/files')
-    .namespace('Api')
     .middleware("auth")
+    .namespace('Api')
 }
