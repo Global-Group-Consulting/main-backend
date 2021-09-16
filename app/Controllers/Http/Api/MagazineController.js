@@ -28,12 +28,10 @@ class MagazineController {
    * GET magazines
    */
   async current() {
-    return Magazine.where({
-      showFrom: {$lte: moment().toDate()},
-      showUntil: {$gte: moment().toDate()},
-    })
+    return Magazine
       .with("coverFile")
-      .sort({showFrom: -1, showUntil: -1, publicationDate: -1}).first()
+      .sort({showFrom: -1, showUntil: -1, publicationDate: -1})
+      .first()
   }
 
 
