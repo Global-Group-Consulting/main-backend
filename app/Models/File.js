@@ -95,11 +95,11 @@ class File extends Model {
       toDeleteIds = [toDeleteIds]
     }
 
-    const query = toDeleteIds.map(el => castToObjectId(el))
+    const query = toDeleteIds.map(el => castToObjectId(el, true))
     const filesToRemove = await File.where({[field]: {$in: query}}).fetch()
     const removedFiles = []
 
-    if (!filesToRemove) {
+    if (!filesToRemove || filesToRemove.rows === 0) {
       return
     }
 
