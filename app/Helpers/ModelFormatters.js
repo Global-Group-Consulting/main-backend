@@ -5,15 +5,23 @@ const writtenNumber = require('written-number');
 
 const AddressesProvider = use("AddressesProvider")
 
-exports.castToObjectId = function (value) {
+exports.castToObjectId = function (value, dontFail = false) {
   if (!value) {
     return value
   }
 
-  if (value instanceof Array) {
-    return value.map(_val => new MongoTypes.ObjectId(_val))
-  } else if (typeof value === "string") {
-    return new MongoTypes.ObjectId(value)
+  try {
+    if (value instanceof Array) {
+      return value.map(_val => new MongoTypes.ObjectId(_val))
+    } else if (typeof value === "string") {
+      return new MongoTypes.ObjectId(value)
+    }
+  } catch (er) {
+    if (dontFail) {
+      return ""
+    }
+
+    throw er
   }
 
   return value
