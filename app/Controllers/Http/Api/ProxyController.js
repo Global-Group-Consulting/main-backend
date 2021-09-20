@@ -51,13 +51,19 @@ class ProxyController {
         }
 
         const fieldName = curr.fieldName.replace("[]", "")
+        const asArray = files[fieldName] instanceof Array
 
         // if the section doesn't exist, creates it as an array
-        if (!acc[fieldName]) {
+        // should be created as an array only if the incoming type was an array
+        if (!acc[fieldName] && asArray) {
           acc[fieldName] = []
         }
 
-        acc[fieldName].push(file)
+        if (asArray) {
+          acc[fieldName].push(file)
+        } else {
+          acc[fieldName] = file;
+        }
 
         return acc
       }, {})
