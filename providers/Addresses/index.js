@@ -1,16 +1,19 @@
 /**
- * @typedef {{alpha2Code: string, name: string,translations: {[string]: string}[], nativeName: string,callingCodes: string[] }} Country
+ * @typedef {import("../../@types/Geolocation/Country").Country} Country
  */
 
 /**
- * @typedef {{nome: string, codice: string, sigla: string, regione: string}} Province
+ * @typedef {import("../../@types/Geolocation/ItaRegion").ItaRegion} Region
  */
 
-const COUNTRIES_API_URL = "https://restcountries.eu/rest/v2/all"
-const REGIONS_API_URL = "https://comuni-ita.herokuapp.com/api/regioni"
-const PROVINCES_API_URL = "https://comuni-ita.herokuapp.com/api/province"
+/**
+ * @typedef {import("../../@types/Geolocation/ItaProvince").ItaProvince} Province
+ */
 
 const axios = require('axios')
+
+/** @type {typeof import('../../app/Models/Geolocation')} */
+const Geolocation = use("App/Models/Geolocation")
 
 class Addresses {
   constructor(config) {
@@ -23,7 +26,7 @@ class Addresses {
 
     /**
      *
-     * @type {string[]}
+     * @type {Region[]}
      */
     this.regionsList = null
 
@@ -34,21 +37,21 @@ class Addresses {
   }
 
   async fetchCountriesList() {
-    const resp = await axios.get(COUNTRIES_API_URL + "?fields=alpha2Code;name;translations;nativeName;callingCodes;")
+    const resp = await Geolocation.getCountries()
 
-    this.countriesList = resp.data
+    this.countriesList = resp
   }
 
   async fetchRegionsList() {
-    const resp = await axios.get(REGIONS_API_URL)
+    const resp = await Geolocation.getItaRegions()
 
-    this.regionsList = resp.data
+    this.regionsList = resp
   }
 
   async fetchProvincesList() {
-    const resp = await axios.get(PROVINCES_API_URL)
+    const resp = await Geolocation.getItaProvinces()
 
-    this.provincesList = resp.data
+    this.provincesList = resp
   }
 
   /**
@@ -60,7 +63,7 @@ class Addresses {
       await this.fetchCountriesList()
     }
 
-    return this.countriesList.find(el => (el.alpha2Code || "").toLowerCase() === countryCode || (el.name || "").toLowerCase() === countryCode)
+    return this.countriesList.find(el => (el.cca2 || "").toLowerCase() === countryCode || (el.name.common || "").toLowerCase() === countryCode)
   }
 
   /**
@@ -72,19 +75,19 @@ class Addresses {
       await this.fetchProvincesList()
     }
 
-    return this.provincesList.find(el => el.sigla.toLowerCase() === provinceCode)
+    return this.provincesList.find(el => el.sigla.toLowerCase() === provinceCode.toLowerCase())
   }
 
   /**
    * @param {string} regionCode
-   * @returns {Promise<string>}
+   * @returns {Promise<Region>}
    */
   async getRegion(regionCode) {
     if (!this.regionsList) {
       await this.fetchRegionsList()
     }
 
-    return this.regionsList.find(el => el === regionCode)
+    return this.regionsList.find(el => el.nome.toLowerCase() === regionCode.toLowerCase())
   }
 }
 
