@@ -153,16 +153,21 @@ exports.formatPaymentMethod = function (method, otherMethod) {
 }
 
 exports.formatCountry = async function (countryCode) {
+  /** @type {Country} */
   const country = await AddressesProvider.getCountry(countryCode)
 
-  return capitalize(country ? country.nativeName : "")
+  const langCode = Object.keys(country.languages)[0]
+
+  return capitalize(country ? country.name.native[langCode].common : "")
 }
 exports.formatRegion = async function (regionCode) {
+  /** @type {Region} */
   const region = await AddressesProvider.getRegion(regionCode)
 
-  return capitalize(region || "")
+  return capitalize(region.nome || "")
 }
 exports.formatProvince = async function (provinceCode) {
+  /** @type {Province} */
   const province = await AddressesProvider.getProvince(provinceCode)
 
   return capitalize(province ? province.nome : "")

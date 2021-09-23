@@ -36,6 +36,7 @@ const MagazineRoutes = require('./routes/magazine.js')
 const ReportsRoutes = require('./routes/reports.js')
 const FiltersRoutes = require('./routes/filters')
 const ProxyRoutes = require('./routes/proxy')
+const GeolocationRoutes = require('./routes/geolocation')
 
 Route.on('/').render('welcome')
 
@@ -56,6 +57,7 @@ WebhooksRoutes(Route)
 MagazineRoutes(Route)
 ReportsRoutes(Route)
 FiltersRoutes(Route)
+GeolocationRoutes(Route)
 // Set this route at the end due to the use of the wildcard
 ProxyRoutes(Route)
 
