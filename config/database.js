@@ -44,5 +44,15 @@ module.exports = {
         // other options
       }
     }
+  },
+
+  mongoGeolocation: {
+    client: 'mongodb',
+    connectionString: Env.get('DB_GEOLOCATION_CONNECTION_STRING', ''),
+    connectionOptions: {
+      useUnifiedTopology: true,
+      useFindAndModify: false,
+      useNewUrlParser: true
+    }
   }
 }
