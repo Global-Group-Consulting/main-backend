@@ -156,6 +156,10 @@ exports.formatCountry = async function (countryCode) {
   /** @type {Country} */
   const country = await AddressesProvider.getCountry(countryCode)
 
+  if (!country) {
+    return countryCode
+  }
+
   const langCode = Object.keys(country.languages)[0]
 
   return capitalize(country ? country.name.native[langCode].common : "")
@@ -164,11 +168,19 @@ exports.formatRegion = async function (regionCode) {
   /** @type {Region} */
   const region = await AddressesProvider.getRegion(regionCode)
 
+  if (!region) {
+    return ""
+  }
+
   return capitalize(region.nome || "")
 }
 exports.formatProvince = async function (provinceCode) {
   /** @type {Province} */
   const province = await AddressesProvider.getProvince(provinceCode)
+
+  if (!province) {
+    return ""
+  }
 
   return capitalize(province ? province.nome : "")
 }
