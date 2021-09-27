@@ -59,6 +59,10 @@ class Addresses {
    * @returns {Promise<Country>}
    */
   async getCountry(countryCode) {
+    if (!countryCode) {
+      return
+    }
+
     if (!this.countriesList) {
       await this.fetchCountriesList()
     }
@@ -71,6 +75,10 @@ class Addresses {
    * @returns {Promise<Province>}
    */
   async getProvince(provinceCode) {
+    if (!provinceCode) {
+      return
+    }
+
     if (!this.provincesList) {
       await this.fetchProvincesList()
     }
@@ -83,6 +91,10 @@ class Addresses {
    * @returns {Promise<Region>}
    */
   async getRegion(regionCode) {
+    if (!regionCode) {
+      return
+    }
+
     if (!this.regionsList) {
       await this.fetchRegionsList()
     }
