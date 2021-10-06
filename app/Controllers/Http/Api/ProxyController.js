@@ -155,7 +155,7 @@ class ProxyController {
 
     switch (destination[0]) {
       case "club":
-        return this.club(request, auth, "/api/" + url.slice(url.indexOf("/")))
+        return this.club(request, auth, "/api" + url.slice(url.indexOf("/")))
     }
 
   }
