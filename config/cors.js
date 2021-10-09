@@ -16,7 +16,7 @@ module.exports = {
   | Function - Receives the current origin and should return one of the above values.
   |
   */
-  origin: process.env.NODE_ENV === "development",
+  origin: process.env.NODE_ENV === "development" ? true : ['http://staging.globalclub.consulting:8080'],
 
   /*
   |--------------------------------------------------------------------------
