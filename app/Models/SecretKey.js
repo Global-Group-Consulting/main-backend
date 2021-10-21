@@ -15,15 +15,19 @@ class SecretKey extends Model {
    * @return {Promise<boolean>}
    */
   static async getClientKey(key) {
+    if (process.env.NODE_ENV === "development") {
+      return "dev_key";
+    }
+
     const client = await this.query()
-      .where({publicKey: key, type: "client"})
+      .where({ publicKey: key, type: "client" })
       .first();
 
     if (!client) {
-      throw new AclGenericException("Invalid client key")
+      throw new AclGenericException("Invalid client key");
     }
 
-    return client.secretKey
+    return client.secretKey;
   }
 
 }

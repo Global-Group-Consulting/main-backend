@@ -59,10 +59,10 @@ class FileController {
     return pathname
   }
 
-  async show({params, response}) {
-    const {id} = params
+  async meta ({ params, response }) {
+    const { id } = params;
 
-    const dbFile = await File.find(id)
+    const dbFile = await File.find(id);
 
     if (!dbFile) {
       return response.badRequest('File not found');
@@ -71,10 +71,18 @@ class FileController {
     return dbFile;
   }
 
-  async download({params, response}) {
-    const {id} = params
+  async show ({ params, response }) {
+    const meta = await this.meta({ params, response });
 
-    const dbFile = await File.find(id)
+    const s3File = await Drive.getSignedUrl(meta._id.toString())
+
+    response.redirect(s3File) ;
+  }
+
+  async download ({ params, response }) {
+    const { id } = params;
+
+    const dbFile = await File.find(id);
 
     //TODO:: Check if the user has the rights to download that file
 
