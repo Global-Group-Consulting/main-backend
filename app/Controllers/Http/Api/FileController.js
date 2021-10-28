@@ -14,6 +14,7 @@ const {Readable} = require('stream');
 const {existsSync} = require("fs")
 const fs = require("fs");
 const Logger = use("Logger");
+const FileException = use("App/Exceptions/FileException");
 
 class FileController {
   /**
@@ -62,11 +63,11 @@ class FileController {
 
   async meta ({ params, response }) {
     const { id } = params;
-
     const dbFile = await File.find(id);
 
     if (!dbFile) {
-      return response.badRequest('File not found');
+      throw new FileException('File not found');
+      // response.badRequest('File not found');
     }
 
     return dbFile;
