@@ -45,7 +45,7 @@ class AuthController {
         .withRefreshToken()
         .attempt(lowerEmail, password)
     } catch (e) {
-      throw new InvalidLoginException()
+      throw new InvalidLoginException("Dati di accesso non validi. Controllare il nome utente e la password inserita.")
     }
 
     const user = await User.where({email: lowerEmail}).first()
