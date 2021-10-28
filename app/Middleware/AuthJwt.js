@@ -27,8 +27,6 @@ class AuthJwt {
     }
 
     if (lastError) {
-      console.info(lastError)
-
       throw new TokenExpiredException()
     }
 
