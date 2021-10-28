@@ -12,7 +12,8 @@ const path = require("path")
 const {Readable} = require('stream');
 
 const {existsSync} = require("fs")
-const fs = require("fs")
+const fs = require("fs");
+const Logger = use("Logger");
 
 class FileController {
   /**
@@ -107,22 +108,22 @@ class FileController {
    * @param {{params: {id: string}, response: AdonisHttpResponse}} param0
    */
   async delete({params, response}) {
-    const {id} = params
+    const { id } = params;
 
-    const dbFile = await File.find(id)
+    const dbFile = await File.find(id);
 
     //TODO:: Check if the user has the rights to download that file
 
-    console.log("[FILE] trying to delete file", id);
+    Logger.info("[FILE] trying to delete file " + id);
 
     if (!dbFile) {
       return response.badRequest('File not found');
     }
 
-    console.log("[FILE] Deleting file", id);
-    await File.deleteAllWith(id)
+    Logger.info("[FILE] Deleting file " + id);
+    await File.deleteAllWith(id);
 
-    return response.ok()
+    return response.ok();
   }
 
   async deleteBulk({request}) {

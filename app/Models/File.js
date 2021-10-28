@@ -1,25 +1,25 @@
 'use strict'
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
-const Helpers = use('Helpers')
-const Drive = use('Drive')
+const Model = use('Model');
+const Helpers = use('Helpers');
+const Drive = use('Drive');
 
-const fs = require("fs")
-const {resolve, basename} = require("path")
-const {existsSync, unlinkSync} = require("fs")
+const fs = require("fs");
+const { resolve, basename } = require("path");
+const { existsSync, unlinkSync } = require("fs");
 const tmp = require('tmp');
-const {Readable} = require('stream');
+const { Readable } = require('stream');
+const Logger = use("Logger");
 
+const { Types: MongoTypes } = require("mongoose");
+const { castToObjectId } = require("../Helpers/ModelFormatters");
 
-const {Types: MongoTypes} = require("mongoose")
-const {castToObjectId} = require("../Helpers/ModelFormatters")
-
-const axios = require("axios")
+const axios = require("axios");
 
 class File extends Model {
-  static get computed() {
-    return ["id"]
+  static get computed () {
+    return ["id"];
   }
 
   static get hidden() {
@@ -92,27 +92,27 @@ class File extends Model {
 
   static async deleteAllWith(toDeleteIds, field = "_id") {
     if (!(toDeleteIds instanceof Array)) {
-      toDeleteIds = [toDeleteIds]
+      toDeleteIds = [toDeleteIds];
     }
 
-    const query = toDeleteIds.map(el => castToObjectId(el, true))
-    const filesToRemove = await File.where({[field]: {$in: query}}).fetch()
-    const removedFiles = []
+    const query = toDeleteIds.map(el => castToObjectId(el, true));
+    const filesToRemove = await File.where({ [field]: { $in: query } }).fetch();
+    const removedFiles = [];
 
-    console.log("[FILE] Files will be removed", query);
+    Logger.info("[FILE] Files will be removed" + JSON.stringify(query));
 
     if (!filesToRemove || filesToRemove.rows === 0) {
-      return
+      return;
     }
 
     for (const file of filesToRemove.rows) {
-      console.log("[FILE] Removing from S3", file._id.toString());
-      await Drive.delete(file._id.toString())
-      removedFiles.push(await file.delete())
+      Logger.info("[FILE] Removing from S3 " + file._id.toString());
+      await Drive.delete(file._id.toString());
+      removedFiles.push(await file.delete());
     }
 
-    console.log("[FILE] removedFiles", removedFiles);
-    return removedFiles
+    Logger.info("[FILE] removedFiles" + JSON.stringify(removedFiles));
+    return removedFiles;
   }
 
   user() {
