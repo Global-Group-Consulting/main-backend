@@ -113,10 +113,13 @@ class FileController {
 
     //TODO:: Check if the user has the rights to download that file
 
+    console.log("[FILE] trying to delete file", id);
+
     if (!dbFile) {
       return response.badRequest('File not found');
     }
 
+    console.log("[FILE] Deleting file", id);
     await File.deleteAllWith(id)
 
     return response.ok()

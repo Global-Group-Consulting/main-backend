@@ -99,15 +99,19 @@ class File extends Model {
     const filesToRemove = await File.where({[field]: {$in: query}}).fetch()
     const removedFiles = []
 
+    console.log("[FILE] Files will be removed", query);
+
     if (!filesToRemove || filesToRemove.rows === 0) {
       return
     }
 
     for (const file of filesToRemove.rows) {
+      console.log("[FILE] Removing from S3", file._id.toString());
       await Drive.delete(file._id.toString())
       removedFiles.push(await file.delete())
     }
 
+    console.log("[FILE] removedFiles", removedFiles);
     return removedFiles
   }
 
