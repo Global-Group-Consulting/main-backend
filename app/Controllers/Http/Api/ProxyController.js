@@ -91,7 +91,8 @@ class ProxyController {
      * @type {{host: string, accept: string, "client-key": string}}
      */
     const headers = req.headers();
-    const reqBody = req.all();
+    const reqBody = req.body;
+    const reqParams = req.qs
 
     headers.host = parsedUrl.host;
     headers.accept = "application/json";
@@ -129,7 +130,8 @@ class ProxyController {
         data: {
           ...reqBody,
           _auth_user: user
-        }
+        },
+        params: reqParams
       })
 
       return result.data
