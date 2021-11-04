@@ -74,26 +74,32 @@ class FileController {
   }
 
   async download({params, response}) {
-    const {id} = params
+    const { id } = params;
 
-    const dbFile = await File.find(id)
+    const dbFile = await File.find(id);
 
     //TODO:: Check if the user has the rights to download that file
 
     if (!dbFile) {
-      return response.badRequest('File not found');
+      throw new FileException('File not found');
     }
 
-    const driverIsLocal = Config.get("drive.default") === "local"
-    let pathName
+    const driverIsLocal = Config.get("drive.default") === "local";
+    let pathName;
 
-    if (driverIsLocal) {
-      pathName = await this._downloadFromLocal(dbFile)
-    } else {
-      pathName = await this._downloadFromS3(dbFile)
+    try {
+      if (driverIsLocal) {
+
+        pathName = await this._downloadFromLocal(dbFile);
+      } else {
+        pathName = await this._downloadFromS3(dbFile);
+      }
+    } catch (er) {
+      Logger.error(er);
+      throw new FileException('File not found');
     }
 
-    response.download(pathName)
+    response.download(pathName);
   }
 
   /**

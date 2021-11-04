@@ -1,6 +1,6 @@
 module.exports = function (Route) {
   Route.group(() => {
-    Route.get('/:id/meta', 'FileController.show')
+    Route.get('/:id/meta', 'FileController.meta')
 
     Route.get('/:id', 'FileController.download')
 
