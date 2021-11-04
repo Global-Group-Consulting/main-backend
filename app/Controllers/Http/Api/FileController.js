@@ -95,10 +95,15 @@ class FileController {
     const driverIsLocal = Config.get("drive.default") === "local"
     let pathName
 
-    if (driverIsLocal) {
-      pathName = await this._downloadFromLocal(dbFile)
-    } else {
-      pathName = await this._downloadFromS3(dbFile)
+    try {
+      if (driverIsLocal) {
+        pathName = await this._downloadFromLocal(dbFile);
+      } else {
+        pathName = await this._downloadFromS3(dbFile);
+      }
+    } catch (er) {
+      Logger.error(er);
+      throw new FileException('File not found');
     }
 
     response.download(pathName)
@@ -115,34 +120,31 @@ class FileController {
 
     //TODO:: Check if the user has the rights to download that file
 
-    Logger.info("[FILE] trying to delete file " + id);
-
     if (!dbFile) {
       return response.badRequest('File not found');
     }
 
-    Logger.info("[FILE] Deleting file " + id);
     await File.deleteAllWith(id);
 
     return response.ok();
   }
 
-  async deleteBulk({request}) {
+  async deleteBulk ({ request }) {
     const filesToDelete = request.input("filesToDelete");
 
-    return File.deleteAllWith(filesToDelete)
+    return File.deleteAllWith(filesToDelete);
   }
 
   // Only for testing purposes
-  async upload({request, auth}) {
-    const userId = auth.user._id
+  async upload ({ request, auth }) {
+    const userId = auth.user._id;
 
     request.multipart.file('*', {}, async (file) => {
       const uploadedFile = await File.store({
         [file.fieldName]: file
-      }, userId, userId)
+      }, userId, userId);
 
-    })
+    });
 
     await request.multipart.process()
   }
