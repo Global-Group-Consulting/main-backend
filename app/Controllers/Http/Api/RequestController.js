@@ -133,16 +133,19 @@ class RequestController {
     if (incomingData.cards) {
       let cardsSum = 0;
 
-      for (const key in incomingData.cards) {
-        let numValue = +incomingData.cards[key];
+      incomingData.cards.forEach((el, i) => {
+        incomingData.cards[i] = JSON.parse(el);
+        /**
+         * @type {{amount: number; id: string}}
+         */
+        const cardData = incomingData.cards[i];
 
-        if (isNaN(numValue)) {
-          numValue = 0;
+        if (isNaN(+cardData.amount)) {
+          cardData.amount = 0;
         }
 
-        incomingData.cards[key] = numValue;
-        cardsSum += numValue;
-      }
+        cardsSum += cardData.amount;
+      });
 
       if (cardsSum !== incomingData.amount) {
         throw new RequestException("La somma degli importi delle carte prepagate è diverso dall'importo richiesto.");

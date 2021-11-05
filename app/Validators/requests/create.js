@@ -17,7 +17,7 @@ const rules = {
   notes: "string",
   autoWithdrawlAll: "boolean",
   autoWithdrawlAllRecursively: "boolean",
-  cards: "object"
+  cards: "array"
 }
 
 class requestsCreate extends WhitelistValidator {
