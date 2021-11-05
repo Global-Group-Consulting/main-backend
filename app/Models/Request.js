@@ -107,6 +107,7 @@ class Request extends Model {
               briteConversionPercentage: data.briteConversionPercentage,
               requestId: data._id,
               interestPercentage: +user.contractPercentage,
+              cards: data.cards
             }
 
             if (data.typeClub) {
@@ -193,7 +194,8 @@ class Request extends Model {
             requestType: data.type,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
-            paymentDocDate: data.paymentDocDate
+            paymentDocDate: data.paymentDocDate,
+            cards: data.cards
           }
 
           if (data.typeClub) {
