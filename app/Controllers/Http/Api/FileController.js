@@ -89,14 +89,15 @@ class FileController {
     //TODO:: Check if the user has the rights to download that file
 
     if (!dbFile) {
-      return response.badRequest('File not found');
+      throw new FileException('File not found');
     }
 
-    const driverIsLocal = Config.get("drive.default") === "local"
-    let pathName
+    const driverIsLocal = Config.get("drive.default") === "local";
+    let pathName;
 
     try {
       if (driverIsLocal) {
+
         pathName = await this._downloadFromLocal(dbFile);
       } else {
         pathName = await this._downloadFromS3(dbFile);
@@ -106,7 +107,7 @@ class FileController {
       throw new FileException('File not found');
     }
 
-    response.download(pathName)
+    response.download(pathName);
   }
 
   /**

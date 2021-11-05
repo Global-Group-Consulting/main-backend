@@ -124,36 +124,58 @@ class RequestController {
       incomingData.amount = 0;
     } else {
       if (!+incomingData.amount && ![RequestTypes.VERSAMENTO].includes(+incomingData.type)) {
-        throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+        throw new RequestException("L'importo della richiesta deve essere maggiore di 0.");
       }
     }
 
     const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll;
+
+    if (incomingData.cards) {
+      let cardsSum = 0;
+
+      incomingData.cards.forEach((el, i) => {
+        incomingData.cards[i] = JSON.parse(el);
+        /**
+         * @type {{amount: number; id: string}}
+         */
+        const cardData = incomingData.cards[i];
+
+        if (isNaN(+cardData.amount)) {
+          cardData.amount = 0;
+        }
+
+        cardsSum += cardData.amount;
+      });
+
+      if (cardsSum !== incomingData.amount) {
+        throw new RequestException("La somma degli importi delle carte prepagate è diverso dall'importo richiesto.");
+      }
+    }
 
     /**
      * @type {IRequest}
      */
     const newRequest = await RequestModel.create({
       ...incomingData
-    })
+    });
 
     if (incomingData.type === RequestTypes.RISC_PROVVIGIONI && !isAutoWithdrawlRequest) {
-      newRequest.briteMovementId = await AgentBrite.addBritesFromRequest(newRequest)
+      newRequest.briteMovementId = await AgentBrite.addBritesFromRequest(newRequest);
 
       await newRequest.save();
     }
 
-    const files = request.files()
+    const files = request.files();
 
     if (Object.keys(files).length > 0) {
       await FileModel.store(files, associatedUser.id, auth.user._id, {
         requestId: newRequest.id
-      })
+      });
     }
 
     // avoid triggering notifications for autoWithdrawl requests
     if (!isAutoWithdrawlRequest) {
-      Event.emit("request::new", newRequest)
+      Event.emit("request::new", newRequest);
     } else {
       associatedUser.autoWithdrawlAll = newRequest._id.toString()
       associatedUser.autoWithdrawlAllRecursively = newRequest.autoWithdrawlAllRecursively ? newRequest._id.toString() : null
