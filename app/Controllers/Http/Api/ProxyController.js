@@ -86,13 +86,14 @@ class ProxyController {
    * @private
    */
   async _forward(url, req, user, path) {
-    const parsedUrl = new URL(url)
+    const parsedUrl = new URL(url);
     /**
      * @type {{host: string, accept: string, "client-key": string}}
      */
     const headers = req.headers();
     const reqBody = req.body;
-    const reqParams = req.qs
+    // const reqParams = req.qs
+    const reqParams = req.originalUrl().split("?")[1];
 
     headers.host = parsedUrl.host;
     headers.accept = "application/json";
@@ -124,14 +125,14 @@ class ProxyController {
       }*/
 
       result = await axios.request({
-        url: url + path,
+        url: url + path + (reqParams ? ('?' + reqParams) : ''),
         method: req.method(),
         headers: headers,
         data: {
           ...reqBody,
           _auth_user: user
         },
-        params: reqParams
+        // params: reqParams
       })
 
       return result.data
