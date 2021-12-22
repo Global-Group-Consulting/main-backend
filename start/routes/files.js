@@ -14,4 +14,6 @@ module.exports = function (Route) {
   }).prefix('/api/files')
     .namespace('Api')
     .middleware("auth")
+
+  Route.get('/api/files/:id/show', 'Api/FileController.show');
 }
