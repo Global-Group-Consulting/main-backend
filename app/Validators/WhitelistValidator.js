@@ -1,19 +1,28 @@
 class WhitelistValidator {
-  get includeParams() {
-    return false
+  get includeParams () {
+    return false;
   }
 
-  get data() {
-    const data = this.ctx.request.only(Object.keys(this.rules))
+  get includeFiles () {
+    return false;
+  }
+
+  get data () {
+    const data = this.ctx.request.only(Object.keys(this.rules));
+    const files = this.ctx.request.files();
 
     // I remove all unspecified fields
-    this.ctx.request.body = data
+    this.ctx.request.body = data;
 
     if (this.includeParams) {
-      return Object.assign({}, data, this.ctx.request.params)
+      return Object.assign({}, data, this.ctx.request.params);
     }
 
-    return data
+    if (this.includeFiles) {
+      return Object.assign({}, data, files);
+    }
+
+    return data;
   }
 }
 
