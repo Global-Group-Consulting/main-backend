@@ -5,9 +5,7 @@
 /** @typedef {import("/@types/News").NewsUpdateDto} NewsUpdateDto */
 /** @typedef {import("../../../Models/News")} News */
 
-const { NewsPermissions } = require('../../../Helpers/Acl/enums/news.permissions');
 const { castToObjectId } = require('../../../Helpers/ModelFormatters');
-const AclGenericException = require('../../../Exceptions/Acl/AclGenericException');
 const NewsException = require('../../../Exceptions/NewsException');
 
 /** @type {typeof import("../../../Models/News")} */
@@ -23,8 +21,17 @@ class NewsController {
   /**
    * Read all existing news;
    */
-  async read () {
-    return NewsModel.all();
+  async read ({ auth }) {
+    const data = await NewsModel.with("readings", builder => builder.where("userId", auth.user._id))
+      .sort({ "createdAt": -1, "startAt": -1, "endAt": -1 }).fetch();
+
+    /*return data.rows.sort((a, b) => {
+      return a.readings.createdAt - b.readings.createdAt;
+    });*/
+
+    // Maybe is not a good idea to order by reading status, otherwise the news will move
+    // and the user could lose its position
+    return data;
   }
 
   /**
@@ -40,9 +47,9 @@ class NewsController {
     const newNewsData = {
       title: incomingData.title,
       text: incomingData.text,
-      created_by: adminId,
-      start_at: incomingData.startAt,
-      end_at: incomingData.endAt,
+      createdBy: adminId,
+      startAt: incomingData.startAt,
+      endAt: incomingData.endAt,
       active: true,
     };
 
@@ -145,8 +152,20 @@ class NewsController {
     });
   }
 
-  async delete ({ request }) {
-    // when deleting, also remove readed entries from newsStatus
+  async delete ({ params, response }) {
+    // when deleting, also remove read entries from newsStatus
+    const toDelete = await NewsModel.with("readings").find(params.id);
+
+    if (!toDelete) {
+      throw new NewsException("News not found.");
+    }
+
+    // Delete all relative news readings
+    await toDelete.readings().delete();
+    // delete also the news
+    await toDelete.delete();
+
+    response.ok();
   }
 
   async deleteAttachment ({ params, response }) {
