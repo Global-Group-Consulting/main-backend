@@ -74,7 +74,19 @@ class NewsController {
       newNewsData.newsAttachments = formattedStoredFiles.newsAttachments;
     }
 
-    return NewsModel.create(newNewsData);
+    const createdNews = await NewsModel.create(newNewsData);
+
+    // immediatly create the readed entry
+    const readingStatus = await NewsStatusModel.create({
+      userId: adminId,
+      newsId: createdNews._id
+    });
+
+    createdNews.readings = [
+      readingStatus.toJSON()
+    ];
+
+    return createdNews;
   }
 
   /**

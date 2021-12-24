@@ -16,8 +16,8 @@ class MovementsAdd extends WhitelistValidator {
     return {
       title: "required",
       text: "required",
-      endAt: [validations.dateFormat(['YYYY-MM-DD HH:mm:ss'])],
-      startAt: [validations.dateFormat(['YYYY-MM-DD HH:mm:ss'])],
+      endAt: [validations.dateFormat(['YYYY-MM-DD'])],
+      startAt: [validations.dateFormat(['YYYY-MM-DD'])],
       newsAttachments: "array"
     };
   }

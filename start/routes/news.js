@@ -14,8 +14,10 @@ module.exports = function (Route) {
       .validator("News/update")
       .middleware(setAclMiddleware(NewsPermissions.NEWS_ALL_CREATE));
 
-    Route.delete("/:id", "NewsController.delete");
-    Route.delete("/attachments/:id", "NewsController.deleteAttachment");
+    Route.delete("/:id", "NewsController.delete")
+      .middleware(setAclMiddleware(NewsPermissions.NEWS_ALL_CREATE));
+    Route.delete("/attachments/:id", "NewsController.deleteAttachment")
+      .middleware(setAclMiddleware(NewsPermissions.NEWS_ALL_CREATE));
 
     Route.patch("/:id", "NewsController.updateStatus");
 
