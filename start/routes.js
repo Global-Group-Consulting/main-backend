@@ -35,7 +35,8 @@ const WebhooksRoutes = require('./routes/webhooks.js')
 const MagazineRoutes = require('./routes/magazine.js')
 const ReportsRoutes = require('./routes/reports.js')
 const FiltersRoutes = require('./routes/filters')
-const GeolocationRoutes = require('./routes/geolocation')
+const GeolocationRoutes = require('./routes/geolocation');
+const NewsRoutes = require('./routes/news');
 
 Route.on('/').render('welcome')
 
@@ -56,7 +57,8 @@ WebhooksRoutes(Route)
 MagazineRoutes(Route)
 ReportsRoutes(Route)
 FiltersRoutes(Route)
-GeolocationRoutes(Route)
+GeolocationRoutes(Route);
+NewsRoutes(Route);
 
 const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64')
 
