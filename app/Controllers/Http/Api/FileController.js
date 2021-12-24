@@ -81,7 +81,7 @@ class FileController {
     response.redirect(s3File) ;
   }
 
-  async download({params, response}) {
+  async download ({ params, response }) {
     const { id } = params;
 
     const dbFile = await File.find(id);
@@ -115,9 +115,9 @@ class FileController {
    * @param {{params: {id: string}, response: AdonisHttpResponse}} param0
    */
   async delete({params, response}) {
-    const {id} = params
+    const { id } = params;
 
-    const dbFile = await File.find(id)
+    const dbFile = await File.find(id);
 
     //TODO:: Check if the user has the rights to download that file
 
@@ -125,21 +125,27 @@ class FileController {
       return response.badRequest('File not found');
     }
 
-    await File.deleteAllWith(id)
+    await File.deleteAllWith(id);
 
-    return response.ok()
+    return response.ok();
+  }
+
+  async deleteBulk ({ request }) {
+    const filesToDelete = request.input("filesToDelete");
+
+    return File.deleteAllWith(filesToDelete);
   }
 
   // Only for testing purposes
-  async upload({request, auth}) {
-    const userId = auth.user._id
+  async upload ({ request, auth }) {
+    const userId = auth.user._id;
 
     request.multipart.file('*', {}, async (file) => {
       const uploadedFile = await File.store({
         [file.fieldName]: file
-      }, userId, userId)
+      }, userId, userId);
 
-    })
+    });
 
     await request.multipart.process()
   }
