@@ -13,7 +13,6 @@ const { resolve, basename } = require("path");
 const { existsSync, unlinkSync } = require("fs");
 const tmp = require('tmp');
 const { Readable } = require('stream');
-const Logger = use("Logger");
 
 const { Types: MongoTypes } = require("mongoose");
 const { castToObjectId } = require("../Helpers/ModelFormatters");
