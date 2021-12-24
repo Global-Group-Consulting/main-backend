@@ -33,7 +33,7 @@ class MovementController {
   async read({auth, params}) {
     const userRole = +auth.user.role
     const forId = params["id"]
-    let userId = auth.user._id
+      let userId = auth.user._id
 
     if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole) && forId) {
       userId = forId

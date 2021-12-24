@@ -12,7 +12,9 @@ const path = require("path")
 const {Readable} = require('stream');
 
 const {existsSync} = require("fs")
-const fs = require("fs")
+const fs = require("fs");
+const Logger = use("Logger");
+const FileException = use("App/Exceptions/FileException");
 
 class FileController {
   /**
@@ -59,39 +61,53 @@ class FileController {
     return pathname
   }
 
-  async show({params, response}) {
-    const {id} = params
-
-    const dbFile = await File.find(id)
+  async meta ({ params, response }) {
+    const { id } = params;
+    const dbFile = await File.find(id);
 
     if (!dbFile) {
-      return response.badRequest('File not found');
+      throw new FileException('File not found');
+      // response.badRequest('File not found');
     }
 
     return dbFile;
   }
 
-  async download({params, response}) {
-    const {id} = params
+  async show ({ params, response }) {
+    const meta = await this.meta({ params, response });
 
-    const dbFile = await File.find(id)
+    const s3File = await Drive.getSignedUrl(meta._id.toString())
+
+    response.redirect(s3File) ;
+  }
+
+  async download({params, response}) {
+    const { id } = params;
+
+    const dbFile = await File.find(id);
 
     //TODO:: Check if the user has the rights to download that file
 
     if (!dbFile) {
-      return response.badRequest('File not found');
+      throw new FileException('File not found');
     }
 
-    const driverIsLocal = Config.get("drive.default") === "local"
-    let pathName
+    const driverIsLocal = Config.get("drive.default") === "local";
+    let pathName;
 
-    if (driverIsLocal) {
-      pathName = await this._downloadFromLocal(dbFile)
-    } else {
-      pathName = await this._downloadFromS3(dbFile)
+    try {
+      if (driverIsLocal) {
+
+        pathName = await this._downloadFromLocal(dbFile);
+      } else {
+        pathName = await this._downloadFromS3(dbFile);
+      }
+    } catch (er) {
+      Logger.error(er);
+      throw new FileException('File not found');
     }
 
-    response.download(pathName)
+    response.download(pathName);
   }
 
   /**

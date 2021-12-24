@@ -1,6 +1,6 @@
 module.exports = function (Route) {
   Route.group(() => {
-    Route.get('/:id/meta', 'FileController.show')
+    Route.get('/:id/meta', 'FileController.meta')
 
     Route.get('/:id', 'FileController.download')
 
@@ -14,4 +14,6 @@ module.exports = function (Route) {
   }).prefix('/api/files')
     .namespace('Api')
     .middleware("auth")
+
+  Route.get('/api/files/:id/show', 'Api/FileController.show');
 }

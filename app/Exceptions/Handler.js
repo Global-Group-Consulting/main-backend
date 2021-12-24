@@ -37,6 +37,12 @@ class ExceptionHandler extends BaseExceptionHandler {
    * @return {void}
    */
   async report(error, { request }) {
+    const errorsToIgnore = ["InvalidLoginException", "TokenExpiredException"];
+
+    if (errorsToIgnore.includes(error.name)) {
+      return;
+    }
+
     await Log.create({
       ...error,
       code: error.code,
@@ -53,7 +59,6 @@ class ExceptionHandler extends BaseExceptionHandler {
         originalUrl: request.originalUrl()
       }
     })
-
   }
 }
 
