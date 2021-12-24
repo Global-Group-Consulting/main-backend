@@ -61,7 +61,7 @@ class MaintenanceMode {
       }
 
       // If is a critical day and the user is admin set the interval
-      timeInterval = ["05:00", "22:00"]
+      // timeInterval = ["05:00", "23:00"]
     }
 
     // If no setting exists, allow user.

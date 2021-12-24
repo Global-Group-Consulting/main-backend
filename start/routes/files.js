@@ -4,6 +4,8 @@ module.exports = function (Route) {
 
     Route.get('/:id', 'FileController.download')
 
+    Route.delete('/', 'FileController.deleteBulk')
+
     Route.delete('/:id', 'FileController.delete')
 
     // Only for testing purposes
@@ -16,4 +18,5 @@ module.exports = function (Route) {
     .middleware("auth")
 
   Route.get('/api/files/:id/show', 'Api/FileController.show');
+
 }

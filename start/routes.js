@@ -35,6 +35,7 @@ const WebhooksRoutes = require('./routes/webhooks.js')
 const MagazineRoutes = require('./routes/magazine.js')
 const ReportsRoutes = require('./routes/reports.js')
 const FiltersRoutes = require('./routes/filters')
+const ProxyRoutes = require('./routes/proxy')
 const GeolocationRoutes = require('./routes/geolocation');
 const NewsRoutes = require('./routes/news');
 
@@ -57,6 +58,8 @@ WebhooksRoutes(Route)
 MagazineRoutes(Route)
 ReportsRoutes(Route)
 FiltersRoutes(Route)
+// Set this route at the end due to the use of the wildcard
+ProxyRoutes(Route)
 GeolocationRoutes(Route);
 NewsRoutes(Route);
 
@@ -69,7 +72,7 @@ Route.group(() => {
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
   //Route.post("/recapitalize_user", "SecretCommandController.recapitalizeUser")
 }).prefix('/' + secretRoutePath)
-  //.middleware("authSuperAdmin")
+//.middleware("authSuperAdmin")
 
 Logger.info("*** Generated secret routes at /" + secretRoutePath + "/")
 

@@ -41,7 +41,7 @@ class Queue {
         collection: "queueJobs",
         options: {
           useUnifiedTopology: true,
-          useFindAndModify: false,
+          // useFindAndModify: false,
           useNewUrlParser: true
         }
       },

@@ -12,17 +12,17 @@ const fs = require("fs");
 const { resolve, basename } = require("path");
 const { existsSync, unlinkSync } = require("fs");
 const tmp = require('tmp');
-const {Readable} = require('stream');
+const { Readable } = require('stream');
+const Logger = use("Logger");
 
+const { Types: MongoTypes } = require("mongoose");
+const { castToObjectId } = require("../Helpers/ModelFormatters");
 
-const {Types: MongoTypes} = require("mongoose")
-const {castToObjectId} = require("../Helpers/ModelFormatters")
-
-const axios = require("axios")
+const axios = require("axios");
 
 class File extends Model {
-  static get computed() {
-    return ["id"]
+  static get computed () {
+    return ["id"];
   }
 
   static get hidden() {
