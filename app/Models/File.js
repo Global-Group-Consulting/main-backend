@@ -1,25 +1,27 @@
-'use strict'
+'use strict';
+
+/** @typedef {import("/@types/Attachment").Attachment} Attachment */
 
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
-const Helpers = use('Helpers')
-const Drive = use('Drive')
+const Model = use('Model');
+const Helpers = use('Helpers');
+const Drive = use('Drive');
+const Logger = use('Logger');
 
-const fs = require("fs")
-const {resolve, basename} = require("path")
-const {existsSync, unlinkSync} = require("fs")
+const fs = require("fs");
+const { resolve, basename } = require("path");
+const { existsSync, unlinkSync } = require("fs");
 const tmp = require('tmp');
-const {Readable} = require('stream');
+const { Readable } = require('stream');
 
+const { Types: MongoTypes } = require("mongoose");
+const { castToObjectId } = require("../Helpers/ModelFormatters");
 
-const {Types: MongoTypes} = require("mongoose")
-const {castToObjectId} = require("../Helpers/ModelFormatters")
-
-const axios = require("axios")
+const axios = require("axios");
 
 class File extends Model {
-  static get computed() {
-    return ["id"]
+  static get computed () {
+    return ["id"];
   }
 
   static get hidden() {
@@ -61,18 +63,18 @@ class File extends Model {
         readableStream = await this.fetchFile(file)
 
         // create a fake file
-        file = {}
+        file = {};
       } else {
-        readableStream = file.stream
+        readableStream = file.stream;
 
         // when the file is parsed bu the "bodyParser", the stream is not readable,
         // so first must create a readable stream, so that the upload to aws can succeed.
         if (!readableStream.readable) {
-          readableStream = fs.createReadStream(file.tmpPath)
+          readableStream = fs.createReadStream(file.tmpPath);
         }
       }
 
-      const fileUrl = await Drive.put(fileId.toString(), readableStream)
+      const fileUrl = await Drive.put(fileId.toString(), readableStream);
 
       const newFile = await File.create({
         _id: fileId,
@@ -81,29 +83,71 @@ class File extends Model {
         userId,
         loadedBy,
         ...extraData
-      })
+      });
 
-      storedFiles.push(newFile)
+      storedFiles.push(newFile);
     }
 
-    return storedFiles
+    return storedFiles;
   }
 
+  /**
+   *
+   * @param storedFiles
+   * @param reqFiles
+   * @returns {Record<string, Attachment | Attachment[]>}
+   */
+  static getFilesAsObj (storedFiles, reqFiles) {
+    return storedFiles.reduce((acc, curr) => {
+      const file = {
+        "id": curr._id,
+        "fileName": curr.clientName,
+        "size": curr.size,
+        "mimetype": curr.type + "/" + curr.subtype,
+      };
 
-  static async deleteAllWith(value, field = "_id") {
-    const filesToRemove = await File.where({[field]: castToObjectId(value)}).fetch()
-    const removedFiles = []
+      const fieldName = curr.fieldName.replace("[]", "");
+      const asArray = reqFiles[fieldName] instanceof Array;
 
-    if (!filesToRemove) {
-      return
+      // if the section doesn't exist, creates it as an array
+      // should be created as an array only if the incoming type was an array
+      if (!acc[fieldName] && asArray) {
+        acc[fieldName] = [];
+      }
+
+      if (asArray) {
+        acc[fieldName].push(file);
+      } else {
+        acc[fieldName] = file;
+      }
+
+      return acc;
+    }, {});
+  }
+
+  static async deleteAllWith (toDeleteIds, field = "_id") {
+    if (!(toDeleteIds instanceof Array)) {
+      toDeleteIds = [toDeleteIds];
+    }
+
+    const query = toDeleteIds.map(el => castToObjectId(el, true));
+    const filesToRemove = await File.where({ [field]: { $in: query } }).fetch();
+    const removedFiles = [];
+
+    Logger.info("[FILE] Files will be removed" + JSON.stringify(query));
+
+    if (!filesToRemove || filesToRemove.rows === 0) {
+      return;
     }
 
     for (const file of filesToRemove.rows) {
-      await Drive.delete(value)
-      removedFiles.push(await file.delete())
+      Logger.info("[FILE] Removing from S3 " + file._id.toString());
+      await Drive.delete(file._id.toString());
+      removedFiles.push(await file.delete());
     }
 
-    return removedFiles
+    Logger.info("[FILE] removedFiles" + JSON.stringify(removedFiles));
+    return removedFiles;
   }
 
   user() {

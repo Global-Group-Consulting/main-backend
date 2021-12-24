@@ -24,8 +24,8 @@ const {Ignitor} = require('@adonisjs/ignitor')
 
 // Certificate
 const options = {
-  key: fs.readFileSync(path.resolve(__dirname, 'key.pem')),
-  cert: fs.readFileSync(path.resolve(__dirname, 'cert.pem'))
+  key: fs.readFileSync(path.resolve(__dirname, 'localhost.key')),
+  cert: fs.readFileSync(path.resolve(__dirname, 'localhost.crt'))
 }
 
 if (!fs.existsSync("tmp")) {

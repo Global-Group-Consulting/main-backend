@@ -23,10 +23,10 @@ module.exports = {
     connectionString: Env.get('DB_CONNECTION_STRING', ''),
     connectionOptions: {
       useUnifiedTopology: true,
-      useFindAndModify: false,
+      // useFindAndModify: false,
       useNewUrlParser: true
     },
-    connection: {
+    /*connection: {
       host: Env.get('DB_HOST', 'localhost'),
       port: Env.get('DB_PORT', 27017),
       //username: Env.get('DB_USER', 'admin'),
@@ -43,7 +43,7 @@ module.exports = {
         // authMechanism: Env.get('DB_AUTH_MECHANISM', ''),
         // other options
       }
-    }
+    }*/
   },
 
   mongoGeolocation: {
