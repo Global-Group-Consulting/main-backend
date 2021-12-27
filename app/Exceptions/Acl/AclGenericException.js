@@ -3,7 +3,7 @@
 const {LogicalException} = require('@adonisjs/generic-exceptions')
 const {StatusCodes} = require("http-status-codes")
 
-const defaultMessage = "Can't execute the required action"
+const defaultMessage = "Not enough permissions"
 
 class AclGenericException extends LogicalException {
   /**
@@ -13,7 +13,7 @@ class AclGenericException extends LogicalException {
     return StatusCodes
   }
 
-  constructor(message = defaultMessage, status = StatusCodes.BAD_REQUEST) {
+  constructor(message = defaultMessage, status = StatusCodes.FORBIDDEN) {
     super(message, status)
   }
 }
