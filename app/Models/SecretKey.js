@@ -15,9 +15,9 @@ class SecretKey extends Model {
    * @return {Promise<boolean>}
    */
   static async getClientKey(key) {
-    if (process.env.NODE_ENV === "development") {
+   /* if (process.env.NODE_ENV === "development") {
       return "dev_key";
-    }
+    }*/
 
     const client = await this.query()
       .where({ publicKey: key, type: "client" })
