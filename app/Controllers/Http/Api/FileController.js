@@ -76,9 +76,15 @@ class FileController {
   async show ({ params, response }) {
     const meta = await this.meta({ params, response });
 
-    const s3File = await Drive.getSignedUrl(meta._id.toString())
+    const s3File = await Drive.getSignedUrl(meta._id.toString());
 
-    response.redirect(s3File) ;
+    response.redirect(s3File);
+  }
+
+  async showUrl ({ params, response }) {
+    const meta = await this.meta({ params, response });
+
+    return Drive.getSignedUrl(meta._id.toString());
   }
 
   async download ({ params, response }) {
