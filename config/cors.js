@@ -16,7 +16,7 @@ module.exports = {
   | Function - Receives the current origin and should return one of the above values.
   |
   */
-  origin: process.env.NODE_ENV === "development" || "https://staging-club-backend.herokuapp.com" || "capacitor://localhost" || "http://localhost",
+  origin: process.env.NODE_ENV === "development" || ["https://staging-club-backend.herokuapp.com", "capacitor://localhost", "http://localhost"],
 
   /*
   |--------------------------------------------------------------------------
