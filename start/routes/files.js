@@ -18,5 +18,6 @@ module.exports = function (Route) {
     .middleware("auth")
 
   Route.get('/api/files/:id/show', 'Api/FileController.show');
+  Route.get('/api/files/:id/url', 'Api/FileController.showUrl');
 
 }
