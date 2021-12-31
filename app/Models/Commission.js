@@ -21,30 +21,32 @@ const Event = use('Event')
 const Database = use('Database')
 
 /** @type {typeof import('./Movement')} */
-const MovementModel = use("App/Models/Movement")
+const MovementModel = use("App/Models/Movement");
 
 /** @type {typeof import('./User')} */
-const UserModel = use("App/Models/User")
+const UserModel = use("App/Models/User");
 
 /** @type {typeof import('../Exceptions/CommissionException')} */
-const CommissionException = use("App/Exceptions/CommissionException")
+const CommissionException = use("App/Exceptions/CommissionException");
 
-const {castToObjectId} = require("../Helpers/ModelFormatters")
-const CommissionType = require("../../enums/CommissionType")
-const MovementTypes = require("../../enums/MovementTypes")
-const AgentTeamType = require("../../enums/AgentTeamType")
-const moment = require("moment")
+const { castToObjectId } = require("../Helpers/ModelFormatters");
+const CommissionType = require("../../enums/CommissionType");
+const MovementTypes = require("../../enums/MovementTypes");
+const AgentTeamType = require("../../enums/AgentTeamType");
+const UserRolesType = require("../../enums/UserRoles");
+const moment = require("moment");
+const { result } = require('lodash/object');
 
 class Commission extends Model {
-  static db
+  static db;
 
-  static async boot() {
-    super.boot()
-    this.db = await Database.connect("mongodb")
+  static async boot () {
+    super.boot();
+    this.db = await Database.connect("mongodb");
   }
 
-  static async fetchAll() {
-    return this.all()
+  static async fetchAll () {
+    return this.all();
   }
 
   /**
@@ -54,29 +56,29 @@ class Commission extends Model {
    * @returns {Promise<{agent: *, movement: Movement, user: *}>}
    * @private
    */
-  static async _getMovementRelatedDate(movementId, agentId) {
+  static async _getMovementRelatedDate (movementId, agentId) {
     // get movement
-    const movement = await MovementModel.where({"_id": castToObjectId(movementId)}).first()
+    const movement = await MovementModel.where({ "_id": castToObjectId(movementId) }).first();
 
     if (!movement) {
-      throw new CommissionException("Can't find any movement with the specified id")
+      throw new CommissionException("Can't find any movement with the specified id");
     }
 
     // Get the user related to that movement
-    const user = await UserModel.query().where("_id", movement.userId).with("referenceAgentData").first()
+    const user = await UserModel.query().where("_id", movement.userId).with("referenceAgentData").first();
 
     if (!user) {
-      throw new CommissionException("Can't find the user related with the specified movement")
+      throw new CommissionException("Can't find the user related with the specified movement");
     }
 
     // get the reference agent specified when creating the queue entry
-    const agent = await UserModel.find(agentId)
+    const agent = await UserModel.find(agentId);
 
     if (!agent) {
-      throw new CommissionException("The user associated with the movement doesn't have a reference agent")
+      throw new CommissionException("The user associated with the movement doesn't have a reference agent");
     }
 
-    return {movement, user, agent}
+    return { movement, user, agent };
   }
 
   static async _getLastCommission(userId) {
@@ -151,26 +153,126 @@ class Commission extends Model {
       toReturn.total += el.amountChange;
 
       if (el.briteConversionPercentage) {
-        toReturn.totalBrite += el.amountBrite || 0
-        toReturn.totalEuro += el.amountEuro || 0
+        toReturn.totalBrite += el.amountBrite || 0;
+        toReturn.totalEuro += el.amountEuro || 0;
       } else {
-        toReturn.totalEuro += el.amountChange
+        toReturn.totalEuro += el.amountChange;
       }
-    })
+    });
 
-    return toReturn
+    return toReturn;
   }
 
-  static async _getClientsYearDeposits(userId) {
-    userId = castToObjectId(userId)
+  /**
+   * @typedef {{_id: ObjectId, role: UserRolesType, referenceAgent: ObjectId}} UserSubClient
+   */
+  /**
+   * @param {string | ObjectId} userId
+   * @returns {Promise<UserSubClient[]>}
+   * @private
+   */
+  static async _recursiveSubClients (userId) {
+    /** @type {UserSubClient[]} */
+    const toReturn = [];
 
-    return this.where({
+    /** @type {UserSubClient[]} */
+    const users = await this.db.collection("users")
+      .find({ referenceAgent: castToObjectId(userId) }, {
+          projection: {
+            _id: 1,
+            role: 1,
+            referenceAgent: 1
+          }
+        }
+      )
+      .toArray();
+
+    toReturn.push(...users);
+
+    const agents = users.filter(user => user.role === UserRolesType.AGENTE);
+
+    if (agents.length > 0) {
+      const promises = agents.map(agent => this._recursiveSubClients(agent._id));
+      const results = await Promise.all(promises);
+
+      results.forEach(res => toReturn.push(...res));
+    }
+
+    return toReturn;
+  }
+
+  static async _getClientsYearDeposits (_userId) {
+    const userId = castToObjectId(_userId);
+
+    /*
+    As required by the client, this statistic must consider the movements' table instead the commissions table.
+     */
+    /*return this.where({
       userId,
       commissionType: CommissionType.NEW_DEPOSIT,
       created_at: {
         $gte: moment().startOf("year"),
       }
-    }).fetch()
+    }).fetch()*/
+
+    let toReturn = 0;
+
+    // first fetch all the users that are under this agent, with all subusers/agents
+    const users = await this._recursiveSubClients(userId);
+    const usersId = users.reduce((acc, curr) => {
+      acc.push(curr._id);
+
+      return acc;
+    }, []);
+
+    const aggregation = [
+      {
+        '$project': {
+          '_id': 1,
+          'userId': 1,
+          'movementType': 1,
+          'created_at': 1,
+          'amountChange': 1
+        }
+      },
+      {
+        '$match': {
+          'userId': { '$in': usersId },
+          'movementType': { '$in': [MovementTypes.INITIAL_DEPOSIT, MovementTypes.DEPOSIT_ADDED] },
+          'created_at': { '$gte': moment().startOf("year").toDate() }
+        }
+      }, {
+        // adds the cancelRefs for each movement
+        '$lookup': {
+          'from': 'movements',
+          'localField': '_id',
+          'foreignField': 'cancelRef',
+          'as': 'cancRef'
+        }
+      }, {
+        // filter out only the movements without cancellation
+        '$match': {
+          'cancRef': {
+            '$size': 0
+          }
+        }
+      }, {
+        '$group': {
+          '_id': '',
+          'sum': {
+            '$sum': '$amountChange'
+          }
+        }
+      }
+    ];
+
+    const movements = await this.db.collection("movements").aggregate(aggregation).toArray();
+
+    if (movements && movements.length > 0) {
+      toReturn = movements[0].sum;
+    }
+
+    return toReturn;
   }
 
   /**
@@ -564,7 +666,7 @@ class Commission extends Model {
       monthCommissions: lastCommission ? lastCommission.currMonthCommissions : 0,
       reinvestedCommissions: lastReinvestedCommissions ? lastReinvestedCommissions.amountChange : 0,
       collectedCommissions: collectedCommissions,
-      clientsTotalDeposit: clientsTotalDeposit.rows.reduce((acc, curr) => acc + curr.commissionOnValue, 0),
+      clientsTotalDeposit: clientsTotalDeposit//.rows.reduce((acc, curr) => acc + curr.commissionOnValue, 0),
     }
 
   }
