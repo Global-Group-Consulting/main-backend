@@ -18,6 +18,10 @@ module.exports = {
   */
   // origin: process.env.NODE_ENV === "development" || ["https://staging-club-backend.herokuapp.com", "capacitor://localhost", "http://localhost", "http://dev.globalclub.consulting"],
   origin: (origin) => {
+    if (process.env.NODE_ENV !== "production") {
+      return true;
+    }
+
     const validOrigins = [
       "https://staging-club-backend.herokuapp.com",
       // capacitor IOS

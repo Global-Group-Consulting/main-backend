@@ -67,14 +67,14 @@ const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : 
 
 
 Route.group(() => {
-  Route.post("/commissions_block", "SecretCommandController.triggerCommissionsBlock")
+  Route.post("/commissions_block_all", "SecretCommandController.triggerCommissionsBlock")
+  Route.put("/commissions_block/:id", "SecretCommandController.triggerCommissionsBlockForAgent")
   Route.post("/recapitalization", "SecretCommandController.triggerUsersRecapitalization")
   Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements")
-  //Route.post("/recapitalize_user", "SecretCommandController.recapitalizeUser")
-}).prefix('/' + secretRoutePath)
-//.middleware("authSuperAdmin")
+  Route.post("/recapitalize_user/:id", "SecretCommandController.recapitalizeUser")
+}).prefix('/' + process.env.SERVER_KEY)
 
-Logger.info("*** Generated secret routes at /" + secretRoutePath + "/")
+Logger.info("*** Generated secret routes at /" + process.env.SERVER_KEY + "/")
 
 /*
 Route.post("/docs/create", "DocSignController.createDocument")
