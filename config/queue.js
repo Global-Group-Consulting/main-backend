@@ -20,13 +20,13 @@ const queueConfig = {
     },
     user_recapitalization: {
       options: {
-        concurrency: 5,
+        concurrency: 15,
         lockLimit: 5,
       }
     },
     user_recapitalization_brites: {
       options: {
-        concurrency: 5,
+        concurrency: 15,
         lockLimit: 5
       }
     },
@@ -79,6 +79,8 @@ const queueConfig = {
     trigger_periodic_emails: {},
 
   },
+  /*
+  // removes recursive jobs due to switching to external service
   recursiveJobs: [
     {
       queue: "trigger_commissions_block_month",
@@ -92,7 +94,7 @@ const queueConfig = {
       queue: "trigger_periodic_emails",
       recursion: Env.get("TRIGGER_PERIODIC_EMAILS", "1 10 6 16 * *")
     }
-  ]
+  ]*/
 }
 
 module.exports = queueConfig

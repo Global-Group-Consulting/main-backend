@@ -16,7 +16,29 @@ module.exports = {
   | Function - Receives the current origin and should return one of the above values.
   |
   */
-  origin: process.env.NODE_ENV === "development" || ["https://staging-club-backend.herokuapp.com", "capacitor://localhost", "http://localhost"],
+  // origin: process.env.NODE_ENV === "development" || ["https://staging-club-backend.herokuapp.com", "capacitor://localhost", "http://localhost", "http://dev.globalclub.consulting"],
+  origin: (origin) => {
+    if (process.env.NODE_ENV !== "production") {
+      return true;
+    }
+
+    const validOrigins = [
+      "https://staging-club-backend.herokuapp.com",
+      // capacitor IOS
+      "capacitor://localhost",
+      // capacitor android
+      "http://localhost"];
+
+    let toReturn = validOrigins.includes(origin);
+
+    if (!toReturn) {
+      const devHostName = "dev.globalclub.consulting";
+      const url = new URL(origin);
+      toReturn = url.hostname === devHostName;
+    }
+
+    return toReturn;
+  },
 
   /*
   |--------------------------------------------------------------------------
