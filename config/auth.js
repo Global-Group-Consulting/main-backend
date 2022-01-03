@@ -50,9 +50,9 @@ module.exports = {
   */
   basic: {
     serializer: 'LucidMongo',
-    model: 'App/Models/User',
+    model: 'App/Models/CronUser',
     scheme: 'basic',
-    uid: 'email',
+    uid: 'username',
     password: 'password'
   },
 

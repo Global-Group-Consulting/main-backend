@@ -3,7 +3,7 @@
 const { LogicalException } = require('@adonisjs/generic-exceptions')
 const { StatusCodes } = require("http-status-codes")
 
-class TokenExpiredException extends LogicalException {
+class TokenException extends LogicalException {
   /**
    * Handle this exception by itself
    */
@@ -14,4 +14,4 @@ class TokenExpiredException extends LogicalException {
   }
 }
 
-module.exports = TokenExpiredException
+module.exports = TokenException
