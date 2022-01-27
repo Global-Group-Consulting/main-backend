@@ -100,13 +100,13 @@ class EmailSender {
     const emailBody = await this._renderTemplate(tmpl, locale, data)
 
     if (this.provider === "postmark") {
-      return this.postmarkClient.sendEmail({
-        "From": Env.get('MAIL_FROM'),
-        "To": data.email,
-        "Subject": Antl.compile(locale, `emails.${tmpl}.subject`, data),
-        "HtmlBody": emailBody,
-        "MessageStream": "outbound"
-      })
+     return this.postmarkClient.sendEmail({
+       'From': Env.get('MAIL_FROM'),
+       'To': data.email,
+       'Subject': Antl.compile(locale, `emails.${tmpl}.subject`, data),
+       'HtmlBody': emailBody,
+       'MessageStream': 'outbound'
+     })
     } else {
       return Mail.raw(emailBody, (message) => {
         message.to(data.email)

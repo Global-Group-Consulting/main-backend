@@ -50,13 +50,13 @@ class Queue {
 
     this._initQueues()
 
-    this.initRecursiveJobs()
+    /*this.initRecursiveJobs()
       .then(() => {
         this.logInfo("Started recursive jobs")
       })
       .catch(er => {
         this.logError("Can't start recursive jobs", er)
-      })
+      })*/
   }
 
   get agenda() {

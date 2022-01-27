@@ -9,6 +9,7 @@ const InvalidLoginException = use('App/Exceptions/InvalidLoginException')
 const UserException = use('App/Exceptions/UserException')
 const AccountStatuses = require('../../../../enums/AccountStatuses')
 const UserRoles = require('../../../../enums/UserRoles')
+const SecretKey = use("App/Models/SecretKey")
 
 /**
  * @typedef AuthResult
@@ -47,19 +48,25 @@ class AuthController {
     } catch (e) {
       throw new InvalidLoginException("Dati di accesso non validi. Controllare il nome utente e la password inserita.")
     }
-
+    
     const user = await User.where({email: lowerEmail}).first()
-
+    const apps = user.apps || [];
+    const requestedApp = await SecretKey.getClientApp(request.headers()["client-key"])
+  
+    if (!apps.includes(requestedApp)) {
+      throw new InvalidLoginException("Permessi insufficienti per accedere a questa applicazione.")
+    }
+  
     if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)
       || user.suspended) {
       throw new InvalidLoginException("Utente non valido o sospeso.")
     }
-
+  
     return response.json({
       'token': authResult.token,
       'refreshToken': authResult.refreshToken
     })
-
+  
   }
 
   async user({auth}) {
