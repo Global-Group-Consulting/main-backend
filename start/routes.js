@@ -41,7 +41,7 @@ const NewsRoutes = require('./routes/news');
 
 Route.on('/').render('welcome');
 
-AclRoutes(Route);
+// AclRoutes(Route);
 AuthRoutes(Route);
 AgentBrites(Route);
 ClubRoutes(Route);
