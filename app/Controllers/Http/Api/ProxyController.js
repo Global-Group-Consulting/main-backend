@@ -153,7 +153,7 @@ class ProxyController {
   }
   
   async news(request, auth, path) {
-    const baseUrl = Env.get("CLUB_SERVER")
+    const baseUrl = Env.get("NEWS_SERVER")
     
     return await this._forward(baseUrl, request, auth.user, path)
   }
@@ -166,9 +166,8 @@ class ProxyController {
       case "club":
         return this.club(request, auth, "/api" + url.slice(url.indexOf("/")))
       case "news":
-        return this.club(request, auth, "/api" + url.slice(url.indexOf("/")))
+        return this.news(request, auth, "/api" + url.slice(url.indexOf("/")))
     }
-
   }
 }
 
