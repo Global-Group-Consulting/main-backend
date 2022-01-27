@@ -111,7 +111,7 @@ class User extends Model {
    * Hides the fields in the array that returns
    */
   static get hidden() {
-    return ['password', '_id', '__v']
+    return ['password', '__v']
   }
 
   static get allUserFields() {
