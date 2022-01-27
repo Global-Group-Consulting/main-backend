@@ -45,6 +45,15 @@ module.exports = {
       }
     }*/
   },
+  
+  mongoIAM: {
+    client: 'mongodb',
+    connectionString: Env.get('DB_IAM_CONNECTION_STRING', ''),
+    connectionOptions: {
+      useUnifiedTopology: true,
+      useNewUrlParser: true
+    },
+  },
 
   mongoGeolocation: {
     client: 'mongodb',
