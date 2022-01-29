@@ -66,7 +66,7 @@ User.onApproved = async (user) => {
   }
 
   await Queue.add("send_email", {
-    tmpl: "account_approved",
+    tmpl: "main-account-approved",
     data: {
       ...user.toJSON(),
       token,
