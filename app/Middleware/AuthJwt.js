@@ -22,6 +22,8 @@ class AuthJwt {
         throw new AclGenericException("Permessi insufficienti per accedere a questa applicazione.")
       }
       
+      auth.requestedApp = requestedApp;
+      
       /**
        * Swapping the main authentication instance with the one using which user
        * logged in.
