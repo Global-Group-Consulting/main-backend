@@ -9,6 +9,7 @@ const cronParser = require('cron-parser');
 
 const Logger = use("Logger")
 const Helpers = use('Helpers');
+const Database = use('Database');
 
 class Queue {
   /**
@@ -22,34 +23,40 @@ class Queue {
     if (!appMongoConnection) {
       throw new Error("Missing MongoDb configuration.")
     }
-
+  
     if (!appMongoConnection.connectionString) {
       appMongoConnection.connectionString = mongoUriBuilder({
         ...appMongoConnection.connection
       })
     }
-
+  
     this.Config = Config
-
+  
     this.queuesList = {}
     this.jobsList = {}
-
-    /** @type {Agenda} */
-    this._agenda = new Agenda({
-      db: {
-        address: appMongoConnection.connectionString,
-        collection: "queueJobs",
-        options: {
-          useUnifiedTopology: true,
-          // useFindAndModify: false,
-          useNewUrlParser: true
-        }
-      },
-      defaultLockLifetime: 5000,
-    });
-
-    this._initQueues()
-
+  
+    Database.connect("mongodb")
+      .then(resp => {
+      
+        /** @type {Agenda} */
+        this._agenda = new Agenda({
+          mongo: resp,
+          /*db: {
+            address: appMongoConnection.connectionString,
+            collection: "queueJobs",
+            options: {
+              useUnifiedTopology: true,
+              // useFindAndModify: false,
+              useNewUrlParser: true
+            }
+          },*/
+          defaultLockLifetime: 5000,
+        });
+      
+        this._initQueues()
+      })
+  
+  
     /*this.initRecursiveJobs()
       .then(() => {
         this.logInfo("Started recursive jobs")
