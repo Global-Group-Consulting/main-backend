@@ -154,8 +154,8 @@ class File extends Model {
     return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId({_id, id}) {
+    return (_id || id).toString()
   }
 
   setRequestId(value) {

@@ -91,6 +91,7 @@ class AuthController {
 
       return userData
     } catch (error) {
+      console.error(error)
       throw new InvalidLoginException('Missing or invalid jwt token; ' + error.message);
     }
   }
