@@ -41,6 +41,9 @@ class Queue {
         /** @type {Agenda} */
         this._agenda = new Agenda({
           mongo: resp,
+          db: {
+            collection: "queueJobs",
+          },
           /*db: {
             address: appMongoConnection.connectionString,
             collection: "queueJobs",
@@ -180,8 +183,12 @@ class Queue {
    * @param {string | string[]} queueName
    */
   async _checkQueueExistence(queueName) {
+    if (!this._agenda) {
+      throw new Error("Queue handler not ready ")
+    }
+  
     await this._agenda["_ready"]
-
+  
     for (const jobName of (queueName instanceof Array ? queueName : [queueName]))
       if (!this._agenda["_definitions"][jobName]) {
         throw new Error("Unknown queue " + jobName)
@@ -319,14 +326,21 @@ class Queue {
     if (!recursiveJobs || recursiveJobs.length === 0) {
       return
     }
-
+  
     await this._isReady()
-
+  
     await Promise.all(
       recursiveJobs.map(async (job) => {
         await this.cron(job.recursion, job.queue)
       })
     )
+  }
+  
+  async create(name, data) {
+    const job = this._agenda.create(name, data);
+    await job.save();
+    
+    job.touch();
   }
 }
 
