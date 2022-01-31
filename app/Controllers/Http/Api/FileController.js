@@ -77,7 +77,7 @@ class FileController {
     
     // const s3File = await Drive.getSignedUrl(meta._id.toString());
     
-    response.header('Content-type', `${meta.type}/${meta/subtype}`)
+    response.header('Content-type', `${meta.type}/${meta.subtype}`)
     response.header('Content-Length', meta.size)
     response.header('Content-Disposition', "inline; filename=" + meta.clientName)
     
