@@ -265,8 +265,8 @@ class Conversation extends Model {
     return this.hasOne("App/Models/Request", "requestId", "_id")
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId({_id, id}) {
+    return (_id || id || '').toString()
   }
 
   setCreatedById(value) {
