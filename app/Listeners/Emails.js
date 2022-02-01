@@ -15,7 +15,7 @@ Emails.scheduleNotificationEmail = async (notification) => {
   const notificationSubject = notification.type.startsWith("message") ? notification.payload.subject : ""
 
   await QueueProvider.schedule(Env.get("NOTIFICATION_EMAIL_TIMEOUT"), "send_email", {
-    tmpl: "new_notification",
+    tmpl: "main-new-notification",
     data: {
       ...user.toJSON(),
       notification: notification.toJSON(),

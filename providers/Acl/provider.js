@@ -76,7 +76,7 @@ class Provider extends ServiceProvider {
    * @return {void}
    */
   async boot() {
-    const AclProvider = use('AclProvider')
+    /*const AclProvider = use('AclProvider')
     const UserModel = this.app.use("App/Models/User")
 
     console.log("*** Checking necessary roles...")
@@ -95,7 +95,7 @@ class Provider extends ServiceProvider {
       user.roles = [rolesMap[userRole]]
 
       await user.save()
-    }
+    }*/
   }
 }
 

@@ -57,7 +57,7 @@ async function onNewRequest(request) {
     const requestId = RequestTypes.get(request.type).id
 
     await Queue.add("send_email", {
-      tmpl: "new_club_request",
+      tmpl: "main-new-club-request",
       data: {
         email: clubRequestNotifyEmail,
         username: user.firstName + " " + user.lastName,

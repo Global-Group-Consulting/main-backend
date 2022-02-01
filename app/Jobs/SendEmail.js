@@ -13,9 +13,4 @@ module.exports =
 
     await job.save()
 
-    /*if (method) {
-      const result = await EmailSender[method](payload.data)
-
-      return Promise.resolve(result)
-    }*/
   }

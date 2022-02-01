@@ -9,6 +9,14 @@ const BasicModel = require('../../classes/BasicModel')
 // const AclPermissionsModel = use("App/Model/AclPermissionsModel")
 
 class AclRolesModel extends BasicModel {
+  static get connection() {
+    return 'mongoIAM'
+  }
+  
+  static get collection() {
+    return 'roles'
+  }
+  
   /**
    * Get all permissions for the provided roles as a flat array of strings
    *
@@ -17,25 +25,21 @@ class AclRolesModel extends BasicModel {
    * @returns {Promise<string[]>}
    */
   static async getAllPermissions(roles, directPermissions) {
-    let toReturn = []
-
-    for (const role of roles || []) {
-      /**
-       * @type {AclRole}
-       */
-      const roleData = await this.where({code: role}).first()
-
-      toReturn.push(...roleData.permissions)
+    let lists = [];
+    const rolesData = await this.where({code: {$in: roles}}).fetch();
+    
+    for (const role of rolesData.rows || []) {
+      lists.push(role.permissions)
     }
-
+    
     if (directPermissions) {
-      toReturn.push(directPermissions)
+      lists.push(directPermissions)
     }
 
-    return toReturn.flat()
+    return Array.from(new Set(lists.flat())).sort();
   }
 
-  static async createIfNew(code, data) {
+  /*static async createIfNew(code, data) {
     const exists = await AclRolesModel.findBy(code, 'admin')
 
     if (exists) {
@@ -43,11 +47,11 @@ class AclRolesModel extends BasicModel {
     }
 
     return this.create(data)
-  }
+  }*/
 
-  setCode(value) {
+/*  setCode(value) {
     return value ? value.toLowerCase().replace(/\s/g, "_") : value
-  }
+  }*/
 }
 
 module.exports = AclRolesModel

@@ -94,7 +94,7 @@ class ProxyController {
     const reqBody = req.body;
     // const reqParams = req.qs
     const reqParams = req.originalUrl().split("?")[1];
-
+  
     headers.host = parsedUrl.host;
     headers.accept = "application/json";
     headers["content-type"] = "application/json";
@@ -141,26 +141,33 @@ class ProxyController {
       if (uploadedFiles) {
         await this._deleteFiles(uploadedFiles)
       }
-
+  
       throw new ProxyException(er)
     }
   }
-
+  
   async club(request, auth, path) {
     const baseUrl = Env.get("CLUB_SERVER")
-
+    
     return await this._forward(baseUrl, request, auth.user, path)
   }
-
+  
+  async news(request, auth, path) {
+    const baseUrl = Env.get("NEWS_SERVER")
+    
+    return await this._forward(baseUrl, request, auth.user, path)
+  }
+  
   async handle({request, auth}) {
     const url = request.url().replace("/api/ext/", "");
     const destination = url.split("/");
-
+    
     switch (destination[0]) {
       case "club":
         return this.club(request, auth, "/api" + url.slice(url.indexOf("/")))
+      case "news":
+        return this.news(request, auth, "/api" + url.slice(url.indexOf("/")))
     }
-
   }
 }
 

@@ -3,12 +3,11 @@
 /** @type {import("../../providers/Queue")} */
 const Queue = use("QueueProvider")
 const Env = use("Env")
-
 const Auth = exports = module.exports = {}
 
-Auth.onPasswordForgot = async ({user, token}) => {
+Auth.onPasswordForgot = async ({user, token, app}) => {
   await Queue.add("send_email", {
-    tmpl: "password_forgot",
+    tmpl: app + "-password-forgot",
     data: {
       ...user.toJSON(),
       token,
@@ -17,9 +16,9 @@ Auth.onPasswordForgot = async ({user, token}) => {
   })
 }
 
-Auth.onPasswordRecovered = async ({user}) => {
+Auth.onPasswordRecovered = async ({user, app}) => {
   await Queue.add("send_email", {
-    tmpl: "password_recovered",
+    tmpl: app + "-password-reset",
     data: user.toJSON()
   })
 }

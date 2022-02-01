@@ -24,12 +24,7 @@ const queueConfig = {
         lockLimit: 5,
       }
     },
-    user_recapitalization_brites: {
-      options: {
-        concurrency: 15,
-        lockLimit: 5
-      }
-    },
+
     agent_commissions_on_new_deposit: {
       options: {
         concurrency: 5,

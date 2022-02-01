@@ -55,7 +55,6 @@ class File extends Model {
     const storedFiles = []
 
     for (const key of Object.keys(files)) {
-      const fileId = new MongoTypes.ObjectId()
       let file = files[key]
       let readableStream
 
@@ -74,17 +73,15 @@ class File extends Model {
         }
       }
 
-      const fileUrl = await Drive.put(fileId.toString(), readableStream);
-
       const newFile = await File.create({
-        _id: fileId,
         ...(file.toJSON ? file.toJSON() : file),
-        fileUrl,
         userId,
         loadedBy,
         ...extraData
       });
-
+  
+      const fileUrl = await Drive.put(newFile._id.toString(), readableStream);
+  
       storedFiles.push(newFile);
     }
 
@@ -154,8 +151,8 @@ class File extends Model {
     return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId({_id, id}) {
+    return (_id || id).toString()
   }
 
   setRequestId(value) {

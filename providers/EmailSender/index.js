@@ -89,33 +89,23 @@ class EmailSender {
    */
   async send(tmpl, data) {
     const locale = data.locale || 'it'
-
+  
     if (data.toObject) {
       data = data.toObject()
     }
-
+  
     data.publicUrl = Env.get('PUBLIC_URL')
     data.publicEmail = Env.get('PUBLIC_EMAIL')
-
-    const emailBody = await this._renderTemplate(tmpl, locale, data)
-
-    if (this.provider === "postmark") {
-      return this.postmarkClient.sendEmail({
-        "From": Env.get('MAIL_FROM'),
-        "To": data.email,
-        "Subject": Antl.compile(locale, `emails.${tmpl}.subject`, data),
-        "HtmlBody": emailBody,
-        "MessageStream": "outbound"
-      })
-    } else {
-      return Mail.raw(emailBody, (message) => {
-        message.to(data.email)
-        message.from(Env.get('MAIL_FROM'))
-        message.subject(Antl.compile(locale, `emails.${tmpl}.subject`, data))
-      })
-    }
+  
+    return this.postmarkClient.sendEmailWithTemplate({
+      'From': Env.get('MAIL_FROM'),
+      'To': data.email,
+      // 'Subject': Antl.compile(locale, `emails.${tmpl}.subject`, data),
+      'MessageStream': 'outbound',
+      "TemplateAlias": tmpl,
+      "TemplateModel": data,
+    })
   }
-
 }
 
 /**

@@ -111,7 +111,7 @@ class User extends Model {
    * Hides the fields in the array that returns
    */
   static get hidden() {
-    return ['password', '_id', '__v']
+    return ['password', '__v']
   }
 
   static get allUserFields() {
@@ -197,27 +197,125 @@ class User extends Model {
     let data = await this.where({...filter})
       .with("referenceAgentData")
       .sort({firstName: 1, lastName: 1})
-      .fetch()
-
-    data = data.rows
-
+      .fetch();
+    
+    const aggregation = [
+      /*{
+        '$match': {
+          'role': 3
+        }
+      }, */{
+        '$lookup': {
+          'from': 'users',
+          'localField': 'referenceAgent',
+          'foreignField': '_id',
+          'as': 'referenceAgentData'
+        }
+      }, {
+        '$unwind': {
+          'path': '$referenceAgentData',
+          'preserveNullAndEmptyArrays': true
+        }
+      }, {
+        '$sort': {
+          'firstName': 1,
+          'lastName': 1
+        }
+      }, {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$_id'
+          },
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$referenceAgent', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$count': 'counter'
+            }
+          ],
+          'as': 'clientsCount'
+        }
+      }, {
+        '$unwind': {
+          'path': '$clientsCount',
+          'preserveNullAndEmptyArrays': true
+        }
+      }, {
+        '$addFields': {
+          'clientsCount': '$clientsCount.counter'
+        }
+      }, {
+        '$lookup': {
+          'from': 'movements',
+          'let': {
+            'userId': '$_id'
+          },
+          'as': 'movements',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$userId', '$$userId'
+                  ]
+                }
+              }
+            }, {
+              '$sort': {
+                'created_at': -1
+              }
+            }, {
+              '$limit': 1
+            }
+          ]
+        }
+      }, {
+        '$unwind': {
+          'path': '$movements',
+          'preserveNullAndEmptyArrays': true
+        }
+      }, {
+        '$addFields': {
+          'earnings': {
+            'deposit': '$movements.deposit',
+            'intrests': '$movements.interestAmount'
+          }
+        }
+      },
+    ]
+  
+    if (Object.keys(filter).length > 0) {
+      aggregation.unshift({
+        '$match': filter
+      });
+    }
+  
+    // let data = await this.db.collection("users").aggregate(aggregation).toArray();
+    data = data.rows;
     data = await Promise.all(data.map(async (el) => {
       if ([UserRoles.AGENTE].includes(el.role)) {
         el.clientsCount = await el.clients().count()
       }
-
+    
       await el.withEarnings()
-
+    
       return el
     }))
-
+  
     if (project) {
       const mode = Object.values(project).includes(1) ? "pick" : "omit"
       const projectKeys = Object.keys(project)
-
+    
       data = data.map(_entry => {
         const jsonData = _entry.toJSON()
-
+      
         if (mode === "pick") {
           return _pick(jsonData, projectKeys)
         } else {
@@ -225,7 +323,7 @@ class User extends Model {
         }
       })
     }
-
+  
     if (returnFlat) {
       return data || []
     }
@@ -860,15 +958,15 @@ class User extends Model {
   }
 
   async withEarnings() {
-    const movement = await MovementModel.where({userId: this._id})
-      .sort({created_at: -1})
-      .first()
-
+     const movement = await MovementModel.where({userId: this._id})
+       .sort({created_at: -1})
+       .first()
+  
     this.earnings = {
       deposit: movement ? movement.deposit : 0,
       interests: movement ? movement.interestAmount : 0
     }
-
+  
     return this
   }
 

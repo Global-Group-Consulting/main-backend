@@ -20,8 +20,8 @@ class ProxyException extends LogicalException {
       Logger.error("[ProxyException] " + JSON.stringify(er.response.data));
 
       if (er.response.data) {
-        message = er.response.data.message;
-        statusCode = er.response.data.statusCode;
+        message = er.response.data.message || er.response.statusText;
+        statusCode = er.response.data.statusCode || er.response.status;
         code = er.response.data.error || er.response.data.name;
 
         if (statusCode === 500) {
@@ -31,6 +31,8 @@ class ProxyException extends LogicalException {
             message = "There was an internal server error. Please contact the site owner!";
           }
         }
+        
+        console.error(er.response.data);
       } else {
         message = er.response.statusText;
         statusCode = er.response.status;

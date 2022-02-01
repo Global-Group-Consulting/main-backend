@@ -5,6 +5,7 @@ const Server = use('Server')
 const {sanitizor} = use('Validator')
 const Persona = use('Persona')
 const Antl = use('Antl')
+const GE = require('@adonisjs/generic-exceptions')
 
 const moment = require('moment')
 const {get: _get, template: _template, templateSettings: _templateSettings} = require('lodash')
@@ -52,7 +53,7 @@ const namedMiddleware = {
   authBasic: 'App/Middleware/AuthBasic',
   authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
   authAdmin: 'App/Middleware/AuthAdmin',
-  guest: 'Adonis/Middleware/AllowGuestOnly',
+  guest: 'App/Middleware/AllowGuestOnly',
   acl: 'App/Middleware/Acl',
   //requestsBlock: 'App/Middleware/RequestsBlock',
 }
@@ -77,13 +78,21 @@ Server
   .registerNamed(namedMiddleware)
   .use(serverMiddleware)
 
+
+class InvalidTokenException extends GE.LogicalException {
+  static invalidToken() {
+    return new this('The token is invalid or expired', 400)
+  }
+}
+
+
 Persona.registerationRules = function () {
   // disable this control in favor of Validators/users
   return {}
 }
 Persona.getUserByUids = async function (value) {
   const userQuery = this.getModel().query()
-
+  
   /**
    * Search for all uids to allow login with
    * any identifier
@@ -141,22 +150,39 @@ Persona._addTokenConstraints = function (query, type) {
 Persona.generateToken = async function (user, type) {
   const query = user.tokens()
   this._addTokenConstraints(query, type)
-
+  
   const row = await query.first()
   if (row) {
     return row.token
   }
-
+  
   const token = this._encrypter.encrypt(randtoken.generate(16))
   await user.tokens().create({type, token})
   return token
 }
 
+Persona.updatePasswordByToken = async function (token, payload) {
+  await this.runValidation(payload, this.updatePasswordRules(false), 'passwordUpdate')
+  
+  const tokenRow = await this.getToken(token, 'password')
+  if (!tokenRow) {
+    throw InvalidTokenException.invalidToken()
+  }
+  
+  const user = tokenRow.getRelated('user')
+  this._setPassword(user, this._getPassword(payload))
+  
+  await user.save()
+  await this.removeToken(token, 'password')
+  
+  return user
+}
+
 Antl.compile = function (locale, key, data) {
   locale = locale || 'it'
-
+  
   const translation = _get(this._messages, [locale, key].join('.'))
-
+  
   const tmplString = _template(translation, {
     interpolate: /{([\s\S]+?)}/g
   })

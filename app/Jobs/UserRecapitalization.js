@@ -43,17 +43,20 @@ module.exports =
       movementType: MovementTypes.INTEREST_RECAPITALIZED,
       interestPercentage: +user.contractPercentage
     }
-
+  
     /**
      * @type {IMovement & Document}
      */
     const cratedMovement = await MovementModel.create(newMovement)
     job.attrs.result = cratedMovement.toJSON()
-
+  
     await job.save()
-
-    await QueueProvider.add("user_recapitalization_brites", {movementId: job.attrs.result._id})
-
+  
+    await QueueProvider.create("brite_recapitalize", {
+      amountChange: cratedMovement.amountChange,
+      userId: cratedMovement.userId
+    })
+  
     // Avoid adding this job if the percentage of the user is equal or higher to 4, because the agent would get anything
     if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
       await QueueProvider.add("agent_commissions_on_total_deposit", {
@@ -61,7 +64,7 @@ module.exports =
         agentId: user.referenceAgent
       })
     }
-
+  
     if (user.role === UserRoles.AGENTE) {
       await QueueProvider.add("agent_commissions_reinvest", {userId: user._id.toString()})
     }
