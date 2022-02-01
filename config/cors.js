@@ -24,6 +24,8 @@ module.exports = {
 
     const validOrigins = [
       "https://staging-club-backend.herokuapp.com",
+      "https://private.globalclub.it",
+      "https://api.globalclub.it",
       // capacitor IOS
       "capacitor://localhost",
       // capacitor android
