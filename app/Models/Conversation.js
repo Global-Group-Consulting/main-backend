@@ -18,10 +18,6 @@ class Conversation extends Model {
     return ['id']
   }
 
-  static get hidden() {
-    return ["_id"]
-  }
-
   static boot() {
     super.boot()
 
