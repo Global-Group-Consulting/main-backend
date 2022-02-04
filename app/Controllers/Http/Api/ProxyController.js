@@ -4,23 +4,27 @@ const axios = require("axios")
 const SecretKey = use("App/Models/SecretKey")
 const ProxyException = use("App/Exceptions/ProxyException");
 const Env = use("Env")
+/**
+ * @type {import("../../../Models/File")}
+ */
 const File = use('App/Models/File')
 
 class ProxyController {
-
+  
   /**
    *
-   * @param files
+   * @param {File[]} files
    * @param authUserId
+   * @param {string} path
    * @return {Promise<Record<string, {"id": string, "fileName": string, "size": string, "mimetype": string}>>}
    * @private
    */
-  async _uploadFiles(files, authUserId) {
-
+  async _uploadFiles(files, authUserId, path) {
+    
     if (Object.keys(files).length > 0) {
-
-      const uploadedFiles = await File.store(Object.values(files).flat(), null, authUserId);
-
+      
+      const uploadedFiles = await File.store(Object.values(files).flat(), null, authUserId, null, path);
+      
       /* uploaded file fields
       {
         "_id": "613a104b96f5cd307073fc7c",
@@ -77,15 +81,16 @@ class ProxyController {
       return acc
     }, []))
   }
-
+  
   /**
    * @param {String} url
    * @param {Request} req
    * @param {User} user
-   * @param {'club'} prefix
+   * @param {string} path
+   * @param {string} app
    * @private
    */
-  async _forward(url, req, user, path) {
+  async _forward(url, req, user, path, app) {
     const parsedUrl = new URL(url);
     /**
      * @type {{host: string, accept: string, "client-key": string}}
@@ -94,7 +99,7 @@ class ProxyController {
     const reqBody = req.body;
     // const reqParams = req.qs
     const reqParams = req.originalUrl().split("?")[1];
-  
+    
     headers.host = parsedUrl.host;
     headers.accept = "application/json";
     headers["content-type"] = "application/json";
@@ -105,14 +110,14 @@ class ProxyController {
     let uploadedFiles;
 
     try {
-      uploadedFiles = await this._uploadFiles(req.files(), user._id);
-
+      uploadedFiles = await this._uploadFiles(req.files(), user._id, app);
+  
       if (uploadedFiles) {
         Object.keys(uploadedFiles).forEach(fieldName => {
           reqBody[fieldName] = uploadedFiles[fieldName]
         })
       }
-
+  
       /*
       La cancellazione deve essere prima controllata dal server finale.
       sarà compito di quest'ultimo richiedere la cancellazione da questo server e dallo Storage,
@@ -146,16 +151,16 @@ class ProxyController {
     }
   }
   
-  async club(request, auth, path) {
+  async club(request, auth, path, app) {
     const baseUrl = Env.get("CLUB_SERVER")
     
-    return await this._forward(baseUrl, request, auth.user, path)
+    return await this._forward(baseUrl, request, auth.user, path, app)
   }
   
-  async news(request, auth, path) {
+  async news(request, auth, path, app) {
     const baseUrl = Env.get("NEWS_SERVER")
     
-    return await this._forward(baseUrl, request, auth.user, path)
+    return await this._forward(baseUrl, request, auth.user, path, app)
   }
   
   async handle({request, auth}) {
@@ -164,9 +169,9 @@ class ProxyController {
     
     switch (destination[0]) {
       case "club":
-        return this.club(request, auth, "/api" + url.slice(url.indexOf("/")))
+        return this.club(request, auth, "/api" + url.slice(url.indexOf("/")), destination[0])
       case "news":
-        return this.news(request, auth, "/api" + url.slice(url.indexOf("/")))
+        return this.news(request, auth, "/api" + url.slice(url.indexOf("/")), destination[0])
     }
   }
 }
