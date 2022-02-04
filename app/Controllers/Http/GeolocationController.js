@@ -10,15 +10,15 @@ class GeolocationController {
   async getItaRegions() {
     return Geolocation.getItaRegions()
   }
-
-  async getItaProvinces() {
-    return Geolocation.getItaProvinces()
+  
+  async getItaProvinces({request}) {
+    return Geolocation.getItaProvinces(request.input("region"))
   }
-
-  async getItaComunis() {
-    return Geolocation.getItaComunis()
+  
+  async getItaComunis({request}) {
+    return Geolocation.getItaComunis(request.qs)
   }
-
+  
   async getCountries() {
     return Geolocation.getCountries({}, {
       cca2: 1,
