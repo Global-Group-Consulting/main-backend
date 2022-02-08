@@ -931,14 +931,25 @@ class User extends Model {
     const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray();
     const toReturn = agentsList.map((agent) => {
       agent.totals = formatBySemester(agent.totals, "created_at", {field: "commissionOnValue"})
-
+    
       return agent;
     })
-
-
+  
+  
     return toReturn
   }
-
+  
+  /**
+   * Used by the club app for calculating the cost of the pack change (5% of deposit);
+   *
+   * @returns {Promise<number|number>}
+   */
+  async getUserDeposit() {
+    const currentStatus = await MovementModel.getLast(this._id)
+    
+    return currentStatus && currentStatus.deposit ? currentStatus.deposit : 0;
+  }
+  
   /**
    * A relationship on tokens is required for Auth to
    * work. Since features like `refreshTokens` or
