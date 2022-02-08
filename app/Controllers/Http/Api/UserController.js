@@ -619,6 +619,16 @@ class UserController {
 
     return user.fetchSigningLogs()
   }
+  
+  async getDeposit({params, auth}) {
+    const user = await User.find(params.id)
+  
+    if (!user) {
+      throw new UserNotFoundException()
+    }
+  
+    return user.getUserDeposit()
+  }
 
   async resendContract({params, auth}) {
     const userId = params.id

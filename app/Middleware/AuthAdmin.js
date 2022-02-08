@@ -15,9 +15,9 @@ class AuthSuperAdmin {
    */
   async handle({request, auth, response}, next) {
 
-    if (request.hostname() === "localhost" && request.headers()["user-agent"].startsWith("PostmanRuntime") && Env.get("NODE_ENV") === "development") {
+   /* if (request.hostname() === "localhost" && request.headers()["user-agent"].startsWith("PostmanRuntime") && Env.get("NODE_ENV") === "development") {
       return next()
-    }
+    }*/
 
     if (!auth.authenticatorInstance.user) {
       return response.unauthorized()

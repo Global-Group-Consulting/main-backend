@@ -39,7 +39,7 @@ class FileController {
 
   async _downloadFromS3(file) {
     const filePath = Helpers.tmpPath(``);
-    const s3File = await Drive.getObject(file._id.toString())
+    const s3File = await Drive.getObject((file.path || file._id).toString())
 
     fs.mkdirSync(filePath, {recursive: true})
 
@@ -73,14 +73,20 @@ class FileController {
   
   async show({params, response, res}) {
     const meta = await this.meta({params, response});
-    const stream = Drive.disk("s3").getStream(meta._id.toString());
-    
+    const fileName = (meta.path || meta._id).toString();
+  
+    // before fetching the file, must check if exists, otherwise will launch an error
+    if (!await Drive.disk("s3").exists(fileName)) {
+      return response.notFound();
+    }
+  
+    const stream = await Drive.disk("s3").getStream(fileName);
+  
     // const s3File = await Drive.getSignedUrl(meta._id.toString());
-    
     response.header('Content-type', `${meta.type}/${meta.subtype}`)
     response.header('Content-Length', meta.size)
     response.header('Content-Disposition', "inline; filename=" + meta.clientName)
-    
+  
     return new Promise((resolve) => {
       stream.on('data', (data) => {
         res.write(data);
@@ -89,13 +95,12 @@ class FileController {
         res.end();
       });
     })
-    // response.redirect(s3File);
   }
   
   async showUrl(ctx) {
     const {params, response, res} = ctx
     const meta = await this.meta({params, response});
-    return await Drive.disk("s3").getSignedUrl(meta._id.toString());
+    return await Drive.disk("s3").getSignedUrl((meta.path || meta._id).toString());
   }
   
   async download({params, response, res}) {
@@ -117,7 +122,14 @@ class FileController {
 
         pathName = await this._downloadFromLocal(dbFile);
       } else {
-        const stream = Drive.disk("s3").getStream(id.toString());
+        const fileName = ((dbFile.path || id)).toString();
+  
+        // before fetching the file, must check if exists, otherwise will launch an error
+        if (!await Drive.disk("s3").exists(fileName)) {
+          return response.notFound();
+        }
+        
+        const stream = await Drive.disk("s3").getStream(fileName);
         
         response.header('Content-type', `${dbFile.type}/${dbFile.subtype}`)
         response.header('Content-Length', dbFile.size)

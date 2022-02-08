@@ -50,6 +50,7 @@ User.onApproved = async (user) => {
   const userTypeAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)
 
   user.token = token;
+  user.apps = ["main", "club"];
 
   await user.save();
 
