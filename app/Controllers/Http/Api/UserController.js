@@ -211,6 +211,10 @@ class UserController {
     const incomingUser = request.only(User.updatableFields)
     const roleChangeData = request.input("roleChangeData");
     const incompleteData = request.input("incompleteData")
+    
+    delete incomingUser.role;
+    delete incomingUser.roles;
+    
     /**
      * @type {User}
      */
