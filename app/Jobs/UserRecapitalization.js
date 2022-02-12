@@ -7,6 +7,9 @@ const MovementModel = use("App/Models/Movement")
 /** @type {typeof import("../Models/User")} */
 const UserModel = use("App/Models/User")
 
+/** @type {import("../../providers/LaravelQueue")} */
+const LaravelQueueProvider = use("LaravelQueueProvider")
+
 const MovementTypes = require("../../enums/MovementTypes")
 const UserRoles = require("../../enums/UserRoles")
 
@@ -52,10 +55,15 @@ module.exports =
   
     await job.save()
   
-    await QueueProvider.create("brite_recapitalize", {
+    LaravelQueueProvider.dispatchBriteRecapitalization({
+      userId: cratedMovement.userId,
+      amount: cratedMovement.amountChange,
+      amountEuro: cratedMovement.amountChange
+    });
+    /*await QueueProvider.create("brite_recapitalize", {
       amountChange: cratedMovement.amountChange,
       userId: cratedMovement.userId
-    })
+    })*/
   
     // Avoid adding this job if the percentage of the user is equal or higher to 4, because the agent would get anything
     if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
