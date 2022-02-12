@@ -1,5 +1,6 @@
 class AuthBasic {
   async handle ({ auth }, next) {
+    // Uses cron users
     const authenticator = auth.authenticator("basic");
     await authenticator.check();
 

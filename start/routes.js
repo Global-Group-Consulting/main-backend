@@ -90,6 +90,21 @@ Route.delete("/docs/docs/:uuid", "DocSignController.deleteDocument")
 */
 
 
+/*
+/!** @type {import("../providers/LaravelQueue")} *!/
+const LaravelQueueProvider = use("LaravelQueueProvider")
 
+Route.get("/test", function () {
+  for (let i = 0; i < 1; i++) {
+    
+    LaravelQueueProvider.dispatchBriteRecapitalization({
+      userId: "5fce04215422d40021621af1",
+      amount: 500,
+      amountEuro: 250
+    });
+    
+  }
+  return "hi"
+})*/
 
 
