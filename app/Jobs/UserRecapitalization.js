@@ -54,12 +54,16 @@ module.exports =
     job.attrs.result = cratedMovement.toJSON()
   
     await job.save()
-  
-    LaravelQueueProvider.dispatchBriteRecapitalization({
-      userId: cratedMovement.userId,
-      amount: cratedMovement.amountChange,
-      amountEuro: cratedMovement.amountChange
-    });
+
+    // If the amount is 0,
+    // i don't need to trigger brites recapitalization
+    if (!cratedMovement.amountChange) {
+      LaravelQueueProvider.dispatchBriteRecapitalization({
+        userId: cratedMovement.userId,
+        amount: cratedMovement.amountChange,
+        amountEuro: cratedMovement.amountChange
+      });
+    }
     /*await QueueProvider.create("brite_recapitalize", {
       amountChange: cratedMovement.amountChange,
       userId: cratedMovement.userId
