@@ -203,7 +203,7 @@ class Movement extends Model {
     data.deposit = lastMovement.deposit - data.amountChange
     data.interestAmount = lastMovement.interestAmount
   }
-
+  
   /**
    * @param {MovementInstance} data
    * @param {MovementInstance} lastMovement
@@ -212,13 +212,44 @@ class Movement extends Model {
     data.deposit = lastMovement.deposit
     data.interestAmount = lastMovement.interestAmount - data.amountChange
   }
-
+  
+  /**
+   * @param {MovementInstance} data
+   * @param {MovementInstance} lastMovement
+   */
+  static async _handleDepositRepayment(data, lastMovement) {
+    if (data.amountChange <= 0) {
+      throw new InvalidMovementException("The amount of the deposit must be greater than 0")
+    }
+    
+    data.deposit = lastMovement.deposit + data.amountChange
+    data.interestAmount = lastMovement.interestAmount
+  }
+  
+  /**
+   *
+   * @param {{userId: string, notes: string, amount: number, interestPercentage: number}} data
+   * @returns {Promise<Movement>}
+   */
+  static async addRepaymentMovement(data) {
+    /** @type {IMovement} */
+    const newMovement = {
+      userId: castToObjectId(data.userId),
+      amountChange: data.amount,
+      movementType: MovementTypes.DEPOSIT_REPAYMENT,
+      notes: data.notes,
+      interestPercentage: data.interestPercentage
+    }
+    
+    return Movement.create(newMovement)
+  }
+  
   static async getInitialInvestment(id) {
     const result = await Movement.where({userId: id, movementType: MovementTypes.INITIAL_DEPOSIT}).first()
-
+    
     return result
   }
-
+  
   /**
    * @param {string | ObjectId} userId
    * @returns {IMovement}

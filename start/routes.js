@@ -69,11 +69,14 @@ Route.group(() => {
   // commissions
   Route.put("/block_commissions_all", "SecretCommandController.triggerAllCommissionsBlock");
   Route.put("/block_commissions/:id", "SecretCommandController.triggerSingleCommissionsBlock");
-
+  
   // recapitalization
   Route.put("/recapitalize_all", "SecretCommandController.triggerAllRecapitalization");
   Route.put("/recapitalize/:id", "SecretCommandController.triggerSingleRecapitalization");
-
+  
+  Route.put("/repayment", "SecretCommandController.triggerRepayment")
+    .validator('App/Validators/Movements/TriggerRepayment');
+  
   // Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements");
 }).prefix(process.env.SERVER_KEY)
   .middleware("authBasic");
@@ -88,23 +91,4 @@ Route.get("/docs/docs", "DocSignController.readDocuments")
 Route.post("/docs/docs", "DocSignController.sendDocument")
 Route.delete("/docs/docs/:uuid", "DocSignController.deleteDocument")
 */
-
-
-/*
-/!** @type {import("../providers/LaravelQueue")} *!/
-const LaravelQueueProvider = use("LaravelQueueProvider")
-
-Route.get("/test", function () {
-  for (let i = 0; i < 1; i++) {
-    
-    LaravelQueueProvider.dispatchBriteRecapitalization({
-      userId: "5fce04215422d40021621af1",
-      amount: 500,
-      amountEuro: 250
-    });
-    
-  }
-  return "hi"
-})*/
-
 

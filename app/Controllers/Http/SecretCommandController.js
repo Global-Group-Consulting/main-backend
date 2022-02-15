@@ -2,6 +2,7 @@
 
 const QueueProvider = use("QueueProvider");
 const User = use("App/Models/User");
+const Movement = use("App/Models/Movement");
 const CronUser = use("App/Models/CronUser");
 const { validate } = use('Validator');
 const CronException = use('App/Exceptions/CronException');
@@ -114,14 +115,28 @@ class SecretCommandController {
     if (!user.username || !user.password) {
       throw new CronException("Missing username or password", 400);
     }
-
-    const existingUser = await CronUser.where({ username: user.username }).first();
-
+  
+    const existingUser = await CronUser.where({username: user.username}).first();
+  
     if (existingUser) {
       throw new CronException("Can't create the required user.", 400);
     }
-
+  
     return CronUser.create(user);
+  }
+  
+  async triggerRepayment({request}) {
+    /**
+     * @type {{userId: string, notes: string, amount: number}}
+     */
+    const data = request.all();
+    /** @type {User} */
+    const user = await User.find(data.userId);
+    
+    return Movement.addRepaymentMovement({
+      ...data,
+      interestPercentage: user.contractPercentage
+    });
   }
 }
 
