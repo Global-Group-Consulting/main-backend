@@ -74,6 +74,8 @@ Route.group(() => {
   Route.put("/recapitalize_all", "SecretCommandController.triggerAllRecapitalization");
   Route.put("/recapitalize/:id", "SecretCommandController.triggerSingleRecapitalization");
   
+  Route.put("/dispatch_brite_recap", "SecretCommandController.dispatchBriteRecap");
+  
   Route.put("/repayment", "SecretCommandController.triggerRepayment")
     .validator('App/Validators/Movements/TriggerRepayment');
   

@@ -4,17 +4,22 @@ const QueueProvider = use("QueueProvider");
 const User = use("App/Models/User");
 const Movement = use("App/Models/Movement");
 const CronUser = use("App/Models/CronUser");
-const { validate } = use('Validator');
+const {validate} = use('Validator');
 const CronException = use('App/Exceptions/CronException');
 
-const { HttpException, LogicalException } = require('@adonisjs/generic-exceptions');
+/** @type {import("../../../providers/LaravelQueue")} */
+const LaravelQueueProvider = use("LaravelQueueProvider")
+
+const {HttpException, LogicalException} = require('@adonisjs/generic-exceptions');
+const UserRoles = require("../../../enums/UserRoles");
+const AccountStatuses = require("../../../enums/AccountStatuses");
 
 class SecretCommandController {
   /**
    * Trigger the agents commissions block
    * @returns {Promise<*>}
    */
-  async triggerAllCommissionsBlock () {
+  async triggerAllCommissionsBlock() {
     return await QueueProvider.add("trigger_commissions_block_month", {
       attrs: {
         data: {}
@@ -132,11 +137,30 @@ class SecretCommandController {
     const data = request.all();
     /** @type {User} */
     const user = await User.find(data.userId);
-    
+  
     return Movement.addRepaymentMovement({
       ...data,
       interestPercentage: user.contractPercentage
     });
+  }
+  
+  async dispatchBriteRecap() {
+    const users = await User.where({
+      'role': {'$in': [UserRoles.CLIENTE, UserRoles.AGENTE]},
+      'account_status': {'$in': [AccountStatuses.ACTIVE, AccountStatuses.APPROVED]}
+    }).fetch();
+    
+    for (const user of users.rows) {
+      const lastRecap = await Movement.getLastRecapitalization(user._id);
+      
+      if (lastRecap.amountChange) {
+        LaravelQueueProvider.dispatchBriteRecapitalization({
+          userId: lastRecap.userId.toString(),
+          amount: lastRecap.amountChange,
+          amountEuro: lastRecap.amountChange
+        });
+      }
+    }
   }
 }
 
