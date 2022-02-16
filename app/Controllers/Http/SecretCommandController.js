@@ -153,7 +153,7 @@ class SecretCommandController {
     for (const user of users.rows) {
       const lastRecap = await Movement.getLastRecapitalization(user._id);
       
-      if (lastRecap.amountChange) {
+      if (lastRecap && lastRecap.amountChange) {
         LaravelQueueProvider.dispatchBriteRecapitalization({
           userId: lastRecap.userId.toString(),
           amount: lastRecap.amountChange,
