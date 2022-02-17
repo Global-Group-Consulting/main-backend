@@ -1,5 +1,5 @@
 import { ConnectionConfig } from 'mysql';
-export declare type AvailableJobNames = "SendEmail";
+export declare type AvailableJobNames = "SendEmail" | "TriggerBriteRecapitalization";
 export declare class AvailableJob {
     id: number;
     title: string;
