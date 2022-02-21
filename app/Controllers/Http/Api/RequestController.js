@@ -203,25 +203,32 @@ class RequestController {
 
     /** @type {import("../../../../@types/User").User} */
     const associatedUser = await UserModel.find(incomingData.userId)
-
+  
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
-
+  
     if (!+incomingData.amount) {
       throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
     }
-
+  
     let newRequest = null;
-
-    if (+incomingData.type === RequestTypes.RISC_MANUALE_INTERESSI) {
-      if(!auth.user.superAdmin){
-        throw new AclGenericException("Permessi insufficienti!")
+  
+    if ([RequestTypes.RISC_MANUALE_INTERESSI, RequestTypes.DEPOSIT_REPAYMENT].includes(+incomingData.type)) {
+      let movementType;
+    
+      switch (+incomingData.type) {
+        case RequestTypes.RISC_MANUALE_INTERESSI:
+          movementType = MovementTypes.MANUAL_INTEREST_COLLECTED;
+          break;
+        case RequestTypes.DEPOSIT_REPAYMENT:
+          movementType = MovementTypes.DEPOSIT_REPAYMENT;
+          break;
       }
-
+    
       const movementData = {
         userId: incomingData.userId,
-        movementType: MovementTypes.MANUAL_INTEREST_COLLECTED,
+        movementType,
         requestType: incomingData.type,
         amountChange: incomingData.amount,
         createdBy: auth.user.id,
@@ -229,7 +236,7 @@ class RequestController {
         interestPercentage: associatedUser.contractPercentage,
         notes: incomingData.notes
       }
-
+    
       newRequest = await MovementModel.create(movementData);
     } else {
       newRequest = await RequestModel.create({
@@ -237,20 +244,19 @@ class RequestController {
         createdBy: auth.user.id,
         createdByAdmin: true
       })
-
+    
       const files = request.files()
-
+    
       if (Object.keys(files).length > 0) {
         await FileModel.store(files, associatedUser.id, auth.user._id, {
           requestId: newRequest.id
         })
       }
-
+    
       Event.emit("request::new", newRequest)
     }
 
     return newRequest
-
   }
 
   /**
