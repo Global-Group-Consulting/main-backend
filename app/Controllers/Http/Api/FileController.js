@@ -128,13 +128,15 @@ class FileController {
         if (!await Drive.disk("s3").exists(fileName)) {
           return response.notFound();
         }
-        
+  
         const stream = await Drive.disk("s3").getStream(fileName);
-        
+  
         response.header('Content-type', `${dbFile.type}/${dbFile.subtype}`)
-        response.header('Content-Length', dbFile.size)
+        if (dbFile.size) {
+          response.header('Content-Length', dbFile.size)
+        }
         response.header('Content-Disposition', "attachment; filename=" + dbFile.clientName)
-        
+  
         return new Promise((resolve) => {
           stream.on('data', (data) => {
             res.write(data);

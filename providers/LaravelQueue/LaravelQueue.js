@@ -141,16 +141,17 @@ var LaravelQueue = /** @class */ (function () {
     };
     LaravelQueue.prototype.pushTo = function (jobName, payload, options) {
         return __awaiter(this, void 0, void 0, function () {
-            var job, data, sql;
+            var encodedPayload, job, data, sql;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.connectionReady];
                     case 1:
                         _a.sent();
+                        encodedPayload = new Buffer(JSON.stringify(payload)).toString('base64');
                         return [4 /*yield*/, this.getJob(jobName)];
                     case 2:
                         job = _a.sent();
-                        data = this.prepareData(job, payload, options);
+                        data = this.prepareData(job, encodedPayload, options);
                         sql = "INSERT INTO jobs (queue, payload, attempts, available_at, created_at)\n                 VALUES ('" + data.queue + "',\n                         " + (0, mysql_1.escape)(data.payload) + ",\n                         " + data.attempts + ",\n                         " + data.available_at + ",\n                         " + data.created_at + ")";
                         return [4 /*yield*/, this.query(sql)];
                     case 3: return [2 /*return*/, _a.sent()];

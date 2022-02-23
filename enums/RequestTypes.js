@@ -13,18 +13,21 @@ class RequestTypes extends BasicEnum {
     this.VERSAMENTO = 2
 
     this.RISC_CAPITALE = 3
-
+  
     this.RISC_INTERESSI = 4
     this.RISC_INTERESSI_GOLD = 6
     this.RISC_INTERESSI_BRITE = 7
     this.RISC_MANUALE_INTERESSI = 10
-
+  
     /**  Riscossione delle provvigioni dell'agente */
     this.RISC_PROVVIGIONI = 5
-
+  
     this.COMMISSION_MANUAL_ADD = 8
     this.COMMISSION_MANUAL_TRANSFER = 9
-
+  
+    // 13 come la tipologia di movimento che genera
+    this.DEPOSIT_REPAYMENT = 13;
+  
     this.data = {
       /*  [this.ADMIN]: {
           id: 'admin',
@@ -66,6 +69,9 @@ class RequestTypes extends BasicEnum {
       },
       [this.RISC_MANUALE_INTERESSI]: {
         id: 'risc_manuale_interessi',
+      },
+      [this.DEPOSIT_REPAYMENT]: {
+        id: 'depositRepayment',
       }
     }
   }

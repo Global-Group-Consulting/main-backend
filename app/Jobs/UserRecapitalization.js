@@ -55,9 +55,8 @@ module.exports =
   
     await job.save()
 
-    // If the amount is 0,
-    // i don't need to trigger brites recapitalization
-    if (!cratedMovement.amountChange) {
+    // Trigger brite recapitalization only if the amount is > 0
+    if (cratedMovement.amountChange) {
       LaravelQueueProvider.dispatchBriteRecapitalization({
         userId: cratedMovement.userId,
         amount: cratedMovement.amountChange,

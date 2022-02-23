@@ -12,6 +12,9 @@ const RequestModel = use("App/Models/Request")
 /** @type {typeof import("../../../Models/Movement")} */
 const MovementModel = require('../../../Models/Movement')
 
+/** @type {typeof import("../../../Models/Commission")} */
+const CommissionModel = require('../../../Models/Commission')
+
 /** @type {import("../../../Models/Request")} */
 const UserModel = use("App/Models/User")
 const FileModel = use("App/Models/File")
@@ -27,7 +30,9 @@ const RequestStatus = require("../../../../enums/RequestStatus")
 const RequestTypes = require("../../../../enums/RequestTypes")
 const MovementTypes = require("../../../../enums/MovementTypes")
 const CurrencyType = require("../../../../enums/CurrencyType")
+const AclUserRoles = require("../../../../enums/AclUserRoles");
 const moment = require("moment")
+const {castToObjectId} = require("../../../Helpers/ModelFormatters");
 
 /**
  * @type {import("../../../../@types/SettingsProvider").SettingsProvider}
@@ -57,11 +62,15 @@ class RequestController {
    */
   async read({params, response}) {
     const data = await RequestModel.reqWithUser(params.id)
-
+  
+    if (data.type === RequestTypes.DEPOSIT_REPAYMENT) {
+      data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId);
+    }
+  
     if (!data) {
       throw new RequestNotFoundException()
     }
-
+  
     return data
   }
 
@@ -83,13 +92,13 @@ class RequestController {
     const associatedUser = await UserModel.find(incomingData.userId)
     const settingsLimit = SettingsProvider.get("requestMinAmount");
     const settingsPercentage = SettingsProvider.get("requestBritePercentage");
-
+  
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
-
+  
     incomingData.briteConversionPercentage = 0;
-
+  
     /*
     If the request is of type RISC_PROVVIGIONI, must calculate the percentage the user can collect
     and generate the brites movement
@@ -203,56 +212,90 @@ class RequestController {
 
     /** @type {import("../../../../@types/User").User} */
     const associatedUser = await UserModel.find(incomingData.userId)
-
+  
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
-
+  
     if (!+incomingData.amount) {
       throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
     }
-
+  
     let newRequest = null;
-
-    if (+incomingData.type === RequestTypes.RISC_MANUALE_INTERESSI) {
-      if(!auth.user.superAdmin){
-        throw new AclGenericException("Permessi insufficienti!")
+  
+    if ([RequestTypes.RISC_MANUALE_INTERESSI, RequestTypes.DEPOSIT_REPAYMENT].includes(+incomingData.type)) {
+      let movementType;
+  
+      switch (+incomingData.type) {
+        case RequestTypes.RISC_MANUALE_INTERESSI:
+          movementType = MovementTypes.MANUAL_INTEREST_COLLECTED;
+          break;
+        case RequestTypes.DEPOSIT_REPAYMENT:
+          movementType = MovementTypes.DEPOSIT_REPAYMENT;
+          break;
       }
-
-      const movementData = {
-        userId: incomingData.userId,
-        movementType: MovementTypes.MANUAL_INTEREST_COLLECTED,
+  
+      newRequest = await MovementModel.addRepaymentMovement({
+        ...incomingData,
         requestType: incomingData.type,
-        amountChange: incomingData.amount,
         createdBy: auth.user.id,
         createdByAdmin: true,
         interestPercentage: associatedUser.contractPercentage,
-        notes: incomingData.notes
-      }
-
-      newRequest = await MovementModel.create(movementData);
+      });
     } else {
       newRequest = await RequestModel.create({
         ...incomingData,
         createdBy: auth.user.id,
         createdByAdmin: true
       })
-
+    
       const files = request.files()
-
+    
       if (Object.keys(files).length > 0) {
         await FileModel.store(files, associatedUser.id, auth.user._id, {
           requestId: newRequest.id
         })
       }
-
+  
       Event.emit("request::new", newRequest)
     }
-
+  
     return newRequest
-
   }
-
+  
+  async createByAgent({request, auth}) {
+    if (!auth.user.roles.includes(AclUserRoles.AGENT)) {
+      throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
+    }
+    
+    /** @type {typeof import("../../../Validators/requests/create").rules} */
+    const incomingData = request.all()
+    
+    /** @type {import("../../../../@types/User").User} */
+    const associatedUser = await UserModel.find(incomingData.userId)
+    
+    if (!associatedUser) {
+      throw new UserNotFoundException()
+    }
+    
+    if (!+incomingData.amount) {
+      throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+    }
+    
+    if (incomingData.type === RequestTypes.DEPOSIT_REPAYMENT && !incomingData.notes) {
+      throw new RequestException("Motivazione richiesta mancante");
+    }
+    
+    let newRequest = await RequestModel.create({
+      ...incomingData,
+      userId: auth.user._id,
+      createdBy: auth.user._id,
+      targetUserId: castToObjectId(incomingData.userId)
+    })
+    
+    Event.emit("request::new", newRequest)
+  }
+  
   /**
    * I disabled the update so that the requests can't be changed. If necessary thy can be deleted and recreated.
    *
@@ -261,7 +304,7 @@ class RequestController {
    * @param {Request} ctx.request
    * @param {AdonisHttpResponse} ctx.response
    */
-
+  
   /* async update({ params, request, response }) {
     const incomingData = request.all()
     const existingRequest = await RequestModel.find(params.id)
@@ -360,16 +403,35 @@ class RequestController {
       foundedRequest.originalGoldAmount = foundedRequest.goldAmount;
       foundedRequest.goldAmount = +incomingGoldAmount;
     }
-
+  
     foundedRequest.status = RequestStatus.ACCETTATA
     foundedRequest.paymentDocDate = incomingDate
     foundedRequest.completedBy = auth.user._id;
     foundedRequest.completed_at = new Date()
-
+  
     await foundedRequest.save()
-
+  
+    if (foundedRequest.type === RequestTypes.DEPOSIT_REPAYMENT) {
+      try {
+        // If is a repayment, subtract the amount of commissions and add them as deposit to the user
+        foundedRequest.movementId = await this.handleAgentDepositRepayment(foundedRequest)
+      
+        foundedRequest.save()
+      } catch (er) {
+        // Reset the request state
+        foundedRequest.status = RequestStatus.NUOVA
+        foundedRequest.paymentDocDate = null
+        foundedRequest.completedBy = null;
+        foundedRequest.completed_at = null
+      
+        foundedRequest.save();
+      
+        throw er;
+      }
+    }
+  
     Event.emit("request::approved", foundedRequest)
-
+  
     return foundedRequest
   }
 
@@ -473,14 +535,59 @@ class RequestController {
     if (!RequestModel.revertableRequests.includes(reqToRevert.type)) {
       return response.badRequest("Can't revert this type of request.")
     }
-
+  
     reqToRevert.status = RequestStatus.ANNULLATA
     reqToRevert.cancelReason = reason || ""
     reqToRevert.completed_at = moment().toDate()
-
+  
     await reqToRevert.save();
-
+  
     Event.emit("request::reverted", reqToRevert)
+  }
+  
+  /**
+   *
+   * @param {IRequest} request
+   * @returns {Promise<void>}
+   */
+  async handleAgentDepositRepayment(request) {
+    let agentCommissionMovement;
+    let userDepositMovement;
+    
+    try {
+      // Subtract agent commissions
+      agentCommissionMovement = await CommissionModel.repaymentTransfer({
+        amountChange: request.amount,
+        notes: request.notes,
+        userId: request.userId,
+        created_by: request.userId,
+        dateReference: request.paymentDocDate
+      })
+      
+      // Add user deposit
+      const targetUser = await UserModel.find(request.targetUserId);
+      
+      userDepositMovement = await MovementModel.addRepaymentMovement({
+        userId: request.targetUserId,
+        amount: request.amount,
+        requestType: request.type,
+        createdBy: request.userId,
+        interestPercentage: targetUser.contractPercentage,
+        notes: request.notes,
+      });
+      
+      return agentCommissionMovement._id;
+    } catch (er) {
+      // In case of error, delete generated movements
+      if (agentCommissionMovement) {
+        agentCommissionMovement.delete();
+      }
+      if (userDepositMovement) {
+        userDepositMovement.delete();
+      }
+      
+      throw er;
+    }
   }
 }
 

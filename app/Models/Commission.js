@@ -316,8 +316,9 @@ class Commission extends Model {
       case CommissionType.CANCEL_COMMISSIONS_NEW_DEPOSIT:
       case CommissionType.MANUAL_TRANSFER_DONER:
       case CommissionType.MANUAL_WITHDRAWAL:
+      case CommissionType.REPAYMENT_TRANSFER:
         dataToCreate.currMonthCommissions -= dataToCreate.amountChange
-
+    
         break;
     }
 
@@ -517,7 +518,37 @@ class Commission extends Model {
       created_by: data.created_by
     }, lastCommission);
   }
-
+  
+  /**
+   * @param {{userId: string, amountChange: number, notes?: string, created_by: string,dateReference: string}} data
+   * @returns {Promise<Commission>}
+   */
+  static async repaymentTransfer(data) {
+    /** @type {Commission} */
+    const lastCommission = await this._getLastCommission(data.userId)
+    
+    if (!lastCommission) {
+      throw  new CommissionException("Ultima provvigione non trovata");
+    }
+    
+    if (lastCommission.currMonthCommissions < data.amountChange) {
+      throw new CommissionException("Disponibilità insufficiente.")
+    }
+    
+    return this._create({
+      userId: data.userId,
+      commissionType: CommissionType.REPAYMENT_TRANSFER,
+      dateReference: data.dateReference,
+      amountChange: data.amountChange,
+      commissionOnValue: null,
+      commissionPercentage: null,
+      indirectCommission: false,
+      teamCommissionType: "",
+      notes: data.notes || "",
+      created_by: data.created_by
+    }, lastCommission);
+  }
+  
   /**
    * Once the month ends, i must block the earned commissions, waiting for the reinvestment that will happen
    * in a future date.
@@ -526,7 +557,7 @@ class Commission extends Model {
    */
   static async blockCommissionsToReinvest(userId) {
     const agent = await UserModel.find(userId)
-
+    
     if (!agent) {
       throw new CommissionException("No agent was found for the provided id.")
     }

@@ -163,21 +163,21 @@ class Request extends Model {
          */
         if (!data.autoWithdrawlAll) {
           const commissionMovement = await CommissionModel.find(data.movementId)
-
+    
           data.availableAmount = commissionMovement.currMonthCommissionsOld
         } else {
           data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
         }
-      } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER].includes(data.type)) {
-
-        if (data.type === RequestTypes.COMMISSION_MANUAL_TRANSFER) {
+      } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT]
+        .includes(data.type)) {
+  
+        if ([RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT].includes(data.type)) {
           const commissionMovement = await CommissionModel._getLastCommission(data.userId)
           data.availableAmount = commissionMovement.currMonthCommissions
         } else {
           const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
           data.availableAmount = commissionMovement.currMonthCommissions
         }
-
       }
 
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)

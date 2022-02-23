@@ -228,7 +228,7 @@ class Movement extends Model {
   
   /**
    *
-   * @param {{userId: string, notes: string, amount: number, interestPercentage: number}} data
+   * @param {{userId: string, notes: string, amount: number, interestPercentage: number, createdByAdmin: boolean, requestType?: number, createdBy?: string}} data
    * @returns {Promise<Movement>}
    */
   static async addRepaymentMovement(data) {
@@ -238,6 +238,9 @@ class Movement extends Model {
       amountChange: data.amount,
       movementType: MovementTypes.DEPOSIT_REPAYMENT,
       notes: data.notes,
+      createdByAdmin: data.createdByAdmin || false,
+      createdBy: data.createdBy,
+      requestType: data.requestType,
       interestPercentage: data.interestPercentage
     }
     
