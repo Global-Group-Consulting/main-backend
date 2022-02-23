@@ -99,7 +99,7 @@ async function onApproved(approvedRequest) {
      * @type {User}
      */
     const user = await UserModel.find(approvedRequest.userId)
-
+  
     await addAgentCommission(user, approvedRequest.movementId)
   }
 
