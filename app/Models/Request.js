@@ -441,6 +441,9 @@ class Request extends Model {
           '$unwind': {
             'path': '$user'
           }
+        },
+        {
+          "$limit": 1000
         }
       ]).toArray()
 
