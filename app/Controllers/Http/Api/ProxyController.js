@@ -128,7 +128,9 @@ class ProxyController {
       if (req.method().toLowerCase() === "delete" && reqBody.hasOwnProperty("filesToDelete")) {
         await this._deleteFiles(reqBody.filesToDelete)
       }*/
-
+  
+      console.log('proxying to ', url + path + (reqParams ? ('?' + reqParams) : ''))
+  
       result = await axios.request({
         url: url + path + (reqParams ? ('?' + reqParams) : ''),
         method: req.method(),
@@ -136,7 +138,7 @@ class ProxyController {
         data: {
           ...reqBody,
           _auth_user: user
-        },
+        }
         // params: reqParams
       })
 
@@ -166,12 +168,14 @@ class ProxyController {
   async handle({request, auth}) {
     const url = request.url().replace("/api/ext/", "");
     const destination = url.split("/");
-    
+  
     switch (destination[0]) {
-      case "club":
-        return this.club(request, auth, "/api" + url.slice(url.indexOf("/")), destination[0])
-      case "news":
-        return this.news(request, auth, "/api" + url.slice(url.indexOf("/")), destination[0])
+      case 'club':
+        return this.club(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+      case 'news':
+        return this.news(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+      case 'notifications':
+        return this.news(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
     }
   }
 }
