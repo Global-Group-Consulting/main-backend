@@ -786,7 +786,8 @@ class Commission extends Model {
     })
     endDate = moment(momentDate).set({
       date: 1,
-      ...timeToUse
+      ...timeToUse,
+      hour: 6
     })
 
     if (filters.startDate) {
