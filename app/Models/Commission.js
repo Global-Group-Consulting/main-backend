@@ -791,7 +791,7 @@ class Commission extends Model {
     
     if (filters.startDate) {
       startDate = moment(filters.startDate)
-        .set(timeToUse)
+        .set({ ...timeToUse, hour: 6 })
     }
     
     if (filters.endDate) {
