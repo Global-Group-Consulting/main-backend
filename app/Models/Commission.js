@@ -313,6 +313,7 @@ class Commission extends Model {
         break
       case CommissionType.COMMISSIONS_TO_REINVEST:
       case CommissionType.COMMISSIONS_COLLECTED:
+      case CommissionType.COMMISSIONS_CANCELLATION:
       case CommissionType.CANCEL_COMMISSIONS_NEW_DEPOSIT:
       case CommissionType.MANUAL_TRANSFER_DONER:
       case CommissionType.MANUAL_WITHDRAWAL:
@@ -510,6 +511,28 @@ class Commission extends Model {
       commissionType: CommissionType.MANUAL_WITHDRAWAL,
       dateReference: moment().toDate(),
       amountChange: data.amountChange,
+      commissionOnValue: null,
+      commissionPercentage: null,
+      indirectCommission: false,
+      teamCommissionType: '',
+      notes: data.notes || '',
+      created_by: data.created_by
+    }, lastCommission)
+  }
+  
+  /**
+   * @param {{userId: string, amountChange: number, notes?: string, created_by: string, availableAmount: number}} data
+   * @returns {Promise<Commission>}
+   */
+  static async manualCancellation (data) {
+    const lastCommission = await this._getLastCommission(data.userId)
+    
+    return this._create({
+      userId: data.userId,
+      commissionType: CommissionType.COMMISSIONS_CANCELLATION,
+      dateReference: moment().toDate(),
+      amountChange: data.amountChange,
+      availableAmount: data.availableAmount,
       commissionOnValue: null,
       commissionPercentage: null,
       indirectCommission: false,

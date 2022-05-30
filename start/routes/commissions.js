@@ -15,6 +15,8 @@ module.exports = function (Route) {
 
     Route.post('/:id/add', "CommissionController.manualAdd")
       .validator("Commissions/AddManual")
+    Route.post('/:id/cancellation', "CommissionController.manualCancellation")
+      .validator("Commissions/AddManual")
 
     /*
      Route.get('/:id', "CommissionsController.read")
