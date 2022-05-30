@@ -10,6 +10,7 @@
     "start:dev:remove": "heroku local",
     "watch": "nodemon --inspect --watch app server.js",
     "test": "node ace test",
+    "deploy": "git push heroku master",
     "jobRunner": "adonis job-runner --job-name=trigger_users_recapitalization"
   },
   "keywords": [
