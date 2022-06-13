@@ -97,7 +97,7 @@ class SecretCommandController {
     });
   }
 
-  /*async initializeUserMovements ({ request }) {
+  async initializeUserMovements ({ request }) {
     const data = request.all();
 
     if (!data.userId) {
@@ -107,7 +107,7 @@ class SecretCommandController {
     const jobResult = await QueueProvider.add("user_initialize_movements", data);
 
     return jobResult;
-  }*/
+  }
 
   /**
    * Create a cron user to be used for authenticate all cron jobs

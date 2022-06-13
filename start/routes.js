@@ -66,6 +66,8 @@ NewsRoutes(Route);
 // const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64');
 
 Route.group(() => {
+  Route.put("/initialize_user_movements", "SecretCommandController.initializeUserMovements");
+  
   // commissions
   Route.put("/block_commissions_all", "SecretCommandController.triggerAllCommissionsBlock");
   Route.put("/block_commissions/:id", "SecretCommandController.triggerSingleCommissionsBlock");
