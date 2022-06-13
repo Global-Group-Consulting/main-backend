@@ -1,37 +1,37 @@
 'use strict'
 
-const {addAgentCommission} = require("./Request");
+const { addAgentCommission } = require('./Request')
 
-/** @type {import("../../providers/Queue")} */
-const Queue = use("QueueProvider")
-const Persona = use("Persona")
-const Env = use("Env")
-const Event = use("Event")
-const Ws = use("Ws")
-const MovementsModel = use("App/Models/Movement")
-const CommissionsModel = use("App/Models/Commission")
-const RequestsModel = use("App/Models/Request")
-const Logger = use("Logger")
+/** @type {import('../../providers/Queue')} */
+const Queue = use('QueueProvider')
+const Persona = use('Persona')
+const Env = use('Env')
+const Event = use('Event')
+const Ws = use('Ws')
+const MovementsModel = use('App/Models/Movement')
+const CommissionsModel = use('App/Models/Commission')
+const RequestsModel = use('App/Models/Request')
+const Logger = use('Logger')
 
-const UserRoles = require("../../enums/UserRoles")
+const UserRoles = require('../../enums/UserRoles')
 
-const {castToObjectId} = require("../Helpers/ModelFormatters")
+const { castToObjectId } = require('../Helpers/ModelFormatters')
 
 const User = exports = module.exports = {}
 
 User.onDraftUserConfirmed = async (user) => {
   // send notification to all servClienti users.
-  Event.emit("notification::userDraftConfirmed", user)
+  Event.emit('notification::userDraftConfirmed', user)
 }
 
 User.onIncompleteData = async (user) => {
   // send notification to users agent
-  Event.emit("notification::userIncompleteData", user)
+  Event.emit('notification::userIncompleteData', user)
 }
 
 User.onMustRevalidate = async (user) => {
   // send notification to all servClienti users.
-  Event.emit("notification::userMustRevalidate", user)
+  Event.emit('notification::userMustRevalidate', user)
 }
 
 /**
@@ -48,34 +48,38 @@ User.onApproved = async (user) => {
   // read the existing token or generate a new one
   const token = await Persona.generateToken(user, 'email')
   const userTypeAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)
-
-  user.token = token;
-  user.apps = ["main", "club"];
-
-  await user.save();
-
+  
+  user.token = token
+  user.apps = ['main', 'club']
+  
+  await user.save()
+  
   if (!user.sendOnlyEmail && !userTypeAdmin) {
-    Logger.info("add job for initializing user movements")
-
+    Logger.info('add job for initializing user movements')
+    
     // Triggers initial movements that will create a request with type new deposit
-    await Queue.add("user_initialize_movements", {
+    await Queue.add('user_initialize_movements', {
       userId: user._id.toString(),
       // added so that the job workers know if the movement must generate agents commission.
       // This may not be the case when importing a movements list.
-      calcAgentCommissions: (typeof user.calcAgentCommissions === "boolean" ? user.calcAgentCommissions : true)
+      calcAgentCommissions: (typeof user.calcAgentCommissions === 'boolean' ? user.calcAgentCommissions : true)
     })
   }
-
-  await Queue.add("send_email", {
-    tmpl: "main-account-approved",
+  
+  await Queue.add('send_email', {
+    tmpl: 'main-account-approved',
     data: {
       ...user.toJSON(),
       token,
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${token}`
     }
   })
-
-  Event.emit("notification::userApproved", user)
+  
+  Event.emit('notification::userApproved', user)
+  
+  user.sendOnlyEmail = false
+  
+  await user.save()
 }
 
 /**
@@ -85,34 +89,33 @@ User.onApproved = async (user) => {
  */
 User.onUpdate = async (data) => {
   const channel = Ws.getChannel('account')
-  const subscribers = channel.getTopicSubscriptions("account")
-  const topic = channel.topic("account")
-
+  const subscribers = channel.getTopicSubscriptions('account')
+  const topic = channel.topic('account')
+  
   // Must transfer clients and commissions
   if (data.roleChangeData) {
-
+    
     //if (data.roleChangeData.commissionsReceiver) {
     // EDvent if there is no receiver for the commission, i must set them to 0.
-      await Queue.add("transfer_agent_commissions", {
-        oldAgent: data.user._id.toString(),
-        newAgent: data.roleChangeData.commissionsReceiver
-      })
+    await Queue.add('transfer_agent_commissions', {
+      oldAgent: data.user._id.toString(),
+      newAgent: data.roleChangeData.commissionsReceiver
+    })
     //}
-
+    
     //if (data.roleChangeData.newAgent) {
     // Even if there isn't a new agent, i reset the agent for its clients
-      await Queue.add("transfer_agent_clients", {
-        oldAgent: data.user._id.toString(),
-        newAgent: data.roleChangeData.newAgent || null
-      })
+    await Queue.add('transfer_agent_clients', {
+      oldAgent: data.user._id.toString(),
+      newAgent: data.roleChangeData.newAgent || null
+    })
     //}
   }
-
-
+  
   // if no one is listening, so the `topic('subscriptions')` method will return `null`
   if (topic) {
     const userEntry = Array.from(subscribers).find(_sub => _sub.user._id.toString() === data.user._id.toString())
-
+    
     if (userEntry) {
       topic.emitTo('accountUpdated', data.user, [userEntry.id])
     }
@@ -121,7 +124,7 @@ User.onUpdate = async (data) => {
 
 User.onFirstLogin = async (user) => {
   // const movement = await MovementsModel.getInitialInvestment(user._id)
-
+  
   /*if(!movement){
     throw new Error("Seems that there is no initial movement for the current user.")
   }
@@ -133,11 +136,11 @@ User.onDeleted = async (userId) => {
   await MovementsModel.query()
     .where('userId', castToObjectId(userId))
     .delete()
-
+  
   await CommissionsModel.query()
     .where('userId', castToObjectId(userId))
     .delete()
-
+  
   await RequestsModel.query()
     .where('userId', castToObjectId(userId))
     .delete()
