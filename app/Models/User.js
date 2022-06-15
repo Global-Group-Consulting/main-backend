@@ -1027,6 +1027,7 @@ class User extends Model {
   }
   
   async fetchSigningLogs () {
+    // check the user and the uuid associated with the request
     const logs = await SignRequestModel.where({ 'userId': this._id, 'uuid': this.contractSignRequestUuid }).fetch()
     
     if (logs.rows.length === 0) {
