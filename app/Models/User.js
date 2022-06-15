@@ -1027,7 +1027,7 @@ class User extends Model {
   }
   
   async fetchSigningLogs () {
-    const logs = await SignRequestModel.where('userId', this._id, 'uuid', this.contractSignRequestUuid).fetch()
+    const logs = await SignRequestModel.where({ 'userId': this._id, 'uuid': this.contractSignRequestUuid }).fetch()
     
     if (logs.rows.length === 0) {
       return []
