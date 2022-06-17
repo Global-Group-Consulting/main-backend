@@ -76,6 +76,7 @@
     "postmark": "^2.6.0",
     "signrequest-client": "^1.1.1",
     "tmp": "^0.2.1",
+    "uuid": "^8.3.2",
     "written-number": "^0.9.1"
   },
   "devDependencies": {},
