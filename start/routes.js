@@ -74,7 +74,7 @@ Route.group(() => {
   
   // recapitalization
   Route.put("/recapitalize_all", "SecretCommandController.triggerAllRecapitalization");
-  Route.put("/recapitalize/:id", "SecretCommandController.triggerSingleRecapitalization");
+  Route.put("/recapitalize/:id", "SecretCommandController.recapitalizeSingleUser");
   
   Route.put("/dispatch_brite_recap", "SecretCommandController.dispatchBriteRecap");
   
