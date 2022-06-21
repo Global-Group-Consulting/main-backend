@@ -96,6 +96,10 @@ class RequestController {
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
+    
+    if(!associatedUser.contractIban){
+      throw new RequestException("La richiesta non può essere inoltrata in quanto l'utente non ha un IBAN associato. ")
+    }
   
     incomingData.briteConversionPercentage = 0;
   
