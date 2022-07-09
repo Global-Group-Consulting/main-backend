@@ -1,5 +1,5 @@
 import { ConnectionConfig } from 'mysql';
-export declare type AvailableJobNames = "SendEmail" | "TriggerBriteRecapitalization";
+export declare type AvailableJobNames = 'SendEmail' | 'TriggerRepayment' | 'TriggerBriteRecapitalization' | 'CreateNotification';
 export declare class AvailableJob {
     id: number;
     title: string;
@@ -20,12 +20,12 @@ export declare class LaravelJob {
     created_at: number;
 }
 export declare class QueueOptions {
-    "maxTries": number;
-    "maxExceptions": number;
-    "failOnTimeout": boolean;
-    "backoff": number;
-    "timeout": number;
-    "retryUntil": number;
+    'maxTries': number;
+    'maxExceptions': number;
+    'failOnTimeout': boolean;
+    'backoff': number;
+    'timeout': number;
+    'retryUntil': number;
 }
 export declare class JobOptions {
     job?: string;

@@ -77,21 +77,26 @@ var JobOptions = /** @class */ (function () {
 exports.JobOptions = JobOptions;
 var LaravelQueue = /** @class */ (function () {
     function LaravelQueue(config) {
-        var _this = this;
         this.config = config;
-        this.mySqlConnection = (0, mysql_1.createConnection)(config.db);
-        this.connectionReady = new Promise(function (resolve, reject) {
-            _this.mySqlConnection.connect(function (err) {
-                if (err) {
-                    reject();
-                    throw err;
-                }
-                console.log("[LARAVEL_QUE] - Module ready!");
-                _this.fetchAvailableJobs().then(function () {
-                    console.log("[LARAVEL_QUE] - Available jobs fetched!");
-                    resolve(true);
-                });
-            });
+        this.mySqlConnection = (0, mysql_1.createPool)(config.db);
+        /*this.connectionReady = new Promise((resolve, reject) => {
+          this.mySqlConnection.connect((err) => {
+            if (err) {
+              reject()
+              throw err
+            }
+            
+            console.log('[LARAVEL_QUE] - Module ready!')
+            
+            this.fetchAvailableJobs().then(() => {
+              console.log('[LARAVEL_QUE] - Available jobs fetched!')
+              resolve(true)
+            })
+          })
+        })*/
+        this.fetchAvailableJobs().then(function () {
+            console.log('[LARAVEL_QUE] - Available jobs fetched!');
+            // resolve(true)
         });
     }
     LaravelQueue.prototype.query = function (sql) {
@@ -120,7 +125,7 @@ var LaravelQueue = /** @class */ (function () {
                     case 1:
                         result = _a.sent();
                         this.availableJobs = result.map(function (el) {
-                            return __assign(__assign({}, el), { name: el["class"].slice(el["class"].lastIndexOf("\\") + 1) });
+                            return __assign(__assign({}, el), { name: el["class"].slice(el["class"].lastIndexOf('\\') + 1) });
                         });
                         return [2 /*return*/];
                 }
@@ -133,7 +138,7 @@ var LaravelQueue = /** @class */ (function () {
             return __generator(this, function (_a) {
                 result = this.availableJobs.find(function (el) { return el.name === job; });
                 if (!result) {
-                    return [2 /*return*/, Promise.reject("Unknown job: " + job)];
+                    return [2 /*return*/, Promise.reject('Unknown job: ' + job)];
                 }
                 return [2 /*return*/, Promise.resolve(result)];
             });
@@ -153,8 +158,12 @@ var LaravelQueue = /** @class */ (function () {
                         job = _a.sent();
                         data = this.prepareData(job, encodedPayload, options);
                         sql = "INSERT INTO jobs (queue, payload, attempts, available_at, created_at)\n                 VALUES ('" + data.queue + "',\n                         " + (0, mysql_1.escape)(data.payload) + ",\n                         " + data.attempts + ",\n                         " + data.available_at + ",\n                         " + data.created_at + ")";
-                        return [4 /*yield*/, this.query(sql)];
-                    case 3: return [2 /*return*/, _a.sent()];
+                        return [4 /*yield*/, this.query(sql)
+                            // console.log(data.payload);
+                        ];
+                    case 3: return [2 /*return*/, _a.sent()
+                        // console.log(data.payload);
+                    ];
                 }
             });
         });
@@ -162,38 +171,38 @@ var LaravelQueue = /** @class */ (function () {
     LaravelQueue.prototype.prepareData = function (reqJob, payload, options) {
         var _a;
         var mainObj = {
-            "uuid": this.generateUUID(),
-            "displayName": reqJob["class"],
-            "job": "Illuminate\\Queue\\CallQueuedHandler@call",
-            "maxTries": null,
-            "maxExceptions": null,
-            "failOnTimeout": false,
-            "backoff": null,
-            "timeout": null,
-            "retryUntil": null,
-            "data": {
+            'uuid': this.generateUUID(),
+            'displayName': reqJob["class"],
+            'job': 'Illuminate\\Queue\\CallQueuedHandler@call',
+            'maxTries': null,
+            'maxExceptions': null,
+            'failOnTimeout': false,
+            'backoff': null,
+            'timeout': null,
+            'retryUntil': null,
+            'data': {
                 commandName: reqJob["class"],
-                command: ""
+                command: ''
             }
         };
         var commandObj = (_a = {},
             _a[reqJob.payloadKey] = payload !== null && payload !== void 0 ? payload : {},
-            _a["job"] = null,
-            _a["connection"] = null,
-            _a["queue"] = (options === null || options === void 0 ? void 0 : options.queue) || reqJob.queueName || null,
-            _a["chainConnection"] = null,
-            _a["chainQueue"] = null,
-            _a["chainCatchCallbacks"] = null,
-            _a["delay"] = null,
-            _a["afterCommit"] = null,
-            _a["middleware"] = [],
-            _a["chained"] = [],
+            _a['job'] = null,
+            _a['connection'] = null,
+            _a['queue'] = (options === null || options === void 0 ? void 0 : options.queue) || reqJob.queueName || null,
+            _a['chainConnection'] = null,
+            _a['chainQueue'] = null,
+            _a['chainCatchCallbacks'] = null,
+            _a['delay'] = null,
+            _a['afterCommit'] = null,
+            _a['middleware'] = [],
+            _a['chained'] = [],
             _a);
         var job = new php_serialization_1.Class(reqJob["class"]);
         this.prepareForSerialization(commandObj, job, [reqJob.payloadKey], reqJob["class"]);
-        mainObj.data.command = (0, php_serialization_1.serialize)(job, "object");
+        mainObj.data.command = (0, php_serialization_1.serialize)(job, 'object');
         return {
-            queue: (options === null || options === void 0 ? void 0 : options.queue) || reqJob.queueName || "default",
+            queue: (options === null || options === void 0 ? void 0 : options.queue) || reqJob.queueName || 'default',
             payload: JSON.stringify(mainObj),
             attempts: 0,
             available_at: Math.floor(Date.now() / 1000),
@@ -204,40 +213,40 @@ var LaravelQueue = /** @class */ (function () {
         var _this = this;
         Object.keys(data).forEach(function (key) {
             var value = data[key];
-            var type = "string";
+            var type = 'string';
             if (value && value instanceof Array) {
-                type = "array";
-                value = new php_serialization_1.Class("");
+                type = 'array';
+                value = new php_serialization_1.Class('');
                 _this.prepareForSerializationArray(data[key], value);
             }
-            else if (value && value.constructor.name === "Object") {
-                type = "array";
-                value = new php_serialization_1.Class("");
+            else if (value && value.constructor.name === 'Object') {
+                type = 'array';
+                value = new php_serialization_1.Class('');
                 _this.prepareForSerialization(data[key], value, privateKeys);
             }
             else if (!value) {
-                type = "null";
+                type = 'null';
             }
-            else if (typeof value === "number") {
-                type = "float";
+            else if (typeof value === 'number') {
+                type = 'float';
             }
-            container.__addAttr__(key, "string", value, type, privateKeys.includes(key) ? "protected" : null);
+            container.__addAttr__(key, 'string', value, type, privateKeys.includes(key) ? 'protected' : null);
         });
     };
     LaravelQueue.prototype.prepareForSerializationArray = function (data, container) {
         var _this = this;
         data.forEach(function (el, index) {
-            var type = "string";
+            var type = 'string';
             var value = el;
-            if (el && el.constructor.name === "Object") {
-                type = "array";
-                value = new php_serialization_1.Class("");
+            if (el && el.constructor.name === 'Object') {
+                type = 'array';
+                value = new php_serialization_1.Class('');
                 _this.prepareForSerialization(el, value, []);
             }
-            else if (typeof el === "number") {
-                type = "float";
+            else if (typeof el === 'number') {
+                type = 'float';
             }
-            container.__addAttr__(index, "integer", value, type);
+            container.__addAttr__(index, 'integer', value, type);
         });
     };
     LaravelQueue.prototype.generateUUID = function () {
