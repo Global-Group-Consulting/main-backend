@@ -17,6 +17,7 @@ services:
       - APP_URL=http://local.private.globalgroup.consulting
       - CLUB_SERVER=http://global-club-api:3000
       - DB_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_staging?retryWrites=true&w=majority
+#      - DB_CONNECTION_STRING=mongodb+srv://ggc_production:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_production?retryWrites=true&w=majority
       - DB_GEOLOCATION_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/geolocation?retryWrites=true&w=majority
       - DB_IAM_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/global_iam_staging?retryWrites=true&w=majority
       - DOC_EVENTS_CALLBACK=http://local.private.globalgroup.consulting/api/webhooks/signRequest

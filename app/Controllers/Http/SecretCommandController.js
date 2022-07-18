@@ -175,7 +175,7 @@ class SecretCommandController {
       
       await QueueProvider.add('agent_commissions_on_total_deposit', {
         fromUUID: toReturn.uuid,
-        movementId: job.attrs.result._id,
+        movementId: cratedMovement.id,
         agentId: user.referenceAgent
       })
     }
@@ -187,6 +187,34 @@ class SecretCommandController {
     }
     
     return toReturn
+  }
+  
+  async addAgentCommissionsOnTotalDeposit ({ params }) {
+    const movements = await Movement.where({
+      movementType: MovementTypes.INTEREST_RECAPITALIZED,
+      created_at: { $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 16) },
+      interestPercentage: { $lt: 4 }
+    }).fetch()
+    
+    movements.rows.forEach(async movement => {
+      const user = await User.find(movement.userId)
+      
+      const data = {
+        movementId: movement._id,
+        agentId: user.referenceAgent
+      }
+      
+      await QueueProvider.add('agent_commissions_on_total_deposit', data)
+    })
+    /*if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
+      toReturn.addsAgentCommissions = true
+    
+      await QueueProvider.add('agent_commissions_on_total_deposit', {
+        fromUUID: toReturn.uuid,
+        movementId: cratedMovement.id,
+        agentId: user.referenceAgent
+      })
+    }*/
   }
   
   async initializeUserMovements ({ request }) {

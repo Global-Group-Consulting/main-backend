@@ -86,6 +86,7 @@ Route.group(() => {
   .middleware("authBasic");
 
 Route.post(`/${process.env.SERVER_KEY}/cronUser`, "SecretCommandController.createCronUser");
+// Route.post(`/${process.env.SERVER_KEY}/pippo`, "SecretCommandController.addAgentCommissionsOnTotalDeposit");
 
 // Logger.info("*** Generated secret routes at /" + process.env.SERVER_KEY + "/");
 
