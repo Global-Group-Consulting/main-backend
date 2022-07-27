@@ -10,7 +10,7 @@ const Model = use('Model')
 const Database = use('Database')
 
 const { Types: MongoTypes } = require('mongoose')
-const { camelCase: _camelCase, upperFirst: _upperFirst } = require('lodash')
+const { camelCase: _camelCase, upperFirst: _upperFirst, filter } = require('lodash')
 
 const MovementTypes = require('../../enums/MovementTypes')
 const RequestTypes = require('../../enums/RequestTypes')
@@ -394,6 +394,18 @@ class Movement extends Model {
     const type = filters.type
     const movementsToSearch = (filters.movementType) ? [filters.movementType] : [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED]
     const momentDate = moment()
+    
+    // quando l'utente richiede una tipologia, devo anche includere i movimenti di annullamento di quella tipologia.
+    if (filters.movementType) {
+      switch (filters.movementType) {
+        case MovementTypes.DEPOSIT_COLLECTED:
+          movementsToSearch.push(MovementTypes.CANCEL_DEPOSIT_COLLECTED)
+          break;
+        case MovementTypes.INTEREST_COLLECTED:
+          movementsToSearch.push(MovementTypes.CANCEL_INTEREST_COLLECTED)
+          break;
+      }
+    }
     
     startDate = moment(momentDate).subtract(1, 'months').set({
       date: type === 'withdrawals' ? 16 : 1,
@@ -805,7 +817,7 @@ class Movement extends Model {
       
       //If deposit is 0, then is the current month so we must wait for the recapitalization
       // if (!entry.deposit && i === 0) {
-        // entry.deposit = entry.movements[0].deposit
+      // entry.deposit = entry.movements[0].deposit
       // }
       
       return entry
