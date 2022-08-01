@@ -37,7 +37,7 @@ class ExceptionHandler extends BaseExceptionHandler {
    * @return {void}
    */
   async report(error, { request }) {
-    const errorsToIgnore = ["InvalidLoginException", "TokenExpiredException"];
+    const errorsToIgnore = ["InvalidLoginException", "TokenExpiredException", "TokenException"];
 
     if (errorsToIgnore.includes(error.name)) {
       return;
