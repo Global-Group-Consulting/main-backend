@@ -40,6 +40,7 @@ module.exports = function (Route) {
   
     Route.post('/:id/resendContract', 'UserController.resendContract')
     Route.get('/:id/contractLogs', 'UserController.getSignRequestLogs')
+    Route.patch('/:id/restoreSignedContract', 'UserController.restoreSignedContract')
   
     Route.get('/:id/deposit', 'UserController.getDeposit')
   
