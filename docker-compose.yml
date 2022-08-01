@@ -17,15 +17,21 @@ services:
       - APP_URL=http://local.private.globalgroup.consulting
       - CLUB_SERVER=http://global-club-api:3000
       - DB_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_staging?retryWrites=true&w=majority
-#      - DB_CONNECTION_STRING=mongodb+srv://ggc_production:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_production?retryWrites=true&w=majority
+      #      - DB_CONNECTION_STRING=mongodb+srv://ggc_production:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_production?retryWrites=true&w=majority
       - DB_GEOLOCATION_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/geolocation?retryWrites=true&w=majority
       - DB_IAM_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/global_iam_staging?retryWrites=true&w=majority
       - DOC_EVENTS_CALLBACK=http://local.private.globalgroup.consulting/api/webhooks/signRequest
       - DOC_MODEL_UUID=0824adc8-7368-40d6-86f6-9f677526bb77
-      - DOC_PUBLIC_URL=https://ggc.signrequest.com
+      # Staging:
+      # - DOC_PUBLIC_URL=https://ggc.signrequest.com
+      # Production:
+      - DOC_PUBLIC_URL=https://privateglobalgroup.signrequest.com
       - DOC_REDIRECT_DECLINED=http://local.private.globalgroup.consulting/sign/reject
       - DOC_REDIRECT_SIGNED=http://local.private.globalgroup.consulting/sign/success
-      - DOC_SIGN_KEY=cf0d5e22f1ab4d31408123a2b34b1fb1b2ec56a3
+      # Staging
+      # - DOC_SIGN_KEY=cf0d5e22f1ab4d31408123a2b34b1fb1b2ec56a3
+      # Produzione
+      - DOC_SIGN_KEY=9694a1149b304f3ff040bf923a6a518413ad3a4b
       - HASH_DRIVER=bcrypt
       - HOST=0.0.0.0
       - PORT=3000

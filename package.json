@@ -39,6 +39,7 @@
     "@adonisjs/websocket": "^1.0.12",
     "@netilon/differify": "^3.3.2",
     "@types/agenda": "^3.0.0",
+    "@types/http-status-codes": "^1.2.0",
     "@types/moment": "^2.13.0",
     "adonis-antl": "^1.0.5",
     "adonis-bumblebee": "^2.2.0",
