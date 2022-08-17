@@ -146,6 +146,7 @@ class SecretCommandController {
      */
     const newMovement = {
       userId,
+      fromUUID: toReturn.uuid,
       movementType: MovementTypes.INTEREST_RECAPITALIZED,
       interestPercentage: +user.contractPercentage
     }
@@ -175,7 +176,7 @@ class SecretCommandController {
       
       await QueueProvider.add('agent_commissions_on_total_deposit', {
         fromUUID: toReturn.uuid,
-        movementId: cratedMovement.id,
+        movementId: cratedMovement._id || toReturn.recapitalization.id,
         agentId: user.referenceAgent
       })
     }
@@ -196,25 +197,17 @@ class SecretCommandController {
       interestPercentage: { $lt: 4 }
     }).fetch()
     
-    movements.rows.forEach(async movement => {
+    for (const movement of movements.rows) {
       const user = await User.find(movement.userId)
       
       const data = {
         movementId: movement._id,
+        fromUUID: movement.fromUUID,
         agentId: user.referenceAgent
       }
       
       await QueueProvider.add('agent_commissions_on_total_deposit', data)
-    })
-    /*if (user.referenceAgent && cratedMovement && cratedMovement.interestPercentage < 4) {
-      toReturn.addsAgentCommissions = true
-    
-      await QueueProvider.add('agent_commissions_on_total_deposit', {
-        fromUUID: toReturn.uuid,
-        movementId: cratedMovement.id,
-        agentId: user.referenceAgent
-      })
-    }*/
+    }
   }
   
   async initializeUserMovements ({ request }) {

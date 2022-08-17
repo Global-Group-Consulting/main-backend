@@ -15,6 +15,7 @@ services:
       - ENV_SILENT=true
       - APP_KEY=jDLnnnG0TGtBuC84zlwUgDs82pLiW6eD
       - APP_URL=http://local.private.globalgroup.consulting
+      # url dell'immagine docker
       - CLUB_SERVER=http://global-club-api:3000
       - DB_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_staging?retryWrites=true&w=majority
       #      - DB_CONNECTION_STRING=mongodb+srv://ggc_production:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_production?retryWrites=true&w=majority
@@ -40,12 +41,13 @@ services:
       - MAIL_API_KEY=d1bd7d9f-0203-49ee-8a1e-bf5d3ab61add
       - MAIL_CONNECTION=postmark
       - MAIL_FROM=Global Group Consulting <noreply@globalgroup.consulting>
-      - NEWS_SERVER=http://news.stg.globalgroup.consulting
+       # url dell'immagine docker
+      - NEWS_SERVER=http://global-news:8000
       - NODE_ENV=development
       - NODE_MODULES_CACHE=false
       - NOTIFICATION_EMAIL_TIMEOUT=in 30 minutes
       - PATH=/app/.heroku/python/bin:/usr/local/bin:/usr/bin:/bin:/app/vendor/pdftk/bin
-      - PUBLIC_URL=http://localhost:3333
+      - PUBLIC_URL=http://local.private.globalgroup.consulting
       - S3_BUCKET=globalgroupstaging
       - S3_KEY=AKIATXYDZVMNYKFCPSH5
       - S3_REGION=eu-central-1
