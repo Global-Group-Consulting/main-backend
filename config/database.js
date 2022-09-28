@@ -46,6 +46,15 @@ module.exports = {
     }*/
   },
   
+  mongoClub: {
+    client: 'mongodb',
+    connectionString: Env.get('DB_CLUB_CONNECTION_STRING', ''),
+    connectionOptions: {
+      useUnifiedTopology: true,
+      useNewUrlParser: true
+    },
+  },
+  
   mongoIAM: {
     client: 'mongodb',
     connectionString: Env.get('DB_IAM_CONNECTION_STRING', ''),

@@ -8,8 +8,9 @@
     "start": "node server.js",
     "start:dev": "adonis serve --dev",
     "start:dev:remove": "heroku local",
-    "watch": "nodemon --inspect --watch app server.js",
+    "watch": "nodemon --inspect=0.0.0.0 --watch app server.js",
     "test": "node ace test",
+    "deploy": "git push heroku master",
     "jobRunner": "adonis job-runner --job-name=trigger_users_recapitalization"
   },
   "keywords": [
@@ -38,6 +39,7 @@
     "@adonisjs/websocket": "^1.0.12",
     "@netilon/differify": "^3.3.2",
     "@types/agenda": "^3.0.0",
+    "@types/http-status-codes": "^1.2.0",
     "@types/moment": "^2.13.0",
     "adonis-antl": "^1.0.5",
     "adonis-bumblebee": "^2.2.0",
@@ -45,6 +47,7 @@
     "adonis-validation-provider": "^3.0.5",
     "agenda": "^3.1.0",
     "array-sort": "^1.0.0",
+    "assert": "^2.0.0",
     "aws-sdk": "^2.802.0",
     "axios": "^0.21.0",
     "bullmq": "^1.26.2",
@@ -63,6 +66,7 @@
     "mjml": "^4.6.3",
     "moment": "^2.29.1",
     "mongo-uri-builder": "^3.2.2",
+    "mongodb": "^4.6.0",
     "mongoose": "^5.10.15",
     "mysql": "^2.18.1",
     "njwt": "^1.0.0",
@@ -73,6 +77,7 @@
     "postmark": "^2.6.0",
     "signrequest-client": "^1.1.1",
     "tmp": "^0.2.1",
+    "uuid": "^8.3.2",
     "written-number": "^0.9.1"
   },
   "devDependencies": {},
