@@ -28,6 +28,7 @@ module.exports = {
       "http://local.private.globalclub.it",
       "http://local.private.globalgroup.consulting",
       "https://api.globalclub.it",
+      "https://api.stg.globalclub.it",
       // capacitor IOS
       "capacitor://localhost",
       // capacitor android
