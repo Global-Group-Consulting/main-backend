@@ -6,7 +6,6 @@ module.exports = function (Route) {
 
     Route.get('/list/:id?', "MovementController.getList")
 
-
     Route.get('/:id', "MovementController.read")
       .validator("Movements/Read")
 
@@ -17,6 +16,8 @@ module.exports = function (Route) {
 
     Route.post('/:id', 'MovementController.cancel')
       .validator("Movements/Cancel")
+  
+    Route.delete('/:id', 'MovementController.delete')
 
   }).prefix('/api/movements')
     .middleware('auth')
