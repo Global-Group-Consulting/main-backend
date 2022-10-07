@@ -13,6 +13,8 @@ const UserModel = use('App/Models/User')
 const AclProvider = use('AclProvider')
 const Event = use('Event')
 
+const AgentBrite = use('App/Models/AgentBrite')
+
 const UserRoles = require('../../../../enums/UserRoles')
 const RequestTypes = require('../../../../enums/RequestTypes')
 const WalletTypes = require('../../../../enums/WalletTypes')
@@ -22,7 +24,9 @@ const AclGenericException = require('../../../Exceptions/Acl/AclGenericException
 
 const { CommissionsPermissions } = require('../../../Helpers/Acl/enums/commissions.permissions')
 
-const { castToObjectId } = require('../../../Helpers/ModelFormatters')
+const { castToObjectId, castToIsoDate } = require('../../../Helpers/ModelFormatters')
+const { MovementsPermissions } = require('../../../Helpers/Acl/enums/movements.permissions')
+const MovementErrorException = require('../../../Exceptions/MovementErrorException')
 
 class CommissionController {
   async read () {
@@ -240,7 +244,7 @@ class CommissionController {
     }
     
     const availableAmount = await CommissionModel.getAvailableCommissions(userId)
-  
+    
     console.log(availableAmount)
     
     return CommissionModel.manualCancellation({
@@ -253,7 +257,157 @@ class CommissionController {
       created_by: currentUser
     })
   }
+  
+  /**
+   * Function that allow to manually create any type of commission at any past date,
+   * and automatically recalculate the next movements
+   *
+   * @param request
+   * @param params
+   * @param auth
+   * @return {Promise<{}>}
+   */
+  async manualCreate ({ request, params, auth }) {
+    const user = await UserModel.findOrFail(params.userId)
+    const data = request.all()
+    const lastCommission = await CommissionModel._getLastCommission(user._id, new Date(data.created_at))
+    const toReturn = { updatedReinvestmentMovements: [], updatedMovements: [] }
+    const calcResult = RequestModel.calcAgentBriteAmount(data.amountChange)
+    
+    /** @type {CommissionModel} */
+    const newMovement = await CommissionModel._create({
+      movementId: data.movementId ? castToObjectId(data.movementId) : null,
+      userId: user._id,
+      clientId: data.clientId ? castToObjectId(data.clientId) : null,
+      commissionType: data.commissionType,
+      dateReference: Date,
+      amountChange: data.amountChange,
+      commissionOnValue: data.commissionOnValue ? castToObjectId(data.commissionOnValue) : null,
+      commissionPercentage: data.commissionPercentage ? castToObjectId(data.commissionPercentage) : null
+    }, lastCommission)
+    
+    newMovement.created_at = new Date(data.created_at)
+    
+    if (data.commissionType === CommissionType.COMMISSIONS_COLLECTED) {
+      newMovement.amountBrite = calcResult.amountBrite
+      newMovement.amountEuro = calcResult.amountEuro
+      newMovement.currency = calcResult.currency
+      newMovement.briteConversionPercentage = calcResult.briteConversionPercentage
+      
+      const briteMovement = await AgentBrite.addBritesFromWithdraw(newMovement)
+      
+      toReturn.briteMovement = briteMovement
+      
+      newMovement.briteMovementId = briteMovement._id
+    }
+    
+    await newMovement.save()
+    
+    try {
+      // must update movements after the new one
+      const movements = await CommissionModel.where({
+        // the user is the same of the movement to delete
+        'userId': user._id,
+        'created_at': {
+          $gt: newMovement.created_at
+        }
+      }).sort({ 'created_at': -1 }).fetch()
+      
+      for (let i = (movements.rows.length - 1); i >= 0; i--) {
+        const movement = movements.rows[i]
+        const isFirst = i === movements.rows.length - 1
+        let isReinvestmentMovement = false
+        
+        if (movement._id.toString() === newMovement._id.toString()) {
+          continue
+        }
+        
+        movement.currMonthCommissionsOld = isFirst ? newMovement.currMonthCommissions : movements.rows[i + 1].currMonthCommissions
+        movement.currMonthCommissions = movement.currMonthCommissionsOld
+        
+        if (CommissionType.COMMISSIONS_TO_REINVEST === movement.commissionType) {
+          movement.amountChange = movement.currMonthCommissions
+          
+          toReturn.updatedReinvestmentMovements.push(movement)
+          toReturn.alert = 'E\' stato cambiato un movimento di "Chiusura mese e reinvestimento", pertanto controllare che il nuovo importo corrisponda a quello assegnato nella lista dei movimenti'
+          
+          isReinvestmentMovement = true
+        }
+        
+        CommissionModel.calculateCommission(movement)
+        
+        movement.save()
+        toReturn.updatedMovements.push(movement)
+        
+        if (isReinvestmentMovement) {
+          break
+        }
+      }
+      
+      toReturn.createdMovementCount = 1
+      toReturn.briteMovementCount = toReturn.briteMovement ? 1 : 0
+      toReturn.updatedMovementsCount = toReturn.updatedMovements.length
+      toReturn.createdMovement = newMovement
+      
+      return toReturn
+    } catch (e) {
+      // in case of error delete the new movement
+      await newMovement.delete()
+      
+      throw e
+    }
+  }
+  
+  async delete ({ params, auth }) {
+    const refMovement = await CommissionModel.findOrFail(params.id)
+    
+    if (!(await AclProvider.checkPermissions([CommissionsPermissions.COMMISSIONS_ALL_ADD], auth))) {
+      throw new MovementErrorException('You don\'t have the permission to delete this movement.')
+    }
+  
+    if (CommissionType.COMMISSIONS_TO_REINVEST === refMovement.commissionType) {
+      throw new MovementErrorException('You can\'t delete a reinvestment movement.')
+    }
+    
+    // must update movements after the new one
+    const movements = await CommissionModel.where({
+      // the user is the same of the movement to delete
+      'userId': castToObjectId(refMovement.userId),
+      'created_at': {
+        $gt: refMovement.created_at
+      }
+    }).sort({ 'created_at': -1 }).fetch()
+    
+    for (let i = (movements.rows.length - 1); i >= 0; i--) {
+      const movement = movements.rows[i]
+      const isFirst = i === movements.rows.length - 1
+      let isReinvestmentMovement = false
+      
+      if (movement._id.toString() === refMovement._id.toString()) {
+        continue
+      }
+      
+      movement.currMonthCommissionsOld = isFirst ? refMovement.currMonthCommissionsOld : movements.rows[i + 1].currMonthCommissions
+      movement.currMonthCommissions = movement.currMonthCommissionsOld
+      
+      if (CommissionType.COMMISSIONS_TO_REINVEST === movement.commissionType) {
+        movement.amountChange = movement.currMonthCommissions
+        
+        isReinvestmentMovement = true
+      }
+      
+      CommissionModel.calculateCommission(movement)
+      
+      movement.save()
+      // toReturn.updatedMovements.push(movement)
+      
+      if (isReinvestmentMovement) {
+        break
+      }
+    }
+    
+    refMovement.delete()
+  }
 }
 
-module
-  .exports = CommissionController
+module.exports = CommissionController
