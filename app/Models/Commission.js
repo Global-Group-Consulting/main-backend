@@ -37,6 +37,11 @@ const UserRolesType = require('../../enums/UserRoles')
 const moment = require('moment')
 const { result } = require('lodash/object')
 
+/**
+ * @property {number} amountBrite
+ *   amountEuro: number,
+ *   briteConversionPercentage: number
+ */
 class Commission extends Model {
   static db
   
@@ -81,8 +86,13 @@ class Commission extends Model {
     return { movement, user, agent }
   }
   
-  static async _getLastCommission (userId) {
-    return this.where({ userId: castToObjectId(userId) }).sort({ created_at: -1 }).first()
+  static async _getLastCommission (userId, maxDate = null) {
+    const query = { userId: castToObjectId(userId) }
+    
+    if (maxDate) {
+      query.created_at = { $lte: maxDate }
+    }
+    return this.where(query).sort({ created_at: -1 }).first()
   }
   
   static async _getCommissionsToReinvest (userId, includeProcessed) {
@@ -285,7 +295,10 @@ class Commission extends Model {
    *   dateReference: Date,
    *   amountChange: number,
    *   commissionOnValue: number,
-   *   commissionPercentage: number
+   *   commissionPercentage: number,
+   *   amountBrite: number,
+   *   amountEuro: number,
+   *   briteConversionPercentage: number
    * }} data
    * @param lastCommission
    * @returns {typeof Commission}
@@ -302,13 +315,19 @@ class Commission extends Model {
       currMonthCommissionsOld: lastCommission.currMonthCommissions || 0
     }
     
+    this.calculateCommission(dataToCreate)
+    
+    return Commission.create(dataToCreate)
+  }
+  
+  static calculateCommission (data) {
     switch (data.commissionType) {
       case CommissionType.ANNUAL_DEPOSIT:
       case CommissionType.NEW_DEPOSIT:
       case CommissionType.TOTAL_DEPOSIT:
       case CommissionType.MANUAL_ADD:
       case CommissionType.MANUAL_TRANSFER:
-        dataToCreate.currMonthCommissions += data.amountChange
+        data.currMonthCommissions += data.amountChange
         
         break
       case CommissionType.COMMISSIONS_TO_REINVEST:
@@ -318,12 +337,10 @@ class Commission extends Model {
       case CommissionType.MANUAL_TRANSFER_DONER:
       case CommissionType.MANUAL_WITHDRAWAL:
       case CommissionType.REPAYMENT_TRANSFER:
-        dataToCreate.currMonthCommissions -= dataToCreate.amountChange
+        data.currMonthCommissions -= data.amountChange
         
         break
     }
-    
-    return Commission.create(dataToCreate)
   }
   
   /**
@@ -1106,5 +1123,7 @@ class Commission extends Model {
   }
 }
 
-module
-  .exports = Commission
+/**
+ * @type {Commission}
+ */
+module.exports = Commission
