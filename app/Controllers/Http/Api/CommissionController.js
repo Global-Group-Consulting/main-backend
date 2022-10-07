@@ -283,7 +283,8 @@ class CommissionController {
       dateReference: Date,
       amountChange: data.amountChange,
       commissionOnValue: data.commissionOnValue ? castToObjectId(data.commissionOnValue) : null,
-      commissionPercentage: data.commissionPercentage ? castToObjectId(data.commissionPercentage) : null
+      commissionPercentage: data.commissionPercentage ? castToObjectId(data.commissionPercentage) : null,
+      notes: data.notes || '',
     }, lastCommission)
     
     newMovement.created_at = new Date(data.created_at)
