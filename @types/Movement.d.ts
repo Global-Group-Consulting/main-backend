@@ -34,4 +34,5 @@ export interface AddMovementDto {
   userId: string
   movementType: number
   amountChange: number
+  created_at?: string
 }
