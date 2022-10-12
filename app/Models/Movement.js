@@ -47,7 +47,7 @@ class Movement extends Model {
         
         const movementTypeId = MovementTypes.get(data.movementType).id
         /** @type {IMovement} */
-        const lastMovement = await Movement.getLast(data.userId)
+        const lastMovement = await Movement.getLast(data.userId, data.created_at)
         const cancelType = [MovementTypes.CANCEL_COMMISSION_COLLECTED,
           MovementTypes.CANCEL_DEPOSIT_COLLECTED,
           MovementTypes.CANCEL_DEPOSIT_ADDED,
@@ -283,15 +283,22 @@ class Movement extends Model {
   
   /**
    *
-   * @param {} id
+   * @param {string} id
+   * @param {string} maxDate
    * @returns {IMovement}
    */
-  static async getLast (id) {
+  static async getLast (id, maxDate = null) {
     if (typeof id === 'string') {
       id = new MongoTypes.ObjectId(id)
     }
     
-    return await Movement.where({ userId: id }).sort({ 'created_at': -1 }).first()
+    const query = { userId: castToObjectId(id) }
+    
+    if (maxDate) {
+      query.created_at = { $lte: maxDate }
+    }
+    
+    return await Movement.where(query).sort({ 'created_at': -1 }).first()
   }
   
   static async getAll (id) {
@@ -400,10 +407,10 @@ class Movement extends Model {
       switch (filters.movementType) {
         case MovementTypes.DEPOSIT_COLLECTED:
           movementsToSearch.push(MovementTypes.CANCEL_DEPOSIT_COLLECTED)
-          break;
+          break
         case MovementTypes.INTEREST_COLLECTED:
           movementsToSearch.push(MovementTypes.CANCEL_INTEREST_COLLECTED)
-          break;
+          break
       }
     }
     

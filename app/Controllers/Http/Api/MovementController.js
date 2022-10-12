@@ -27,6 +27,7 @@ const moment = require('moment')
 const { MovementsPermissions } = require('../../../Helpers/Acl/enums/movements.permissions')
 const { AclPermissions } = require('../../../Helpers/Acl/enums/acl.permissions')
 const { camelCase: _camelCase, upperFirst: _upperFirst } = require('lodash')
+const { is } = require('consis/lib/object')
 
 /** @type {typeof import('../../../Exceptions/ImportException')} */
 const ImportException = use('App/Exceptions/ImportException')
@@ -57,11 +58,20 @@ class MovementController {
     }
     
     const user = await UserModel.find(data.userId)
-    
-    const newMovement = await MovementModel.create({
+    const newData = {
       ...data,
       interestPercentage: +user.contractPercentage
-    })
+    }
+
+    const newMovement = await MovementModel.create(newData)
+    
+    if (data.created_at) {
+      newMovement.created_at = data.created_at
+      
+      await this._updateNextMovements(newMovement)
+      
+      await newMovement.save()
+    }
     
     return newMovement
   }
@@ -125,38 +135,11 @@ class MovementController {
       throw new MovementErrorException('You can\'t delete this type of movement.')
     }
     
-    // Recuperare tutti i movimenti successivi a quello da cancellare più quello precedente che diventerà il movimento di partenza
-    const movements = await MovementModel.where({
-      // the user is the same of the movement to delete
-      'userId': movementRef.userId,
-      'created_at': {
-        $gt: movementRef.created_at
-      }
-    }).sort({ 'created_at': -1 }).fetch()
+    await this._updateNextMovements(movementRef, true)
     
-    movementRef.deposit = movementRef.depositOld
-    movementRef.interestAmount = movementRef.interestAmountOld
+    await movementRef.delete()
     
-    for (let i = movements.rows.length - 1; i >= 0; i--) {
-      const movement = movements.rows[i]
-      const isFirst = i === movements.rows.length - 1
-      const movementTypeId = MovementTypes.get(movement.movementType).id
-      const lastMovement = isFirst ? movementRef : movements.rows[i + 1]
-      
-      movement.depositOld = isFirst ? lastMovement.depositOld : lastMovement.deposit
-      movement.interestAmountOld = isFirst ? lastMovement.interestAmountOld : lastMovement.interestAmount
-      
-      // use original methods for calculating deposit and interest
-      MovementModel[`_handle${_upperFirst(_camelCase(movementTypeId))}`](movement, lastMovement)
-      
-      // console.log('old_d:', movement.depositOld, 'new_d:', movement.deposit, 'old_i:', movement.interestAmountOld, 'new_i:', movement.interestAmount)
-      
-      movement.save()
-    }
-    
-    movementRef.delete()
-    
-    return movements
+    return { status: 'ok' }
   }
   
   /**
@@ -283,6 +266,49 @@ class MovementController {
     }
     
     return await MovementModel.getAll(user._id)
+  }
+  
+  /**
+   * Given a movement, update the next movements details
+   *
+   * @param movementRef
+   * @param {boolean} [isDeleting=false]
+   * @return {Promise<void>}
+   * @private
+   */
+  async _updateNextMovements (movementRef, isDeleting = false) {
+    // Recuperare tutti i movimenti successivi a quello da cancellare più quello precedente che diventerà il movimento di partenza
+    const movements = await MovementModel.where({
+      // the user is the same of the movement to delete
+      'userId': movementRef.userId,
+      'created_at': {
+        $gt: movementRef.created_at
+      }
+    }).sort({ 'created_at': -1 }).fetch()
+    
+    if (isDeleting) {
+      movementRef.deposit = movementRef.depositOld
+      movementRef.interestAmount = movementRef.interestAmountOld
+    }
+    
+    for (let i = movements.rows.length - 1; i >= 0; i--) {
+      const movement = movements.rows[i]
+      const isFirst = i === movements.rows.length - 1
+      const movementTypeId = MovementTypes.get(movement.movementType).id
+      const lastMovement = isFirst ? movementRef : movements.rows[i + 1]
+      
+      if (movementRef._id.toString() === movement._id.toString()) {
+        continue
+      }
+      
+      movement.depositOld = isFirst ? lastMovement.depositOld : lastMovement.deposit
+      movement.interestAmountOld = isFirst ? lastMovement.interestAmountOld : lastMovement.interestAmount
+      
+      // use original methods for calculating deposit and interest
+      MovementModel[`_handle${_upperFirst(_camelCase(movementTypeId))}`](movement, lastMovement)
+      
+      movement.save()
+    }
   }
   
   /**

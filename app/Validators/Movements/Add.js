@@ -8,7 +8,9 @@ class MovementsAdd extends WhitelistValidator {
     return {
       userId: "required|idExists",
       movementType: "required|number|validMovement",
-      amountChange: "required|number"
+      amountChange: "required|number",
+      created_at: "date",
+      notes: "string",
     }
   }
 }
