@@ -8,10 +8,8 @@ const File = use("App/Models/File")
 const Drive = use('Drive')
 const Helpers = use('Helpers')
 const Config = use('Adonis/Src/Config')
-const path = require("path")
 const {Readable} = require('stream');
 
-const {existsSync} = require("fs")
 const fs = require("fs");
 const Logger = use("Logger");
 const FileException = use("App/Exceptions/FileException");
@@ -41,7 +39,7 @@ class FileController {
 
   async _downloadFromS3(file) {
     const filePath = Helpers.tmpPath(``);
-    const s3File = await Drive.getObject(file._id.toString())
+    const s3File = await Drive.getObject((file.path || file._id).toString())
 
     fs.mkdirSync(filePath, {recursive: true})
 
@@ -62,42 +60,60 @@ class FileController {
   }
 
   async meta ({ params, response }) {
-    const { id } = params;
+    const {id} = params;
     const dbFile = await File.find(id);
-
+  
     if (!dbFile) {
       throw new FileException('File not found');
       // response.badRequest('File not found');
     }
-
+  
     return dbFile;
   }
-
-  async show ({ params, response }) {
-    const meta = await this.meta({ params, response });
-
-    const s3File = await Drive.getSignedUrl(meta._id.toString());
-
-    response.redirect(s3File);
+  
+  async show({params, response, res}) {
+    const meta = await this.meta({params, response});
+    const fileName = (meta.path || meta._id).toString();
+  
+    // before fetching the file, must check if exists, otherwise will launch an error
+    if (!await Drive.disk("s3").exists(fileName)) {
+      return response.notFound();
+    }
+  
+    const stream = await Drive.disk("s3").getStream(fileName);
+  
+    // const s3File = await Drive.getSignedUrl(meta._id.toString());
+    response.header('Content-type', `${meta.type}/${meta.subtype}`)
+    response.header('Content-Length', meta.size)
+    response.header('Content-Disposition', "inline; filename=" + meta.clientName)
+  
+    return new Promise((resolve) => {
+      stream.on('data', (data) => {
+        res.write(data);
+      });
+      stream.on('end', (data) => {
+        res.end();
+      });
+    })
   }
-
-  async showUrl ({ params, response }) {
-    const meta = await this.meta({ params, response });
-
-    return Drive.getSignedUrl(meta._id.toString());
+  
+  async showUrl(ctx) {
+    const {params, response, res} = ctx
+    const meta = await this.meta({params, response});
+    return await Drive.disk("s3").getSignedUrl((meta.path || meta._id).toString());
   }
-
-  async download ({ params, response }) {
-    const { id } = params;
-
+  
+  async download({params, response, res}) {
+    const {id} = params;
+    
     const dbFile = await File.find(id);
-
+    
     //TODO:: Check if the user has the rights to download that file
-
+    
     if (!dbFile) {
       throw new FileException('File not found');
     }
-
+    
     const driverIsLocal = Config.get("drive.default") === "local";
     let pathName;
 
@@ -106,7 +122,29 @@ class FileController {
 
         pathName = await this._downloadFromLocal(dbFile);
       } else {
-        pathName = await this._downloadFromS3(dbFile);
+        const fileName = ((dbFile.path || id)).toString();
+  
+        // before fetching the file, must check if exists, otherwise will launch an error
+        if (!await Drive.disk("s3").exists(fileName)) {
+          return response.notFound();
+        }
+  
+        const stream = await Drive.disk("s3").getStream(fileName);
+  
+        response.header('Content-type', `${dbFile.type}/${dbFile.subtype}`)
+        if (dbFile.size) {
+          response.header('Content-Length', dbFile.size)
+        }
+        response.header('Content-Disposition', "attachment; filename=" + dbFile.clientName)
+  
+        return new Promise((resolve) => {
+          stream.on('data', (data) => {
+            res.write(data);
+          });
+          stream.on('end', (data) => {
+            res.end();
+          });
+        })
       }
     } catch (er) {
       Logger.error(er);

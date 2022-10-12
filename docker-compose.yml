@@ -1,0 +1,67 @@
+version: "3.9"
+services:
+  api:
+    container_name: main-api
+    build: .
+    volumes:
+      - ./:/usr/src/app
+      - nodemodules:/usr/src/app/node_modules
+    ports:
+      - "3333:3000"
+      - "9229:9229"
+    networks:
+      - api
+    environment:
+      - ENV_SILENT=true
+      - APP_KEY=jDLnnnG0TGtBuC84zlwUgDs82pLiW6eD
+      - APP_URL=http://local.private.globalgroup.consulting
+      # url dell'immagine docker
+      - CLUB_SERVER=http://global-club-api:3000
+      - CLUB2_SERVER=http://global-club-api-v2:80
+      - DB_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_staging?retryWrites=true&w=majority
+      #      - DB_CONNECTION_STRING=mongodb+srv://ggc_production:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/ggc_production?retryWrites=true&w=majority
+      - DB_GEOLOCATION_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/geolocation?retryWrites=true&w=majority
+      - DB_IAM_CONNECTION_STRING=mongodb+srv://ggc_staging:1H%25Xv%246xm4iN@cluster0.t1po0.mongodb.net/global_iam_staging?retryWrites=true&w=majority
+      - DOC_EVENTS_CALLBACK=http://local.private.globalgroup.consulting/api/webhooks/signRequest
+      - DOC_MODEL_UUID=0824adc8-7368-40d6-86f6-9f677526bb77
+      # Staging:
+      # - DOC_PUBLIC_URL=https://ggc.signrequest.com
+      # Production:
+      - DOC_PUBLIC_URL=https://privateglobalgroup.signrequest.com
+      - DOC_REDIRECT_DECLINED=http://local.private.globalgroup.consulting/sign/reject
+      - DOC_REDIRECT_SIGNED=http://local.private.globalgroup.consulting/sign/success
+      # Staging
+      # - DOC_SIGN_KEY=cf0d5e22f1ab4d31408123a2b34b1fb1b2ec56a3
+      # Produzione
+      - DOC_SIGN_KEY=9694a1149b304f3ff040bf923a6a518413ad3a4b
+      - HASH_DRIVER=bcrypt
+      - HOST=0.0.0.0
+      - PORT=3000
+      - LD_LIBRARY_PATH=/app/.heroku/vendor/lib:/app/vendor/pdftk/lib
+      - MAIL=noreply@globalgroup.consulting
+      - MAIL_API_KEY=d1bd7d9f-0203-49ee-8a1e-bf5d3ab61add
+      - MAIL_CONNECTION=postmark
+      - MAIL_FROM=Global Group Consulting <noreply@globalgroup.consulting>
+       # url dell'immagine docker
+      - NEWS_SERVER=http://global-news:8000
+      - NODE_ENV=development
+      - NODE_MODULES_CACHE=false
+      - NOTIFICATION_EMAIL_TIMEOUT=in 30 minutes
+      - PATH=/app/.heroku/python/bin:/usr/local/bin:/usr/bin:/bin:/app/vendor/pdftk/bin
+      - PUBLIC_URL=http://local.private.globalgroup.consulting
+      - S3_BUCKET=globalgroupstaging
+      - S3_KEY=AKIATXYDZVMNYKFCPSH5
+      - S3_REGION=eu-central-1
+      - S3_SECRET=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
+      - SERVER_KEY=srv-oeLULBTBa8sBUme-main
+      - SESSION_DRIVER=cookie
+      - STORAGE=s3
+      - TOKENS_KEY=876df6s7g6d5g76hgh23f423478268728342gjh
+      - TRIGGER_COMMISSION_BLOCK=1 10 0 1 * *
+      - TRIGGER_PERIODIC_EMAILS=null
+      - TRIGGER_RECAPITALIZATION=1 10 0 16 * *
+volumes:
+  nodemodules: { }
+networks:
+  api:
+    name: globalNetwork

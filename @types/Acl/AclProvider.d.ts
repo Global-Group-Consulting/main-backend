@@ -1,5 +1,5 @@
 interface AclProvider {
-  checkPermissions(requiredPermissions: string[], auth: { user: any }): boolean
+  checkPermissions (requiredPermissions: string[], auth: { user: any }): Promise<boolean>
 }
 
-export {AclProvider}
+export { AclProvider }

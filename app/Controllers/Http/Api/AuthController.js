@@ -91,6 +91,7 @@ class AuthController {
 
       return userData
     } catch (error) {
+      console.error(error)
       throw new InvalidLoginException('Missing or invalid jwt token; ' + error.message);
     }
   }
@@ -167,19 +168,22 @@ class AuthController {
    * @param response
    * @return {Promise<void>}
    */
-  async forgot({request, response}) {
+  async forgot({request, response, auth}) {
     let email = request.input('email')
-
+  
     email = email.toLowerCase()
-
+  
     const user = await User.checkExists("email", email)
-
+  
     if (user.account_status !== AccountStatuses.ACTIVE || user.suspended) {
       throw new UserException("Utente non trovato o account non attivo o sospeso")
     }
-
-    await Persona.forgotPassword(email)
-
+  
+    // await Persona.forgotPassword(email)
+    const token = await Persona.generateToken(user, 'password')
+  
+    Event.fire('forgot::password', {user, token, app: auth.requestedApp})
+  
     response.ok()
   }
 
@@ -191,26 +195,29 @@ class AuthController {
    *
    * @param request
    * @param response
+   * @param response
    * @return {Promise<void>}
    */
   async resetPassword({request, response, auth}) {
     const inputData = request.only(['token', 'password', 'password_confirmation'])
     const token = inputData.token.replace(/ /g, "+").replace(/%3D/g, "=")
-
+  
     const user = await Persona.updatePasswordByToken(token, {
       password: inputData.password,
       password_confirmation: inputData.password_confirmation,
     })
-
+  
+    Event.fire('password::recovered', {user, app: auth.requestedApp})
+  
     const authResult = await auth
       .withRefreshToken()
       .attempt(user.email, inputData.password)
-
+  
     return response.json({
       'token': authResult.token,
       'refreshToken': authResult.refreshToken
     })
-
+  
   }
 }
 

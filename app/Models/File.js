@@ -47,21 +47,22 @@ class File extends Model {
   /**
    *
    * @param {{ [key:string]: File }} files
-   * @param {string} userId // user id
+   * @param {string|null} userId // user id
    * @param {string} loadedBy // loaded by id
+   * @param {any} extraData
+   * @param {string} path
    * @returns {Promise<Model[]>}
    */
-  static async store(files, userId, loadedBy, extraData = {}) {
+  static async store(files, userId, loadedBy, extraData = {}, path = "") {
     const storedFiles = []
-
+  
     for (const key of Object.keys(files)) {
-      const fileId = new MongoTypes.ObjectId()
       let file = files[key]
       let readableStream
-
+    
       if (typeof file === "string" && file.startsWith("http")) {
         readableStream = await this.fetchFile(file)
-
+      
         // create a fake file
         file = {};
       } else {
@@ -73,18 +74,23 @@ class File extends Model {
           readableStream = fs.createReadStream(file.tmpPath);
         }
       }
-
-      const fileUrl = await Drive.put(fileId.toString(), readableStream);
-
+    
       const newFile = await File.create({
-        _id: fileId,
         ...(file.toJSON ? file.toJSON() : file),
-        fileUrl,
         userId,
         loadedBy,
         ...extraData
       });
-
+    
+      // adds path to the uploaded file
+      const name = (path ? path + "/" : '') + newFile._id.toString();
+  
+      // store the path to the db
+      newFile.path = name;
+      await newFile.save();
+    
+      const fileUrl = await Drive.put(name, readableStream);
+    
       storedFiles.push(newFile);
     }
 
@@ -142,20 +148,21 @@ class File extends Model {
 
     for (const file of filesToRemove.rows) {
       Logger.info("[FILE] Removing from S3 " + file._id.toString());
-      await Drive.delete(file._id.toString());
+      await Drive.delete((file.path || file._id).toString());
       removedFiles.push(await file.delete());
     }
 
     Logger.info("[FILE] removedFiles" + JSON.stringify(removedFiles));
     return removedFiles;
+    
   }
 
   user() {
     return this.belongsTo('App/Models/User', "userId", "_id")
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId({_id, id}) {
+    return (_id || id).toString()
   }
 
   setRequestId(value) {

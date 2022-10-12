@@ -1,5 +1,6 @@
 const {setAclMiddleware} = require("../../app/Helpers/Acl");
 const {ClubPermissions} = require("../../app/Helpers/Acl/enums/club.permissions");
+const QueueProvider = use("QueueProvider")
 
 module.exports = function (Route) {
   Route.group(() => {
@@ -22,14 +23,22 @@ module.exports = function (Route) {
 
     Route.post('/:id/remove', 'BriteController.remove')
       .validator('App/Validators/Club/Remove')
-
+  
     Route.put('/:id', 'BriteController.update')
       .validator('App/Validators/Club/Update')
-
+  
     Route.delete('/:id', 'BriteController.delete')
       .validator('App/Validators/Club/Read')
-
+  
   }).prefix('/api/club')
     .middleware('auth')
     .namespace('Api')
+  
+  /*Route.get("/recap", function () {
+    QueueProvider.create("brite_recapitalize", {
+      amountChange: 1543,
+      userId: "5fa685ff6a42ef0021c799ca"
+    })
+    return "ciao"
+  })*/
 }

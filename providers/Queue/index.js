@@ -9,6 +9,7 @@ const cronParser = require('cron-parser');
 
 const Logger = use("Logger")
 const Helpers = use('Helpers');
+const Database = use('Database');
 
 class Queue {
   /**
@@ -22,34 +23,43 @@ class Queue {
     if (!appMongoConnection) {
       throw new Error("Missing MongoDb configuration.")
     }
-
+  
     if (!appMongoConnection.connectionString) {
       appMongoConnection.connectionString = mongoUriBuilder({
         ...appMongoConnection.connection
       })
     }
-
+  
     this.Config = Config
-
+  
     this.queuesList = {}
     this.jobsList = {}
-
-    /** @type {Agenda} */
-    this._agenda = new Agenda({
-      db: {
-        address: appMongoConnection.connectionString,
-        collection: "queueJobs",
-        options: {
-          useUnifiedTopology: true,
-          // useFindAndModify: false,
-          useNewUrlParser: true
-        }
-      },
-      defaultLockLifetime: 5000,
-    });
-
-    this._initQueues()
-
+  
+    Database.connect("mongodb")
+      .then(resp => {
+      
+        /** @type {Agenda} */
+        this._agenda = new Agenda({
+          mongo: resp,
+          db: {
+            collection: "queueJobs",
+          },
+          /*db: {
+            address: appMongoConnection.connectionString,
+            collection: "queueJobs",
+            options: {
+              useUnifiedTopology: true,
+              // useFindAndModify: false,
+              useNewUrlParser: true
+            }
+          },*/
+          defaultLockLifetime: 5000,
+        });
+      
+        this._initQueues()
+      })
+  
+  
     /*this.initRecursiveJobs()
       .then(() => {
         this.logInfo("Started recursive jobs")
@@ -173,8 +183,12 @@ class Queue {
    * @param {string | string[]} queueName
    */
   async _checkQueueExistence(queueName) {
+    if (!this._agenda) {
+      throw new Error("Queue handler not ready ")
+    }
+  
     await this._agenda["_ready"]
-
+  
     for (const jobName of (queueName instanceof Array ? queueName : [queueName]))
       if (!this._agenda["_definitions"][jobName]) {
         throw new Error("Unknown queue " + jobName)
@@ -312,14 +326,21 @@ class Queue {
     if (!recursiveJobs || recursiveJobs.length === 0) {
       return
     }
-
+  
     await this._isReady()
-
+  
     await Promise.all(
       recursiveJobs.map(async (job) => {
         await this.cron(job.recursion, job.queue)
       })
     )
+  }
+  
+  async create(name, data) {
+    const job = this._agenda.create(name, data);
+    await job.save();
+    
+    job.touch();
   }
 }
 

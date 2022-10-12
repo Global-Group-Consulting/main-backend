@@ -21,6 +21,8 @@ class BriteMovementTypes extends BasicEnum {
 
     // When a user uses them
     this.DEPOSIT_COLLECTED = "deposit_collected"
+    
+    this.DEPOSIT_USED = "deposit_used"
 
     super.data = {
       [this.INTEREST_RECAPITALIZED]: {

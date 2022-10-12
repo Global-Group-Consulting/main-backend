@@ -107,7 +107,8 @@ class Request extends Model {
               briteConversionPercentage: data.briteConversionPercentage,
               requestId: data._id,
               interestPercentage: +user.contractPercentage,
-              cards: data.cards
+              cards: data.cards,
+              notes: data.notes
             }
 
             if (data.typeClub) {
@@ -163,21 +164,21 @@ class Request extends Model {
          */
         if (!data.autoWithdrawlAll) {
           const commissionMovement = await CommissionModel.find(data.movementId)
-
+    
           data.availableAmount = commissionMovement.currMonthCommissionsOld
         } else {
           data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
         }
-      } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER].includes(data.type)) {
-
-        if (data.type === RequestTypes.COMMISSION_MANUAL_TRANSFER) {
+      } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT]
+        .includes(data.type)) {
+  
+        if ([RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT].includes(data.type)) {
           const commissionMovement = await CommissionModel._getLastCommission(data.userId)
           data.availableAmount = commissionMovement.currMonthCommissions
         } else {
           const commissionMovement = await CommissionModel._getLastCommission(data.targetUserId)
           data.availableAmount = commissionMovement.currMonthCommissions
         }
-
       }
 
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)
@@ -195,7 +196,8 @@ class Request extends Model {
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate,
-            cards: data.cards
+            cards: data.cards,
+            notes: data.notes
           }
 
           if (data.typeClub) {
@@ -441,6 +443,9 @@ class Request extends Model {
           '$unwind': {
             'path': '$user'
           }
+        },
+        {
+          "$limit": 1000
         }
       ]).toArray()
 

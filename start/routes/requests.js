@@ -10,6 +10,10 @@ module.exports = function (Route) {
     Route
       .post('/admin', 'RequestController.createByAdmin')
       .validator("requests/createByAdmin")
+  
+    Route
+      .post('/agent', 'RequestController.createByAgent')
+      .validator("requests/createByAgent")
 
     Route
       .put('/:id', 'RequestController.update')

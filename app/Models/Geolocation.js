@@ -1,5 +1,6 @@
 'use strict'
 
+const {filter} = require("lodash/collection");
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 
@@ -22,22 +23,39 @@ class Geolocation extends Model {
   /**
    * @return {Promise<import("../../@types/Geolocation/ItaProvince").ItaProvince[]>}
    */
-  static async getItaProvinces() {
-    return this.db.collection("itaProvinces").find()
+  static async getItaProvinces(region) {
+    const filters = {}
+  
+    if (region) {
+      filters["regione"] = region
+    }
+  
+    return this.db.collection("itaProvinces").where(filters).sort({nome: 1}).find()
   }
 
   /**
    * @return {Promise<import("../../@types/Geolocation/ItaRegion").ItaRegion[]>}
    */
   static async getItaRegions() {
-    return this.db.collection("itaRegions").find()
+    return this.db.collection("itaRegions").sort({nome: 1}).find()
   }
-
+  
   /**
+   * @param {{region?:string, province?: string}} queryString
    * @return {Promise<import("../../@types/Geolocation/ItaComuni").ItaComuni[]>}
    */
-  static async getItaComunis() {
-    return this.db.collection("itaComunis").find()
+  static async getItaComunis(queryString) {
+    const filters = {}
+    
+    if (queryString.region) {
+      filters["regione"] = queryString.region
+    }
+    
+    if (queryString.province) {
+      filters["provincia"] = queryString.province
+    }
+    
+    return this.db.collection("itaComunis").where(filters).sort({nome: 1}).find()
   }
 
   /**

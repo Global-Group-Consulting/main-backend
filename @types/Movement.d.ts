@@ -10,12 +10,13 @@ export interface IMovement {
   // Tipologia di movimento (versamento, reinvestimento, ecc.)
   movementType: number,
 
-  // Percentuale di interesse attualmente attiva.
+  // Percentuale d'i 'interesse attualmente attiva.
   interestPercentage: number,
 
   // Interesse attualmente in pancia, quindi somma calcolata.
   interestAmount: number,
   interestAmountOld: number,
+
 
   requestId: string
   userId: string
@@ -33,4 +34,5 @@ export interface AddMovementDto {
   userId: string
   movementType: number
   amountChange: number
+  created_at?: string
 }

@@ -4,6 +4,8 @@ module.exports = function (Route) {
       .validator("docs/DownloadReceipt")
 
     Route.get('/reports/requests', 'DocController.getRequestsReport')
+    
+    Route.get('/reports/movements', 'DocController.getMovementsReport')
 
   }).prefix('/api/docs')
     .middleware('auth')

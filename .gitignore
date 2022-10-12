@@ -16,7 +16,7 @@ database/*.sqlite
 .history
 .idea
 
-
+mongodump-ggc-prod-db
 
 
 /_fileSystem/

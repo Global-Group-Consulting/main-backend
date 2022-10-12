@@ -30,6 +30,7 @@ export interface Request extends RequestModel {
   created_at: Date
   updated_at: Date
   completed_at: Date
+  paymentDocDate?: Date
   contractNumber: string
   email: string
   firstName: string

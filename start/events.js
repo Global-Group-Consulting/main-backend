@@ -1,9 +1,5 @@
 const Event = use('Event')
-/** @type {import("../providers/EmailSender").default} */
-const EmailSender = use('EmailSender')
-const UserRoles = require("../enums/UserRoles")
 
-// Auth events triggered by Persona
 Event.on('user::created', async ({user, token}) => {
   // Won't do nothing because my user activation is different
   // from the one of Persona

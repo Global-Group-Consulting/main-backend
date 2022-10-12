@@ -19,5 +19,6 @@ module.exports = function (Route) {
 
   Route.get('/api/files/:id/show', 'Api/FileController.show');
   Route.get('/api/files/:id/url', 'Api/FileController.showUrl');
+  // Route.get('/api/files/:id/download', 'Api/FileController.download');
 
 }

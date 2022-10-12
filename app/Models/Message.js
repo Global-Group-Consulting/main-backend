@@ -22,10 +22,6 @@ class Message extends Model {
     return ['id']
   }
 
-  static get hidden() {
-    return ["_id"]
-  }
-
   static boot() {
     super.boot()
 
@@ -174,8 +170,8 @@ class Message extends Model {
     return this.hasOne("App/Models/User", "receiverId", "_id")
   }
 
-  getId({_id}) {
-    return _id.toString()
+  getId({_id, id}) {
+    return (_id || id || '').toString()
   }
 
   setSenderId(value) {
