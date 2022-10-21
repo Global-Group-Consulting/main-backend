@@ -10,6 +10,6 @@ RUN yarn install
 
 COPY . .
 
-CMD ["yarn", "watch"]
+#CMD ["yarn", "watch"]
 
 EXPOSE 3000
