@@ -1,6 +1,14 @@
 const AuthProvider = use('Adonis/Middleware/Auth')
 const Request = use('Adonis/Src/Request')
 
+/**
+ * @type {typeof import('../../app/Models/User')}
+ */
+const User = use('App/Models/User')
+const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
+
+const UserRole = require('../../enums/UserRoles')
+
 class Acl {
   constructor (Config) {
     this.Config = Config
@@ -101,6 +109,33 @@ class Acl {
     }
     
     return toReturn
+  }
+  
+  /**
+   * Check if some user tries to edit or access another user and this can do it
+   *
+   * @param {User} authUser
+   * @param {string} targetUserId
+   * @return {Promise<void>}
+   * @exception AclForbiddenException
+   */
+  async checkAccessToUser (authUser, targetUserId) {
+    // if not admin (admins can access any user) and not changing himself
+    if (!authUser.isAdmin() && targetUserId.toString() !== authUser._id.toString()) {
+      // if user is agent, check if is editing one of subUsers
+      if (authUser.role === UserRole.AGENTE) {
+        // get agentsTeamUsers
+        const teamUsers = await User.getTeamUsersIds(authUser._id)
+        
+        // check if the requested user is in the team, otherwise throw an error
+        if (!teamUsers.includes(targetUserId)) {
+          throw new AclForbiddenException('You can\'t read this user data')
+        }
+      } else {
+        // Throw an error if the user is not admin and is not changing himself
+        throw new AclForbiddenException('You can\'t read this user data')
+      }
+    }
   }
   
   /**

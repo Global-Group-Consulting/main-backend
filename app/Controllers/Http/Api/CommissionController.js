@@ -9,7 +9,7 @@ const RequestModel = use('App/Models/Request')
 /** @type {typeof import('../../../Models/User')} */
 const UserModel = use('App/Models/User')
 
-/** @type {import('../../../../@types/Acl/AclProvider').AclProvider} */
+/** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 const Event = use('Event')
 
@@ -140,9 +140,7 @@ class CommissionController {
       user = await UserModel.find(userId)
       
       // Dovrei fare un controllo se l'utente fa parte dei suoi agenti, altrimenti dovrei bloccare tutto
-      /*if (user.role === UserRoles.AGENTE) {
-        hasSubAgents = (await user.subAgents().count())
-      }*/
+      await AclProvider.checkAccessToUser(auth.user, params.id)
     }
     
     return await CommissionModel.getAll(user._id)
