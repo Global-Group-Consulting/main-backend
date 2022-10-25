@@ -37,6 +37,9 @@ const { formatBySemester } = require('../Helpers/Utilities/formatBySemester.js')
 
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require('lodash')
 
+/**
+ * @property {string[]} roles
+ */
 class User extends Model {
   static userFields = {
     'personType': '',

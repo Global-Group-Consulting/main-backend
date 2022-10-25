@@ -3,6 +3,7 @@
 /**
  * @typedef {import('../../../../@types/HttpResponse').AdonisHttpResponse} AdonisHttpResponse
  * @typedef {import('../../../../@types/HttpRequest').HttpRequest} HttpRequest
+ * @typedef {import('../../../../@types/Auth').Auth} Auth
  */
 
 /** @type {typeof import('../../../Models/User')} */
@@ -649,7 +650,7 @@ class UserController {
   /**
    *
    * @param {HttpRequest} request
-   * @param auth
+   * @param {Auth} auth
    * @return {Promise<User[]|*|*[]>}
    */
   async getFiltered ({ request, auth }) {
@@ -714,7 +715,8 @@ class UserController {
   
   /**
    *
-   * @param auth
+   * @param {HttpRequest} request
+   * @param {Auth} auth
    * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
    */
   async getCounters ({ request, auth }) {
