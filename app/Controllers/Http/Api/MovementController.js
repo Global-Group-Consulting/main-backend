@@ -1,6 +1,9 @@
 'use strict'
 
-/** @typedef {import('../../../../@types/Movement.d').IMovement} IMovement*/
+/**
+ * @typedef {import('../../../../@types/Movement.d').IMovement} IMovement
+ * @typedef {import('../../../../@types/Auth').Auth} Auth
+ * */
 
 /** @type {typeof import('../../../Models/Movement')} */
 const MovementModel = use('App/Models/Movement')
@@ -9,7 +12,7 @@ const CommissionModel = use('App/Models/Commission')
 const UserModel = use('App/Models/User')
 const Database = use('Database')
 
-/** @type {import('../../../../@types/Acl/AclProvider').AclProvider} */
+/** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 
 const MovementTypes = require('../../../../enums/MovementTypes')
@@ -33,6 +36,12 @@ const { is } = require('consis/lib/object')
 const ImportException = use('App/Exceptions/ImportException')
 
 class MovementController {
+  /**
+   *
+   * @param {Auth} auth
+   * @param params
+   * @return {Promise<*>}
+   */
   async read ({ auth, params }) {
     const userRole = +auth.user.role
     const forId = params['id']
@@ -62,7 +71,7 @@ class MovementController {
       ...data,
       interestPercentage: +user.contractPercentage
     }
-
+    
     const newMovement = await MovementModel.create(newData)
     
     if (data.created_at) {
@@ -249,11 +258,19 @@ class MovementController {
     return insertResult.ops
   }
   
+  /**
+   *
+   * @param params
+   * @param {Auth} auth
+   * @return {Promise<*>}
+   */
   async getList ({ params, auth }) {
     let user = auth.user
     const userRole = user.role
     let userId = params.id || user._id.toString()
     let hasSubAgents = false
+  
+    await AclProvider.checkAccessToUser(auth.user, params.id)
     
     // If is required data for a different user than the logged one
     // Must check permissions

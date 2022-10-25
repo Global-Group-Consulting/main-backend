@@ -5,7 +5,7 @@
 const AgentBrite = use("App/Models/AgentBrite");
 const AgentBriteException = use('App/Exceptions/AgentBriteException')
 
-/** @type {import("../../../../@types/Acl/AclProvider").AclProvider} */
+/** @type {import("../../../../providers/Acl/index")} */
 const AclProvider = use('AclProvider')
 const AclGenericException = use("App/Exceptions/Acl/AclGenericException")
 const AclForbiddenException = use("App/Exceptions/Acl/AclForbiddenException")
@@ -30,6 +30,8 @@ class AgentBriteController {
       && userId !== authId) {
       throw new AclForbiddenException()
     }
+  
+    await AclProvider.checkAccessToUser(auth.user, userId)
 
     return AgentBrite.where("userId", castToObjectId(userId))
       .sort({"created_at": -1})

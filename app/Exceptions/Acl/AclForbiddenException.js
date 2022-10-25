@@ -5,7 +5,7 @@ const {StatusCodes} = require("http-status-codes")
 
 const defaultMessage = "Not enough permissions"
 
-class AclGenericException extends LogicalException {
+class AclForbiddenException extends LogicalException {
   /**
    * @returns {typeof StatusCodes}
    */
@@ -18,4 +18,4 @@ class AclGenericException extends LogicalException {
   }
 }
 
-module.exports = AclGenericException
+module.exports = AclForbiddenException

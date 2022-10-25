@@ -76,7 +76,8 @@ const aliases = {}
 |
 */
 const commands = [
-  "App/Commands/JobRunner"
+  "App/Commands/JobRunner",
+  "App/Commands/ResetPassword"
 ]
 
 module.exports = {providers, aceProviders, aliases, commands}
