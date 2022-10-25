@@ -74,7 +74,6 @@ class UserController {
   }
   
   /**
-   *
    * @param user
    * @param {string} existingRequestId
    * @returns {Promise<SignRequestModel>}
@@ -216,7 +215,7 @@ class UserController {
       
       // check if the requested user is in the team, otherwise throw an error
       if (!teamUsers.includes(params.id)) {
-        throw new AclGenericException("You can't read this user data")
+        throw new AclGenericException('You can\'t read this user data')
       }
     }
     
@@ -229,11 +228,12 @@ class UserController {
     const roleChangeData = request.input('roleChangeData')
     const incompleteData = request.input('incompleteData')
     
-    delete incomingUser.role
+    // non so perchè avevo vietato di cambiare il ruolo. Ora lo rimetto
+    // delete incomingUser.role
     delete incomingUser.roles
     
     /**
-     * @type {User}
+     * @type {typeof User}
      */
     const user = await User.find(params.id)
     const userRoleChanged = incomingUser.role && incomingUser.role !== user.role
@@ -257,10 +257,20 @@ class UserController {
     incomingUser.lastChangedBy = auth.user._id
     
     /*
-      If the role changes, i also must update the permissions "roles" field.
+      If the role changes, I also must update the permissions "roles" field.
      */
-    if (incomingUser.role && incomingUser.role !== user.role) {
-      incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
+    if (incomingUser.role && +incomingUser.role !== +user.role) {
+      const oldRoleName = rolesMap[UserRoles.get(user.role).id]
+      const newRoleName = rolesMap[UserRoles.get(incomingUser.role).id]
+  
+      incomingUser.roles = user.roles
+      
+      // must remove the old role from the roles array
+      const existingIndex = user.roles.findIndex(role => role === oldRoleName)
+      incomingUser.roles.splice(existingIndex, 1)
+      
+      // then add the new one
+      incomingUser.roles.push(newRoleName)
     }
     
     if (user.account_status === AccountStatuses.INCOMPLETE && incompleteData.completed) {
@@ -747,6 +757,25 @@ class UserController {
     }
     
     return User.getCounters(match)
+  }
+  
+  /**
+   * Return a list of all agents, necessary for the referenceAgent form select
+   *
+   * @param {HttpRequest} request
+   * @param {Auth} auth
+   * @return {Promise<*>}
+   */
+  async getSelectOptions ({ request, auth }) {
+    // only clients can't read this list.
+    if (auth.user.role === UserRoles.CLIENTE) {
+      throw new AclGenericException()
+    }
+    
+    return User.where({ role: UserRoles.AGENTE })
+      .setVisible(['_id', 'firstName', 'lastName', 'referenceAgent'])
+      .sort({ lastName: 1, firstName: 1 })
+      .fetch()
   }
   
   /**

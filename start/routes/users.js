@@ -3,6 +3,7 @@ const { UsersPermissions } = require('../../app/Helpers/Acl/enums/users.permissi
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/', 'UserController.getFiltered')
+    Route.get('/select/agents', 'UserController.getSelectOptions')
     /*Route.get('/', 'UserController.getAll')
       .validator('users/UserReadAll')*/
     
