@@ -256,7 +256,7 @@ class UserController {
     if (incomingUser.role && +incomingUser.role !== +user.role) {
       const oldRoleName = rolesMap[UserRoles.get(user.role).id]
       const newRoleName = rolesMap[UserRoles.get(incomingUser.role).id]
-  
+      
       incomingUser.roles = user.roles
       
       // must remove the old role from the roles array
@@ -555,107 +555,6 @@ class UserController {
   /**
    *
    * @param {HttpRequest} request
-   * @param auth
-   * @return {Promise<User[]|*|*[]>}
-   */
-  
-  /*async getAll ({ request, auth }) {
-    /!** @type {User} **!/
-    const authUser = auth.user
-    const userRole = +auth.user.role
-    const requestRole = request.input('f')
-    const allowedRoles = [AclUserRoles.ADMIN, AclUserRoles.AGENT, AclUserRoles.CLIENTS_SERVICE, AclUserRoles.SUPER_ADMIN, AclUserRoles.CLIENT]
-    const agentAllowedRoles = [AclUserRoles.AGENT, AclUserRoles.CLIENT]
-    
-    // TODO:: unire questa funzione con quella dei filter, per non duplicare il codice
-    
-    if (!allowedRoles.includes(requestRole)) {
-      throw new AclGenericException('You don\'t have permissions to access this resource.')
-    }
-    
-    if (!(await AclProvider.checkPermissions([UsersPermissions.ACL_USERS_ALL_READ, UsersPermissions.ACL_USERS_TEAM_READ], auth))) {
-      throw new AclGenericException()
-    }
-    
-    // if user is agent, can filter by only the team roles (agent, clients)
-    if (authUser.isAgent() && !agentAllowedRoles.includes(requestRole)) {
-      throw new AclGenericException('You don\'t have permissions to access this resource.')
-    }
-    
-    const filterRole = requestRole
-    let match = {
-      roles: requestRole
-    }
-    let returnFlat = false
-    let project = null
-    let result
-    
-    // Filter used for fetching agents list
-    /!*    if (filterRole && +filterRole === UserRoles.AGENTE) {
-          // match['role'] = { $in: [filterRole.toString(), +filterRole] }
-          returnFlat = true
-          project = {
-            'firstName': 1,
-            'lastName': 1,
-            'role': 1,
-            'roles': 1,
-            'id': 1
-          }
-        }*!/
-    
-    // if the auth user is an agent, filter by only its users
-    if (userRole === UserRoles.AGENTE) {
-      match['referenceAgent'] = { $in: [auth.user._id.toString(), auth.user._id] }
-    }
-    
-    /!*
-    If the user is an agent and has subAgents and the filter for agents is active,
-    return the list of all agents for the agents team
-     *!/
-    if (userRole === UserRoles.AGENTE) {
-      // const hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
-      
-      /!* if (hasSubAgents) {
-         const returnFilterByRole = filterRole && +filterRole === UserRoles.AGENTE
-         const teamAgents = await User.getTeamAgents(auth.user, !returnFilterByRole)
-         
-         if (returnFilterByRole) {
-           return teamAgents
-         }
-         
-         const toReturn = await User.groupByRole(match, returnFlat, project)
-         const agentsGroupIndex = toReturn.findIndex(_data => _data.id === UserRoles.AGENTE.toString())
-         
-         if (agentsGroupIndex >= 0) {
-           toReturn[agentsGroupIndex].data = teamAgents
-         }
-         
-         return toReturn
-       }*!/
-    }
-    
-    return await User.filter(match, [
-      '_id',
-      'firstName',
-      'lastName',
-      'email',
-      'role',
-      'roles',
-      'account_status',
-      'contractSignedAt',
-      'contractPercentage',
-      'contractImported',
-      'contractNumber',
-      'gold',
-      'clubPack',
-      'commissionsAssigned',
-      'referenceAgent'
-    ], request.pagination)
-  }
-  */
-  /**
-   *
-   * @param {HttpRequest} request
    * @param {Auth} auth
    * @return {Promise<User[]|*|*[]>}
    */
@@ -694,9 +593,17 @@ class UserController {
     
     // special fake role used to fetch all the users under an agent team leader
     if (filtersQuery.roles === AclUserRoles.CLIENT + '_indirect') {
-      // first get a list of all agents under the team leader
-      const subAgents = await User.getTeamAgents(authUser)
-      const ids = subAgents.map(_agent => _agent._id).filter(_id => _id.toString() !== authUser._id.toString())
+      const refUser = request.pagination.filters.referenceAgent ? (await User.find(request.pagination.filters.referenceAgent)) : authUser
+      
+      // get the list of all ids of the users under the agent team leader
+      const ids = (await User.getTeamAgents(refUser))
+        .reduce((acc, user) => {
+          if (user._id.toString() !== refUser._id.toString()) {
+            acc.push(user._id, user._id.toString())
+          }
+          
+          return acc
+        }, [])
       
       delete filtersQuery.roles
       
