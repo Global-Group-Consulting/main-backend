@@ -634,7 +634,7 @@ class User extends Model {
   }
   
   /**
-   *
+   * Return the list of all subAgents recursively
    * @param {User | string} agent
    * @param {boolean} includeReferenceAgentData=false
    * @returns {Promise<typeof User[]>}
@@ -671,9 +671,13 @@ class User extends Model {
     return toReturn
   }
   
-  static async getTeamUsersIds (agent) {
+  static async getTeamUsersIds (agent, excludeUser = false) {
     const subAgents = await this.getTeamAgents(agent)
-    const ids = subAgents.map(_agent => _agent._id)
+    let ids = subAgents.map(_agent => _agent._id)
+    
+    if (excludeUser) {
+      ids = ids.filter(id => id.toString() !== agent._id.toString())
+    }
     
     const allUsers = await this.where({ 'referenceAgent': { $in: ids } }).fetch()
     
