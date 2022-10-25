@@ -209,21 +209,15 @@ class UserController {
   }
   
   async read ({ params, auth }) {
-    if (!auth.user.isAdmin() && params.id !== auth.user._id.toString()) {
-      // can read its own data
-      const teamUsers = await User.getTeamUsersIds(auth.user._id)
-      
-      // check if the requested user is in the team, otherwise throw an error
-      if (!teamUsers.includes(params.id)) {
-        throw new AclGenericException('You can\'t read this user data')
-      }
-    }
+    await AclProvider.checkAccessToUser(auth.user, params.id)
     
     // return await User.getUserData(params.id)
     return (await User.find(params.id)).full(true)
   }
   
   async update ({ request, params, auth, response }) {
+    await AclProvider.checkAccessToUser(auth.user, params.id)
+    
     const incomingUser = request.only(User.updatableFields)
     const roleChangeData = request.input('roleChangeData')
     const incompleteData = request.input('incompleteData')
@@ -321,7 +315,9 @@ class UserController {
     return result.full()
   }
   
-  async delete ({ params }) {
+  async delete ({ params, auth }) {
+    await AclProvider.checkAccessToUser(auth.user, params.id)
+    
     const user = await User.find(params.id)
     
     await user.delete()
@@ -688,7 +684,10 @@ class UserController {
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, UserFiltersMap)
     
     // if the auth user is an agent, filter by only its users
-    if (authUserRole === UserRoles.AGENTE) {
+    if (request.pagination.filters.referenceAgent || authUserRole === UserRoles.AGENTE) {
+      // check if the user can access this reference agent. Must be at least a sub agent or subclient
+      await AclProvider.checkAccessToUser(auth.user, request.pagination.filters.referenceAgent || auth.user._id.toString())
+      
       // if the user is an agent allow filtering by other reference agent
       filtersQuery['referenceAgent'] = filtersQuery['referenceAgent'] || { $in: [auth.user._id.toString(), auth.user._id] }
     }
@@ -752,8 +751,11 @@ class UserController {
     }
     
     // if the auth user is an agent, filter by only its users
-    if (userRole === UserRoles.AGENTE) {
-      match['referenceAgent'] = { $in: [auth.user._id.toString(), auth.user._id] }
+    if (match['referenceAgent'] || userRole === UserRoles.AGENTE) {
+      // check if the user can access this reference agent. Must be at least a sub agent or subclient
+      await AclProvider.checkAccessToUser(auth.user, request.pagination.filters.referenceAgent || auth.user._id.toString())
+      
+      match['referenceAgent'] = match['referenceAgent'] || { $in: [auth.user._id.toString(), auth.user._id] }
     }
     
     return User.getCounters(match)
