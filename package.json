@@ -11,6 +11,7 @@
     "watch": "nodemon --inspect=0.0.0.0 --watch app server.js",
     "test": "node ace test",
     "deploy": "git push heroku master",
+    "resetAllPassword": "adonis reset:password --all",
     "jobRunner": "adonis job-runner --job-name=trigger_users_recapitalization"
   },
   "keywords": [

@@ -37,6 +37,9 @@ const { formatBySemester } = require('../Helpers/Utilities/formatBySemester.js')
 
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require('lodash')
 
+/**
+ * @property {string[]} roles
+ */
 class User extends Model {
   static userFields = {
     'personType': '',
@@ -341,6 +344,81 @@ class User extends Model {
   }
   
   /**
+   *
+   * @param filter
+   * @param project
+   * @param {import('/@types/HttpRequest').RequestPagination} requestPagination
+   * @return {Promise<*>}
+   */
+  static async filter (filter = {}, project, requestPagination) {
+    let sort = { firstName: 1, lastName: 1 }
+    
+    if (requestPagination.sortBy) {
+      sort = {}
+      
+      requestPagination.sortBy.forEach((sortKey, i) => {
+        sort[sortKey] = 1
+        
+        if (requestPagination.sortDesc && requestPagination.sortDesc[i]) {
+          sort[sortKey] = -1
+        }
+      })
+    }
+    
+    let result = (await this.where(filter)
+      .with('referenceAgentData')
+      .with('clients', query => {
+        return query.setVisible(['id'])
+      })
+      .setVisible(project, [])
+      .sort(sort)
+      .paginate(requestPagination.page)).toJSON()
+    
+    result.data.forEach(_entry => {
+      _entry.clients = _entry.clients.length
+    })
+    
+    result.sortBy = Object.keys(sort)
+    result.sortDesc = Object.values(sort).map((el) => el === -1)
+    result.filter = filter
+    
+    return result
+  }
+  
+  /**
+   * @param {{}} match
+   * @return {Promise<{_id: string, count: number}[]>}
+   */
+  static async getStatistics_accountStatus (match) {
+    return await this.where(match || {}).count('account_status', 'accountStatus')
+  }
+  
+  /**
+   * @param {{}} match
+   * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
+   */
+  static async getCounters (match) {
+    return await this.db.collection('users').aggregate([
+      {
+        '$match': match || {}
+      },
+      {
+        '$unwind': {
+          'path': '$roles',
+          'preserveNullAndEmptyArrays': true
+        }
+      }, {
+        '$group': {
+          '_id': '$roles',
+          'count': {
+            '$sum': 1
+          }
+        }
+      }
+    ]).toArray()
+  }
+  
+  /**
    *  Return a list of all users that can be mentioned inside a conversation chat.
    */
   static async getQuotableUsers (userId) {
@@ -556,7 +634,7 @@ class User extends Model {
   }
   
   /**
-   *
+   * Return the list of all subAgents recursively
    * @param {User | string} agent
    * @param {boolean} includeReferenceAgentData=false
    * @returns {Promise<typeof User[]>}
@@ -583,7 +661,7 @@ class User extends Model {
     toReturn.push(agent)
     
     /*
-     While there are subAgents, cycle thru each one and return it's sub agents, if any
+     While there are subAgents, cycle through each one and return its sub agents, if any
      */
     for (const subAgent of directSubAgents.rows) {
       // I should avoid recursive call and use a while instead
@@ -591,6 +669,23 @@ class User extends Model {
     }
     
     return toReturn
+  }
+  
+  static async getTeamUsersIds (agent, excludeUser = false) {
+    const subAgents = await this.getTeamAgents(agent)
+    let ids = subAgents.map(_agent => _agent._id)
+    
+    if (excludeUser) {
+      ids = ids.filter(id => id.toString() !== agent._id.toString())
+    }
+    
+    const allUsers = await this.where({ 'referenceAgent': { $in: ids } }).fetch()
+    
+    return allUsers.rows.reduce((acc, user) => {
+      acc.push(user._id.toString())
+      
+      return acc
+    }, [...ids.map(_id => _id.toString())])
   }
   
   static async getPendingSignatures () {

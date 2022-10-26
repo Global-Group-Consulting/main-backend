@@ -2,6 +2,8 @@
 
 /**
  * @typedef {import('../../../../@types/HttpResponse').AdonisHttpResponse} AdonisHttpResponse
+ * @typedef {import('../../../../@types/HttpRequest').HttpRequest} HttpRequest
+ * @typedef {import('../../../../@types/Auth').Auth} Auth
  */
 
 /** @type {typeof import('../../../Models/User')} */
@@ -14,6 +16,7 @@ const SignRequestModel = use('App/Models/SignRequest')
 const DocSigner = use('DocSigner')
 const Config = use('Config')
 
+/** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 
 /** @type {typeof import('../../../Models/History')} */
@@ -25,15 +28,20 @@ const UserNotFoundException = use('App/Exceptions/UserNotFoundException')
 
 const AccountStatuses = require('../../../../enums/AccountStatuses')
 const UserRoles = require('../../../../enums/UserRoles')
+const AclUserRoles = require('../../../../enums/AclUserRoles')
 const PersonTypes = require('../../../../enums/PersonTypes')
 const { UsersPermissions } = require('../../../Helpers/Acl/enums/users.permissions')
+const { validate } = use('Validator')
 
 /** @type {import('../../../Exceptions/UserException')} */
 const UserException = use('App/Exceptions/UserException')
-/** @type {import('../../../Exceptions/Acl/AclGenericException')} */
+
+/** @type {typeof import('../../../Exceptions/Acl/AclGenericException')} */
 const AclGenericException = use('App/Exceptions/Acl/AclGenericException')
 
 const moment = require('moment')
+const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
+const UserFiltersMap = require('../../../Filters/UserFilters.map')
 
 const {
   formatWrittenNumbers, formatDate, formatContractNumber, formatMoney,
@@ -66,7 +74,6 @@ class UserController {
   }
   
   /**
-   *
    * @param user
    * @param {string} existingRequestId
    * @returns {Promise<SignRequestModel>}
@@ -201,21 +208,26 @@ class UserController {
     return user.toJSON()
   }
   
-  async read ({ params }) {
+  async read ({ params, auth }) {
+    await AclProvider.checkAccessToUser(auth.user, params.id)
+    
     // return await User.getUserData(params.id)
     return (await User.find(params.id)).full(true)
   }
   
   async update ({ request, params, auth, response }) {
+    await AclProvider.checkAccessToUser(auth.user, params.id)
+    
     const incomingUser = request.only(User.updatableFields)
     const roleChangeData = request.input('roleChangeData')
     const incompleteData = request.input('incompleteData')
     
-    delete incomingUser.role
+    // non so perchè avevo vietato di cambiare il ruolo. Ora lo rimetto
+    // delete incomingUser.role
     delete incomingUser.roles
     
     /**
-     * @type {User}
+     * @type {typeof User}
      */
     const user = await User.find(params.id)
     const userRoleChanged = incomingUser.role && incomingUser.role !== user.role
@@ -239,10 +251,20 @@ class UserController {
     incomingUser.lastChangedBy = auth.user._id
     
     /*
-      If the role changes, i also must update the permissions "roles" field.
+      If the role changes, I also must update the permissions "roles" field.
      */
-    if (incomingUser.role && incomingUser.role !== user.role) {
-      incomingUser.roles = [rolesMap[UserRoles.get(incomingUser.role).id]]
+    if (incomingUser.role && +incomingUser.role !== +user.role) {
+      const oldRoleName = rolesMap[UserRoles.get(user.role).id]
+      const newRoleName = rolesMap[UserRoles.get(incomingUser.role).id]
+      
+      incomingUser.roles = user.roles
+      
+      // must remove the old role from the roles array
+      const existingIndex = user.roles.findIndex(role => role === oldRoleName)
+      incomingUser.roles.splice(existingIndex, 1)
+      
+      // then add the new one
+      incomingUser.roles.push(newRoleName)
     }
     
     if (user.account_status === AccountStatuses.INCOMPLETE && incompleteData.completed) {
@@ -293,7 +315,9 @@ class UserController {
     return result.full()
   }
   
-  async delete ({ params }) {
+  async delete ({ params, auth }) {
+    await AclProvider.checkAccessToUser(auth.user, params.id)
+    
     const user = await User.find(params.id)
     
     await user.delete()
@@ -528,56 +552,164 @@ class UserController {
     return auth.user
   }
   
-  async getAll ({ request, auth }) {
-    const userRole = +auth.user.role
-    const filterRole = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI, UserRoles.AGENTE].includes(userRole) ? request.input('f') : null
-    let match = {}
-    let returnFlat = false
-    let project = null
-    let result
+  /**
+   *
+   * @param {HttpRequest} request
+   * @param {Auth} auth
+   * @return {Promise<User[]|*|*[]>}
+   */
+  async getFiltered ({ request, auth }) {
+    /** @type {User} **/
+    const authUser = auth.user
+    const authUserRole = +auth.user.role
+    const allowedRoles = [AclUserRoles.ADMIN, AclUserRoles.AGENT, AclUserRoles.CLIENTS_SERVICE, AclUserRoles.SUPER_ADMIN, AclUserRoles.CLIENT, AclUserRoles.CLIENT + '_indirect']
+    const agentAllowedRoles = [AclUserRoles.AGENT, AclUserRoles.CLIENT, AclUserRoles.CLIENT + '_indirect']
     
-    // Filter used for fetching agents list
-    if (filterRole && +filterRole === UserRoles.AGENTE) {
-      match['role'] = { $in: [filterRole.toString(), +filterRole] }
-      returnFlat = true
-      project = {
-        'firstName': 1,
-        'lastName': 1,
-        'role': 1,
-        'id': 1
+    if (!(await AclProvider.checkPermissions([UsersPermissions.ACL_USERS_ALL_READ, UsersPermissions.ACL_USERS_TEAM_READ], auth))) {
+      throw new AclGenericException()
+    }
+    
+    if (request.pagination.filters.roles) {
+      if (!allowedRoles.includes(request.pagination.filters.roles)) {
+        throw new AclGenericException('You don\'t have permissions to access this resource.')
+      }
+      
+      // if user is agent, can filter by only the team roles (agent, clients)
+      if (authUser.isAgent() && request.pagination.filters.roles && !agentAllowedRoles.includes(request.pagination.filters.roles)) {
+        throw new AclGenericException('You don\'t have permissions to access this role users.')
       }
     }
     
+    const filtersQuery = prepareFiltersQuery(request.pagination.filters, UserFiltersMap)
+    
+    // if the auth user is an agent, filter by only its users
+    if (request.pagination.filters.referenceAgent || authUserRole === UserRoles.AGENTE) {
+      // check if the user can access this reference agent. Must be at least a sub agent or subclient
+      await AclProvider.checkAccessToUser(auth.user, request.pagination.filters.referenceAgent || auth.user._id.toString())
+      
+      // if the user is an agent allow filtering by other reference agent
+      filtersQuery['referenceAgent'] = filtersQuery['referenceAgent'] || { $in: [auth.user._id.toString(), auth.user._id] }
+    }
+    
+    // special fake role used to fetch all the users under an agent team leader
+    if (filtersQuery.roles === AclUserRoles.CLIENT + '_indirect') {
+      const refUser = request.pagination.filters.referenceAgent ? (await User.find(request.pagination.filters.referenceAgent)) : authUser
+      
+      // get the list of all ids of the users under the agent team leader
+      const ids = (await User.getTeamAgents(refUser))
+        .reduce((acc, user) => {
+          if (user._id.toString() !== refUser._id.toString()) {
+            acc.push(user._id, user._id.toString())
+          }
+          
+          return acc
+        }, [])
+      
+      delete filtersQuery.roles
+      
+      filtersQuery.referenceAgent = { $in: ids }
+    }
+    
+    return await User.filter(filtersQuery, [
+      '_id',
+      'firstName',
+      'lastName',
+      'email',
+      'role',
+      'roles',
+      'account_status',
+      'contractSignedAt',
+      'contractPercentage',
+      'contractImported',
+      'contractNumber',
+      'gold',
+      'clubPack',
+      'commissionsAssigned',
+      'referenceAgent'
+    ], request.pagination)
+  }
+  
+  /**
+   *
+   * @param {HttpRequest} request
+   * @param {Auth} auth
+   * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
+   */
+  async getCounters ({ request, auth }) {
+    /** @type {User} **/
+    const authUser = auth.user
+    const userRole = +auth.user.role
+    
+    if (!(await AclProvider.checkPermissions([UsersPermissions.ACL_USERS_ALL_READ, UsersPermissions.ACL_USERS_TEAM_READ], auth))) {
+      throw new AclGenericException()
+    }
+    
+    const match = {
+      ...(prepareFiltersQuery(request.pagination.filters || {}, UserFiltersMap)),
+      'role': {
+        // By default, include only clients and agents in the counters
+        '$in': [UserRoles.CLIENTE, UserRoles.AGENTE]
+      }
+    }
+    
+    // if the auth user is an admin, include all roles in the counters
+    if ([UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+      match.role.$in.push(UserRoles.ADMIN, UserRoles.SERV_CLIENTI)
+    }
+    
+    // if the auth user is an agent, filter by only its users
+    if (match['referenceAgent'] || userRole === UserRoles.AGENTE) {
+      // check if the user can access this reference agent. Must be at least a sub agent or subclient
+      await AclProvider.checkAccessToUser(auth.user, request.pagination.filters.referenceAgent || auth.user._id.toString())
+      
+      match['referenceAgent'] = match['referenceAgent'] || { $in: [auth.user._id.toString(), auth.user._id] }
+    }
+    
+    return User.getCounters(match)
+  }
+  
+  /**
+   * Return a list of all agents, necessary for the referenceAgent form select
+   *
+   * @param {HttpRequest} request
+   * @param {Auth} auth
+   * @return {Promise<*>}
+   */
+  async getSelectOptions ({ request, auth }) {
+    // only clients can't read this list.
+    if (auth.user.role === UserRoles.CLIENTE) {
+      throw new AclGenericException()
+    }
+    
+    return User.where({ role: UserRoles.AGENTE })
+      .setVisible(['_id', 'firstName', 'lastName', 'referenceAgent'])
+      .sort({ lastName: 1, firstName: 1 })
+      .fetch()
+  }
+  
+  /**
+   *
+   * @param {HttpRequest} request
+   * @param auth
+   * @return {Promise<{_id: string, count: number}[]>}
+   */
+  async getStatistics ({ request, auth }) {
+    const userRole = +auth.user.role
+    /**
+     * @type {'accountStatuses'}
+     */
+    const type = request.input('type')
+    const match = {}
+    
+    // if the auth user is an agent, filter by only its users
     if (userRole === UserRoles.AGENTE) {
       match['referenceAgent'] = { $in: [auth.user._id.toString(), auth.user._id] }
     }
-    /*
-    If the user is an agent and has subAgents and the filter for agents is active,
-    return the list of all agents for the agents team
-     */
-    if (userRole === UserRoles.AGENTE) {
-      const hasSubAgents = (await auth.user.subAgents().fetch()).rows.length > 0
-      
-      if (hasSubAgents) {
-        const returnFilterByRole = filterRole && +filterRole === UserRoles.AGENTE
-        const teamAgents = await User.getTeamAgents(auth.user, !returnFilterByRole)
-        
-        if (returnFilterByRole) {
-          return teamAgents
-        }
-        
-        const toReturn = await User.groupByRole(match, returnFlat, project)
-        const agentsGroupIndex = toReturn.findIndex(_data => _data.id === UserRoles.AGENTE.toString())
-        
-        if (agentsGroupIndex >= 0) {
-          toReturn[agentsGroupIndex].data = teamAgents
-        }
-        
-        return toReturn
-      }
-    }
     
-    return await User.groupByRole(match, returnFlat, project)
+    switch (type) {
+      case 'accountStatuses':
+        return User.getStatistics_accountStatus(match)
+    }
   }
   
   async getValidatedUsers () {
