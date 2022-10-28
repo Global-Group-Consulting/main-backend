@@ -8,7 +8,7 @@
  * */
 
 /**
- * @type {Model}
+ * @type {import('@adonisjs/lucid/src/Lucid/Model')}
  */
 const Model = use('Model')
 const File = use('App/Models/File')
@@ -21,6 +21,7 @@ const MovementModel = use('App/Models/Movement')
 /** @type {typeof import('./Commission')} */
 const CommissionModel = use('App/Models/Commission')
 const AgentBrite = use('App/Models/AgentBrite')
+const Database = use('Database')
 
 const { Types: MongoTypes } = require('mongoose')
 const moment = require('moment')
@@ -51,9 +52,11 @@ const modelFields = {
 }
 
 /**
- *
+ * @property {string} _id
  */
 class Request extends Model {
+  static db
+  
   static get hidden () {
     return ['_id', '__v']
   }
@@ -70,6 +73,8 @@ class Request extends Model {
   
   static async boot () {
     super.boot()
+    
+    this.db = await Database.connect('mongodb')
     
     this.addTrait('RequestAmount')
     this.addTrait('RawDbConnection')
@@ -404,6 +409,57 @@ class Request extends Model {
       .paginate(requestPagination.page)).toJSON()
     
     return preparePaginatedResult(result, sort, filter)
+  }
+  
+  /**
+   * @param {{}} match
+   * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
+   */
+  static async getCounters (match) {
+    /**
+     * @type {GetCountersDto[]}
+     */
+    const data = await this.db.collection('requests').aggregate([
+      {
+        '$match': match || {}
+      },
+      {
+        '$unwind': {
+          'path': '$roles',
+          'preserveNullAndEmptyArrays': true
+        }
+      }, {
+        '$group': {
+          '_id': '$status',
+          'count': {
+            '$sum': 1
+          }
+        }
+      }
+    ]).toArray()
+    
+    return data.reduce((acc, curr) => {
+      // We merge together the counters for status ANNULLATA and RIFIUTATA
+      if (curr._id === RequestStatus.ANNULLATA || curr._id === RequestStatus.RIFIUTATA) {
+        let existing = acc.find(el => el._id === RequestStatus.RIFIUTATA)
+        
+        if (!existing) {
+          existing = {
+            _id: RequestStatus.RIFIUTATA,
+            count: 0
+          }
+          
+          acc.push(existing)
+        }
+        
+        existing.count += curr.count
+        
+      } else {
+        acc.push(curr)
+      }
+      
+      return acc
+    }, [])
   }
   
   static async allWithUserPaginated (sorting, page = 1, perPage = 25) {
@@ -997,7 +1053,4 @@ class Request extends Model {
   }
 }
 
-/**
- * @type {Request}
- */
 module.exports = Request
