@@ -13,7 +13,7 @@ const { Types: MongoTypes } = require('mongoose')
 /** @type {import('../../../Models/Request')} */
 const RequestModel = use('App/Models/Request')
 
-  /** @type {typeof import('../../../Models/Movement')} */
+/** @type {typeof import('../../../Models/Movement')} */
 const MovementModel = require('../../../Models/Movement')
 
 /** @type {typeof import('../../../Models/Commission')} */
@@ -40,6 +40,9 @@ const CurrencyType = require('../../../../enums/CurrencyType')
 const AclUserRoles = require('../../../../enums/AclUserRoles')
 const moment = require('moment')
 const { castToObjectId } = require('../../../Helpers/ModelFormatters')
+const { getCounters } = require('./requests/getCounters')
+const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
+const RequestFiltersMap = require('../../../Filters/RequestFilters.map')
 
 /**
  * @type {import('../../../../@types/SettingsProvider').SettingsProvider}
@@ -47,6 +50,8 @@ const { castToObjectId } = require('../../../Helpers/ModelFormatters')
 const SettingsProvider = use('SettingsProvider')
 
 class RequestController {
+  getCounters = getCounters.bind(this)
+  
   /**
    * Return all available requests for admin or for single user
    *
@@ -56,19 +61,15 @@ class RequestController {
    */
   async readAll ({ auth, request }) {
     const authAsAdmin = AclProvider.isAdmin(auth)
-    const filter = authAsAdmin ? {} : { userId: { $in: [auth.user._id.toString(), auth.user._id] } }
     
     // it the auth user is an admin, we show all available requests
-    if (authAsAdmin) {
-      // const data = await RequestModel.allWithUserPaginated(sorting)
-      const data = await RequestModel.filter(filter, null, request.pagination)
-      
-      return data;
-      // return transform.collection(data, 'RequestsTransformer')
+    if (!authAsAdmin) {
+      request.pagination.filters.userId = { userId: { $in: [auth.user._id.toString(), auth.user._id] } }
     }
     
-    // const data = await RequestModel.where(filter).sort(sorting).fetch()
-    return await RequestModel.allForUser(auth.user._id, sorting)
+    const filtersQuery = prepareFiltersQuery(request.pagination.filters, RequestFiltersMap)
+    
+    return await RequestModel.filter(filtersQuery, null, request.pagination)
   }
   
   /**
