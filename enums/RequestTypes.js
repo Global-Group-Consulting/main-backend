@@ -25,6 +25,10 @@ class RequestTypes extends BasicEnum {
     this.COMMISSION_MANUAL_ADD = 8
     this.COMMISSION_MANUAL_TRANSFER = 9
   
+    // tipologia creata solo a livello visivo,
+    // ma non viene usata nel codice o nelle richieste
+    this.VERSAMENTO_INIZIALE = 11;
+    
     // 13 come la tipologia di movimento che genera
     this.DEPOSIT_REPAYMENT = 13;
   

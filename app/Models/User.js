@@ -1,4 +1,5 @@
 'use strict'
+/** @typedef {typeof import('@adonisjs/lucid/src/Lucid/Model')} Model */
 
 /** @type {import('@adonisjs/framework/src/Hash')} */
 const Hash = use('Hash')
@@ -36,8 +37,10 @@ const { castToObjectId, castToNumber, castToIsoDate, castToBoolean } = require('
 const { formatBySemester } = require('../Helpers/Utilities/formatBySemester.js')
 
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require('lodash')
+const { prepareSorting, preparePaginatedResult } = require('../Utilities/Pagination')
 
 /**
+ * @property {string} _id MongoId of the user
  * @property {string[]} roles
  */
 class User extends Model {
@@ -351,26 +354,14 @@ class User extends Model {
    * @return {Promise<*>}
    */
   static async filter (filter = {}, project, requestPagination) {
-    let sort = { firstName: 1, lastName: 1 }
-    
-    if (requestPagination.sortBy) {
-      sort = {}
-      
-      requestPagination.sortBy.forEach((sortKey, i) => {
-        sort[sortKey] = 1
-        
-        if (requestPagination.sortDesc && requestPagination.sortDesc[i]) {
-          sort[sortKey] = -1
-        }
-      })
-    }
+    let sort = prepareSorting(requestPagination, { firstName: 1, lastName: 1 })
     
     let result = (await this.where(filter)
       .with('referenceAgentData')
       .with('clients', query => {
         return query.setVisible(['id'])
       })
-      .setVisible(project, [])
+      .setVisible(project, null)
       .sort(sort)
       .paginate(requestPagination.page)).toJSON()
     
@@ -378,11 +369,7 @@ class User extends Model {
       _entry.clients = _entry.clients.length
     })
     
-    result.sortBy = Object.keys(sort)
-    result.sortDesc = Object.values(sort).map((el) => el === -1)
-    result.filter = filter
-    
-    return result
+    return preparePaginatedResult(result, sort, filter)
   }
   
   /**
@@ -1092,7 +1079,13 @@ class User extends Model {
   apiTokens () {
     return this.hasMany('App/Models/Token')
   }
-  
+
+  /**
+   * A relationship to add agents data to a user
+   * Seems I must use a different name because if I use "referenceAgent", won't work
+   *
+   * @return {Model}
+   */
   referenceAgentData () {
     return this.hasOne('App/Models/User', 'referenceAgent', '_id')
       .setVisible([
