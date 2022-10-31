@@ -58,7 +58,7 @@ class Request extends Model {
   static db
   
   static get hidden () {
-    return ['_id', '__v']
+    return ['__v']
   }
   
   static get computed () {
@@ -386,7 +386,6 @@ class Request extends Model {
   }
   
   /**
-   *
    * @param {any} filter
    * @param {any} project
    * @param {import('/@types/HttpRequest').RequestPagination} requestPagination
@@ -403,6 +402,15 @@ class Request extends Model {
           .with('referenceAgentData', refAgentQuery => {
             refAgentQuery.setVisible(['_id', 'firstName', 'lastName', 'email'])
           })
+      })
+      .with('targetUser', userQuery => {
+        userQuery.setVisible([
+          'id',
+          'firstName',
+          'lastName',
+          'email',
+          'contractNumber'
+        ])
       })
       .setVisible(project, null)
       .sort(sort)
