@@ -64,6 +64,7 @@ module.exports = {
     key: () => '$and'
   },
   user: {},
+  userId: {},
   status: {
     query: (value) => {
       // When requesting RIFIUTATA, include also ANNULATA
