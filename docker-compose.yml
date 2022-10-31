@@ -75,12 +75,12 @@ services:
       - MONGO_INITDB_ROOT_USERNAME=admin
       - MONGO_INITDB_ROOT_PASSWORD=root
     networks:
-#      - api
+      - api
       - mongo
     restart: always
 networks:
-#  api:
-#    name: globalNetwork
+  api:
+    name: globalNetwork
   mongo:
     driver: bridge
 volumes:
