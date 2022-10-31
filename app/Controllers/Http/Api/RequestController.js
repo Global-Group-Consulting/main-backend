@@ -64,7 +64,7 @@ class RequestController {
     
     // it the auth user is an admin, we show all available requests
     if (!authAsAdmin) {
-      request.pagination.filters.userId = { userId: { $in: [auth.user._id.toString(), auth.user._id] } }
+      request.pagination.filters.userId = { $in: [auth.user._id.toString(), auth.user._id] }
     }
     
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, RequestFiltersMap)
