@@ -392,7 +392,7 @@ class Request extends Model {
    * @return {Promise<PaginatedResult>}
    */
   static async filter (filter = {}, project, requestPagination) {
-    let sort = prepareSorting(requestPagination, { 'created_at': -1, 'updated_at': -1, 'completed_at': -1 })
+    let sort = prepareSorting(requestPagination /*{ 'created_at': -1, 'updated_at': -1, 'completed_at': -1 }*/)
     
     let result = (await this.where(filter)
       // add user data

@@ -354,7 +354,7 @@ class User extends Model {
    * @return {Promise<*>}
    */
   static async filter (filter = {}, project, requestPagination) {
-    let sort = prepareSorting(requestPagination, { firstName: 1, lastName: 1 })
+    let sort = prepareSorting(requestPagination /*{ firstName: 1, lastName: 1 }*/)
     
     let result = (await this.where(filter)
       .with('referenceAgentData')
