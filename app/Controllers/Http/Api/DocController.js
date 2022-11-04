@@ -27,6 +27,7 @@ const pdfFiller = require('pdffiller')
 const ExcelJS = require('exceljs')
 const path = require('path')
 const moment = require('moment')
+const axios = require('axios')
 
 const {
   formatDate,
@@ -251,7 +252,7 @@ class DocController {
       { header: 'Brite Aggiunti', key: 'newBritesDeposit', style: britesStyle, width: 20 },
       { header: 'Brite Ricapitalizzati', key: 'britesRecapitalized', style: britesStyle, width: 20 },
       { header: 'Brite', key: 'brites', style: britesStyle, width: 20 },
-      { header: 'Brite usati', key: 'britesWithdrawn', style: britesStyle, width: 20 },
+      { header: 'Brite usati', key: 'britesWithdrawn', style: britesStyle, width: 20 }
     ]
     const rows = data.map(row => {
       row.date = row._id.year + '-' + row._id.month.toString().padStart(2, '0')
@@ -469,6 +470,13 @@ class DocController {
     return filePath
   }
   
+  /**
+   *
+   * @param request
+   * @param auth
+   * @param {Response} response
+   * @return {Promise<AxiosResponse<any>>}
+   */
   async getReceiptDeposit ({ request, auth, response }) {
     const id = request.input('id')
     const type = request.input('type')
@@ -507,9 +515,9 @@ class DocController {
     const fileName = 'receipt_deposit_' + reqData._id.toString()
     const filePath = Helpers.tmpPath(fileName)
     const doc = await this._fillPdf('resources/fileTemplates/receipts_deposit_euro.pdf', filePath, docData)
-    
+  
     response.header('x-file-name', `Integrazione ${reqNumber}.pdf`)
-    
+  
     return response.download(filePath)
   }
   

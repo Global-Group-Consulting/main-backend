@@ -40,4 +40,6 @@ export interface Request extends RequestModel {
   typeClub: boolean
   autoWithdrawlAll?: boolean
   autoWithdrawlAllRecursively?: boolean
+  
+  initialMovement?: boolean
 }

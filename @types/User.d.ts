@@ -1,6 +1,7 @@
 import UserModel from "../app/Models/User"
 import {SignRequestQuickCreate} from "./SignRequest";
 import AgentTeamType from "../enums/AgentTeamType"
+import { WebhooksCall } from './SignRequest/Webhooks'
 
 export interface User extends UserModel {
   'personType': string,
@@ -58,10 +59,12 @@ export interface User extends UserModel {
   'agentTeamType': typeof AgentTeamType
   'commissionsAssigned': CommissionAssigned[]
   clubCardNumber: string
-  clubPack: string
+  clubPack: string;
+  _id: string;
+  id: string;
 }
 
 export interface CommissionAssigned {
-  name: CommissionType,
+  name: string
   percent: number
 }

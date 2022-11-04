@@ -1,108 +1,125 @@
 'use strict'
 
 /** @typedef {import('@adonisjs/framework/src/Params')} Params */
-/** @typedef {import("../../../../@types/HttpResponse").AdonisHttpResponse} AdonisHttpResponse */
-/** @typedef {import("../../../../@types/Request").Request} IRequest */
+/** @typedef {import('../../../../@types/HttpResponse').AdonisHttpResponse} AdonisHttpResponse */
+/**
+ * @typedef {import('../../../../@types/HttpRequest').HttpRequest} HttpRequest
+ * @typedef {import('../../../../@types/Request').Request} IRequest
+ * @typedef {import('../../../../@types/Auth').Auth} Auth
+ *  */
 
-const {Types: MongoTypes} = require('mongoose');
+const { Types: MongoTypes } = require('mongoose')
 
-/** @type {typeof import("../../../Models/Request")} */
-const RequestModel = use("App/Models/Request")
+/** @type {import('../../../Models/Request')} */
+const RequestModel = use('App/Models/Request')
 
-/** @type {typeof import("../../../Models/Movement")} */
+/** @type {typeof import('../../../Models/Movement')} */
 const MovementModel = require('../../../Models/Movement')
 
-/** @type {typeof import("../../../Models/Commission")} */
+/** @type {typeof import('../../../Models/Commission')} */
 const CommissionModel = require('../../../Models/Commission')
 
-/** @type {import("../../../Models/Request")} */
-const UserModel = use("App/Models/User")
-const FileModel = use("App/Models/File")
-const AgentBrite = use("App/Models/AgentBrite")
-const Event = use("Event")
+/** @type {import('../../../Models/Request')} */
+const UserModel = use('App/Models/User')
+const FileModel = use('App/Models/File')
+const AgentBrite = use('App/Models/AgentBrite')
 
-const RequestNotFoundException = require("../../../Exceptions/RequestNotFoundException")
-const RequestException = require("../../../Exceptions/RequestException")
-const UserNotFoundException = require("../../../Exceptions/UserNotFoundException")
-const AclGenericException = require("../../../Exceptions/Acl/AclGenericException")
-const UserRoles = require("../../../../enums/UserRoles")
-const RequestStatus = require("../../../../enums/RequestStatus")
-const RequestTypes = require("../../../../enums/RequestTypes")
-const MovementTypes = require("../../../../enums/MovementTypes")
-const CurrencyType = require("../../../../enums/CurrencyType")
-const AclUserRoles = require("../../../../enums/AclUserRoles");
-const moment = require("moment")
-const {castToObjectId} = require("../../../Helpers/ModelFormatters");
+/** @type {import('../../../../providers/Acl/index')} */
+const AclProvider = use('AclProvider')
+const Event = use('Event')
+
+const RequestNotFoundException = require('../../../Exceptions/RequestNotFoundException')
+const RequestException = require('../../../Exceptions/RequestException')
+const UserNotFoundException = require('../../../Exceptions/UserNotFoundException')
+const AclGenericException = require('../../../Exceptions/Acl/AclGenericException')
+const UserRoles = require('../../../../enums/UserRoles')
+const RequestStatus = require('../../../../enums/RequestStatus')
+const RequestTypes = require('../../../../enums/RequestTypes')
+const MovementTypes = require('../../../../enums/MovementTypes')
+const CurrencyType = require('../../../../enums/CurrencyType')
+const AclUserRoles = require('../../../../enums/AclUserRoles')
+const moment = require('moment')
+const { castToObjectId } = require('../../../Helpers/ModelFormatters')
+const { getCounters } = require('./requests/getCounters')
+const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
+const RequestFiltersMap = require('../../../Filters/RequestFilters.map')
 
 /**
- * @type {import("../../../../@types/SettingsProvider").SettingsProvider}
+ * @type {import('../../../../@types/SettingsProvider').SettingsProvider}
  */
-const SettingsProvider = use("SettingsProvider")
+const SettingsProvider = use('SettingsProvider')
 
 class RequestController {
-  async readAll({auth, transform}) {
-    const adminUser = [UserRoles.SERV_CLIENTI, UserRoles.ADMIN].includes(+auth.user.role)
-    const sorting = {"created_at": -1, "updated_at": -1, "completed_at": -1}
-    const filter = adminUser ? {} : {userId: {$in: [auth.user._id.toString(), new MongoTypes.ObjectId(auth.user._id)]}}
-
-    if (adminUser) {
-      const data = await RequestModel.allWithUserPaginated(sorting)
-
-      return transform.collection(data, "RequestsTransformer")
+  getCounters = getCounters.bind(this)
+  
+  /**
+   * Return all available requests for admin or for single user
+   *
+   * @param {Auth} auth
+   * @param {HttpRequest} request
+   * @return {Promise<*>}
+   */
+  async readAll ({ auth, request }) {
+    const authAsAdmin = AclProvider.isAdmin(auth)
+    
+    // it the auth user is an admin, we show all available requests
+    if (!authAsAdmin) {
+      request.pagination.filters.userId = { $in: [auth.user._id.toString(), auth.user._id] }
     }
-
-    // const data = await RequestModel.where(filter).sort(sorting).fetch()
-    return await RequestModel.allForUser(auth.user._id, sorting)
+    
+    const filtersQuery = prepareFiltersQuery(request.pagination.filters, RequestFiltersMap)
+    
+    return await RequestModel.filter(filtersQuery, null, request.pagination)
   }
-
+  
   /**
    * @param {object} ctx
    * @param {Params} ctx.params
    * @param {AdonisHttpResponse} ctx.response
    */
-  async read({params, response}) {
+  async read ({ params, response }) {
     const data = await RequestModel.reqWithUser(params.id)
-  
+    
     if (data.type === RequestTypes.DEPOSIT_REPAYMENT) {
-      data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId);
+      data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
     }
-  
+    
     if (!data) {
       throw new RequestNotFoundException()
     }
-  
+    
     return data
   }
-
-  async readTargetUser({params}) {
+  
+  async readTargetUser ({ params }) {
     const id = params.id
-
+    
     return UserModel.getTargetUser(id)
   }
-
+  
   /**
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {AdonisHttpResponse} ctx.response
    */
-  async create({request, response, auth}) {
-    /** @type {typeof import("../../../Validators/requests/create").rules} */
+  async create ({ request, response, auth }) {
+    /** @type {typeof import('../../../Validators/requests/create').rules} */
     const incomingData = request.all()
-    /** @type {import("../../../../@types/User").User} */
+    /** @type {import('../../../../@types/User').User} */
     const associatedUser = await UserModel.find(incomingData.userId)
-    const settingsLimit = SettingsProvider.get("requestMinAmount");
-    const settingsPercentage = SettingsProvider.get("requestBritePercentage");
-  
+    const settingsLimit = SettingsProvider.get('requestMinAmount')
+    const settingsPercentage = SettingsProvider.get('requestBritePercentage')
+    
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
     
-    if(!associatedUser.contractIban){
-      throw new RequestException("La richiesta non può essere inoltrata in quanto l'utente non ha un IBAN associato. ")
+    if (!associatedUser.contractIban) {
+      throw new RequestException('La richiesta non può essere inoltrata in quanto l\'utente non ha un IBAN associato. ')
     }
-  
-    incomingData.briteConversionPercentage = 0;
-  
+    
+    incomingData.briteConversionPercentage = 0
+    
     /*
     If the request is of type RISC_PROVVIGIONI, must calculate the percentage the user can collect
     and generate the brites movement
@@ -128,154 +145,154 @@ class RequestController {
 
       // In tutti i casi genera un nuovo movimento brite
     }*/
-
+    
     // cast to boolean  - No more required.
     if (incomingData.autoWithdrawlAll) {
       //incomingData.autoWithdrawlAll = incomingData.autoWithdrawlAll === "true"
       //incomingData.autoWithdrawlAllRecursively = incomingData.autoWithdrawlAllRecursively === "true"
-
-      incomingData.amount = 0;
+      
+      incomingData.amount = 0
     } else {
       if (!+incomingData.amount && ![RequestTypes.VERSAMENTO].includes(+incomingData.type)) {
-        throw new RequestException("L'importo della richiesta deve essere maggiore di 0.");
+        throw new RequestException('L\'importo della richiesta deve essere maggiore di 0.')
       }
     }
-
-    const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll;
-
+    
+    const isAutoWithdrawlRequest = incomingData.autoWithdrawlAll
+    
     if (incomingData.cards) {
-      let cardsSum = 0;
-
+      let cardsSum = 0
+      
       incomingData.cards.forEach((el, i) => {
-        incomingData.cards[i] = JSON.parse(el);
+        incomingData.cards[i] = JSON.parse(el)
         /**
          * @type {{amount: number; id: string}}
          */
-        const cardData = incomingData.cards[i];
-
+        const cardData = incomingData.cards[i]
+        
         if (isNaN(+cardData.amount)) {
-          cardData.amount = 0;
+          cardData.amount = 0
         }
-
-        cardsSum += cardData.amount;
-      });
-
+        
+        cardsSum += cardData.amount
+      })
+      
       if (cardsSum !== incomingData.amount) {
-        throw new RequestException("La somma degli importi delle carte prepagate è diverso dall'importo richiesto.");
+        throw new RequestException('La somma degli importi delle carte prepagate è diverso dall\'importo richiesto.')
       }
     }
-
+    
     /**
      * @type {IRequest}
      */
     const newRequest = await RequestModel.create({
       ...incomingData
-    });
-
+    })
+    
     if (incomingData.type === RequestTypes.RISC_PROVVIGIONI && !isAutoWithdrawlRequest) {
-      newRequest.briteMovementId = await AgentBrite.addBritesFromRequest(newRequest);
-
-      await newRequest.save();
+      newRequest.briteMovementId = await AgentBrite.addBritesFromRequest(newRequest)
+      
+      await newRequest.save()
     }
-
-    const files = request.files();
-
+    
+    const files = request.files()
+    
     if (Object.keys(files).length > 0) {
       await FileModel.store(files, associatedUser.id, auth.user._id, {
         requestId: newRequest.id
-      });
+      })
     }
-
+    
     // avoid triggering notifications for autoWithdrawl requests
     if (!isAutoWithdrawlRequest) {
-      Event.emit("request::new", newRequest);
+      Event.emit('request::new', newRequest)
     } else {
       associatedUser.autoWithdrawlAll = newRequest._id.toString()
       associatedUser.autoWithdrawlAllRecursively = newRequest.autoWithdrawlAllRecursively ? newRequest._id.toString() : null
-
+      
       // Updates user's data by storing the autoWithdrawlAll id
       await associatedUser.save()
     }
-
+    
     return newRequest
   }
-
+  
   /**
    *
    * @param request
    * @param auth
    * @return {Promise<*>}
    */
-  async createByAdmin({request, auth}) {
+  async createByAdmin ({ request, auth }) {
     if (auth.user.role !== UserRoles.ADMIN) {
-      throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
+      throw new AclGenericException('Permission denied', AclGenericException.statusCodes.FORBIDDEN)
     }
-
-    /** @type {typeof import("../../../Validators/requests/create").rules} */
+    
+    /** @type {typeof import('../../../Validators/requests/create').rules} */
     const incomingData = request.all()
-
-    /** @type {import("../../../../@types/User").User} */
+    
+    /** @type {import('../../../../@types/User').User} */
     const associatedUser = await UserModel.find(incomingData.userId)
-  
+    
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
-  
+    
     if (!+incomingData.amount) {
-      throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+      throw new RequestException('L\'importo della richiesta deve essere maggiore di 0.')
     }
-  
-    let newRequest = null;
-  
+    
+    let newRequest = null
+    
     if ([RequestTypes.RISC_MANUALE_INTERESSI, RequestTypes.DEPOSIT_REPAYMENT].includes(+incomingData.type)) {
-      let movementType;
-  
+      let movementType
+      
       switch (+incomingData.type) {
         case RequestTypes.RISC_MANUALE_INTERESSI:
-          movementType = MovementTypes.MANUAL_INTEREST_COLLECTED;
-          break;
+          movementType = MovementTypes.MANUAL_INTEREST_COLLECTED
+          break
         case RequestTypes.DEPOSIT_REPAYMENT:
-          movementType = MovementTypes.DEPOSIT_REPAYMENT;
-          break;
+          movementType = MovementTypes.DEPOSIT_REPAYMENT
+          break
       }
-  
+      
       newRequest = await MovementModel.addRepaymentMovement({
         ...incomingData,
         requestType: incomingData.type,
         createdBy: auth.user.id,
         createdByAdmin: true,
-        interestPercentage: associatedUser.contractPercentage,
-      });
+        interestPercentage: associatedUser.contractPercentage
+      })
     } else {
       newRequest = await RequestModel.create({
         ...incomingData,
         createdBy: auth.user.id,
         createdByAdmin: true
       })
-    
+      
       const files = request.files()
-    
+      
       if (Object.keys(files).length > 0) {
         await FileModel.store(files, associatedUser.id, auth.user._id, {
           requestId: newRequest.id
         })
       }
-  
-      Event.emit("request::new", newRequest)
+      
+      Event.emit('request::new', newRequest)
     }
-  
+    
     return newRequest
   }
   
-  async createByAgent({request, auth}) {
+  async createByAgent ({ request, auth }) {
     if (!auth.user.roles.includes(AclUserRoles.AGENT)) {
-      throw new AclGenericException("Permission denied", AclGenericException.statusCodes.FORBIDDEN)
+      throw new AclGenericException('Permission denied', AclGenericException.statusCodes.FORBIDDEN)
     }
     
-    /** @type {typeof import("../../../Validators/requests/create").rules} */
+    /** @type {typeof import('../../../Validators/requests/create').rules} */
     const incomingData = request.all()
     
-    /** @type {import("../../../../@types/User").User} */
+    /** @type {import('../../../../@types/User').User} */
     const associatedUser = await UserModel.find(incomingData.userId)
     
     if (!associatedUser) {
@@ -283,11 +300,11 @@ class RequestController {
     }
     
     if (!+incomingData.amount) {
-      throw new RequestException("L'importo della richiesta deve essere maggiore di 0.")
+      throw new RequestException('L\'importo della richiesta deve essere maggiore di 0.')
     }
     
     if (incomingData.type === RequestTypes.DEPOSIT_REPAYMENT && !incomingData.notes) {
-      throw new RequestException("Motivazione richiesta mancante");
+      throw new RequestException('Motivazione richiesta mancante')
     }
     
     let newRequest = await RequestModel.create({
@@ -297,7 +314,7 @@ class RequestController {
       targetUserId: castToObjectId(incomingData.userId)
     })
     
-    Event.emit("request::new", newRequest)
+    Event.emit('request::new', newRequest)
   }
   
   /**
@@ -323,70 +340,70 @@ class RequestController {
 
     return existingRequest
   } */
-
+  
   /**
    * @param {object} ctx
    * @param {Params} ctx.params
    * @param {AdonisHttpResponse} ctx.response
    */
-  async delete({params, response, auth}) {
+  async delete ({ params, response, auth }) {
     const foundedRequest = await RequestModel.find(params.id)
-
+    
     if (!foundedRequest) {
       throw new RequestNotFoundException()
     }
-
+    
     if (+foundedRequest.status !== RequestStatus.NUOVA
       || auth.user._id.toString() !== foundedRequest.userId.toString()) {
-      return response.badRequest("Can't delete request.")
+      return response.badRequest('Can\'t delete request.')
     }
-
+    
     const result = await foundedRequest.delete()
-
-    Event.emit("request::cancelled", foundedRequest)
-
+    
+    Event.emit('request::cancelled', foundedRequest)
+    
     if (result) {
       return response.ok()
     } else {
-      return response.badRequest("Can't delete request.")
+      return response.badRequest('Can\'t delete request.')
     }
   }
-
-  async approve({params, response, request, auth}) {
+  
+  async approve ({ params, response, request, auth }) {
     const requestId = params.id
     const foundedRequest = await RequestModel.find(requestId)
-    const incomingDate = request.input("paymentDocDate")
-    const incomingAmount = request.input("paymentAmount")
-    const incomingGoldAmount = request.input("paymentGoldAmount")
-
+    const incomingDate = request.input('paymentDocDate')
+    const incomingAmount = request.input('paymentAmount')
+    const incomingGoldAmount = request.input('paymentGoldAmount')
+    
     if (!foundedRequest) {
       throw new RequestNotFoundException()
     }
-
+    
     if (![RequestStatus.NUOVA, RequestStatus.LAVORAZIONE].includes(+foundedRequest.status)) {
-      return response.badRequest("Can't change request status.")
+      return response.badRequest('Can\'t change request status.')
     }
-
-    const minMonthDate = moment().subtract(1, "months")
+    
+    const minMonthDate = moment().subtract(1, 'months')
       .set({
         'date': 1,
         'hour': 0,
-        "minute": 0,
-        "second": 0,
-        "millisecond": 0
+        'minute': 0,
+        'second': 0,
+        'millisecond': 0
       })
-
+    
     // Assure that the date is not older then 1st of previous month
     if ((minMonthDate.isAfter(incomingDate))) {
-      throw new RequestException("The provided date is older the the 1st of the previous month.")
+      throw new RequestException('The provided date is older the the 1st of the previous month.')
     }
-
+    
     const minCurrentMonthDate = moment().set({
       'date': 1,
       'hour': 0,
-      "minute": 0,
-      "second": 0,
-      "millisecond": 0
+      'minute': 0,
+      'second': 0,
+      'millisecond': 0
     })
     /*
     If the current date is > 15, and the date refers to the precious month,
@@ -395,85 +412,85 @@ class RequestController {
     a movement on the previous month.
      */
     if (moment().date() > 15 && minCurrentMonthDate.isAfter(incomingDate)) {
-      throw new RequestException("The provided date can't be precedent to the 1st of the current month because the recapitalization has already occurred.")
+      throw new RequestException('The provided date can\'t be precedent to the 1st of the current month because the recapitalization has already occurred.')
     }
-
+    
     if (!isNaN(incomingAmount) && foundedRequest.amount !== +incomingAmount) {
-      foundedRequest.originalAmount = foundedRequest.amount;
-      foundedRequest.amount = +incomingAmount;
+      foundedRequest.originalAmount = foundedRequest.amount
+      foundedRequest.amount = +incomingAmount
     }
-
+    
     if (!isNaN(incomingGoldAmount) && foundedRequest.goldAmount !== +incomingGoldAmount) {
-      foundedRequest.originalGoldAmount = foundedRequest.goldAmount;
-      foundedRequest.goldAmount = +incomingGoldAmount;
+      foundedRequest.originalGoldAmount = foundedRequest.goldAmount
+      foundedRequest.goldAmount = +incomingGoldAmount
     }
-  
+    
     foundedRequest.status = RequestStatus.ACCETTATA
     foundedRequest.paymentDocDate = incomingDate
-    foundedRequest.completedBy = auth.user._id;
+    foundedRequest.completedBy = auth.user._id
     foundedRequest.completed_at = new Date()
-  
+    
     await foundedRequest.save()
-  
+    
     if (foundedRequest.type === RequestTypes.DEPOSIT_REPAYMENT) {
       try {
         // If is a repayment, subtract the amount of commissions and add them as deposit to the user
         foundedRequest.movementId = await this.handleAgentDepositRepayment(foundedRequest)
-      
+        
         foundedRequest.save()
       } catch (er) {
         // Reset the request state
         foundedRequest.status = RequestStatus.NUOVA
         foundedRequest.paymentDocDate = null
-        foundedRequest.completedBy = null;
+        foundedRequest.completedBy = null
         foundedRequest.completed_at = null
-      
-        foundedRequest.save();
-      
-        throw er;
+        
+        foundedRequest.save()
+        
+        throw er
       }
     }
-  
-    Event.emit("request::approved", foundedRequest)
-  
+    
+    Event.emit('request::approved', foundedRequest)
+    
     return foundedRequest
   }
-
-  async reject({request, params, response}) {
+  
+  async reject ({ request, params, response }) {
     const requestId = params.id
-    const reason = request.input("reason")
+    const reason = request.input('reason')
     const foundedRequest = await RequestModel.find(requestId)
-
+    
     if (!foundedRequest) {
       throw new RequestNotFoundException()
     }
-
+    
     if (![RequestStatus.NUOVA, RequestStatus.LAVORAZIONE].includes(+foundedRequest.status)) {
-      return response.badRequest("Can't change request status.")
+      return response.badRequest('Can\'t change request status.')
     }
-
+    
     foundedRequest.status = RequestStatus.RIFIUTATA
     foundedRequest.rejectReason = reason
     foundedRequest.completed_at = new Date()
-
+    
     await foundedRequest.save()
-
-    Event.emit("request::rejected", foundedRequest)
-
+    
+    Event.emit('request::rejected', foundedRequest)
+    
     return foundedRequest
   }
-
-  async cancel({request, params, response}) {
+  
+  async cancel ({ request, params, response }) {
     const requestId = params.id
-    const reason = request.input("reason")
+    const reason = request.input('reason')
     const foundedRequest = await RequestModel.find(requestId)
-
+    
     if (!foundedRequest) {
       throw new RequestNotFoundException()
     }
-
-    const isAutoWithdrawlRequest = !!foundedRequest.autoWithdrawlAll;
-
+    
+    const isAutoWithdrawlRequest = !!foundedRequest.autoWithdrawlAll
+    
     /*
     Can't cancel a request if this is not autoWithdrawlRequest and not "accettata"
     OR
@@ -481,37 +498,37 @@ class RequestController {
      */
     if ((!isAutoWithdrawlRequest && +foundedRequest.status !== RequestStatus.ACCETTATA)
       || (isAutoWithdrawlRequest && +foundedRequest.status !== RequestStatus.LAVORAZIONE)) {
-      return response.badRequest("Can't cancel this request.")
+      return response.badRequest('Can\'t cancel this request.')
     }
-
+    
     foundedRequest.status = RequestStatus.ANNULLATA
-    foundedRequest.cancelReason = reason || ""
+    foundedRequest.cancelReason = reason || ''
     foundedRequest.completed_at = new Date().toISOString()
-
+    
     if (isAutoWithdrawlRequest) {
       // Create a prop that immediately show if the request has been disabled.
       // This prop will be used for fetching if already exist a request of this type.
-      foundedRequest.autoWithdrawlAllRevoked = true;
-
+      foundedRequest.autoWithdrawlAllRevoked = true
+      
       const associatedUser = await foundedRequest.user().fetch()
-
+      
       associatedUser.autoWithdrawlAll = null
       associatedUser.autoWithdrawlAllRecursively = null
-
+      
       // Updates user's data by resetting the autoWithdrawlAll
       await associatedUser.save()
     }
-
+    
     await foundedRequest.save()
-
+    
     // avoid triggering notifications for autoWithdrawl requests
     if (!isAutoWithdrawlRequest) {
-      Event.emit("request::cancelled", foundedRequest)
+      Event.emit('request::cancelled', foundedRequest)
     }
-
+    
     return foundedRequest
   }
-
+  
   /**
    * Metodo che effettua lo storno di una richiesta, lato admin.
    * Deve controllare anche il movimento relativo a quella richiesta,
@@ -522,31 +539,31 @@ class RequestController {
    * @param {Response} response
    * @return {Promise<void>}
    */
-  async revert({request, params, response}) {
+  async revert ({ request, params, response }) {
     /** @type {string} */
     const requestId = params.id
-
+    
     /** @type {Comprehend.SentimentScore.Mixed} */
-    const reason = request.input("reason")
-
+    const reason = request.input('reason')
+    
     /** @type {IRequest} */
     const reqToRevert = await RequestModel.find(requestId)
-
+    
     if (!reqToRevert) {
       throw new RequestNotFoundException()
     }
-
+    
     if (!RequestModel.revertableRequests.includes(reqToRevert.type)) {
-      return response.badRequest("Can't revert this type of request.")
+      return response.badRequest('Can\'t revert this type of request.')
     }
-  
+    
     reqToRevert.status = RequestStatus.ANNULLATA
-    reqToRevert.cancelReason = reason || ""
+    reqToRevert.cancelReason = reason || ''
     reqToRevert.completed_at = moment().toDate()
-  
-    await reqToRevert.save();
-  
-    Event.emit("request::reverted", reqToRevert)
+    
+    await reqToRevert.save()
+    
+    Event.emit('request::reverted', reqToRevert)
   }
   
   /**
@@ -554,9 +571,9 @@ class RequestController {
    * @param {IRequest} request
    * @returns {Promise<void>}
    */
-  async handleAgentDepositRepayment(request) {
-    let agentCommissionMovement;
-    let userDepositMovement;
+  async handleAgentDepositRepayment (request) {
+    let agentCommissionMovement
+    let userDepositMovement
     
     try {
       // Subtract agent commissions
@@ -569,7 +586,7 @@ class RequestController {
       })
       
       // Add user deposit
-      const targetUser = await UserModel.find(request.targetUserId);
+      const targetUser = await UserModel.find(request.targetUserId)
       
       userDepositMovement = await MovementModel.addRepaymentMovement({
         userId: request.targetUserId,
@@ -577,20 +594,20 @@ class RequestController {
         requestType: request.type,
         createdBy: request.userId,
         interestPercentage: targetUser.contractPercentage,
-        notes: request.notes,
-      });
+        notes: request.notes
+      })
       
-      return agentCommissionMovement._id;
+      return agentCommissionMovement._id
     } catch (er) {
       // In case of error, delete generated movements
       if (agentCommissionMovement) {
-        agentCommissionMovement.delete();
+        agentCommissionMovement.delete()
       }
       if (userDepositMovement) {
-        userDepositMovement.delete();
+        userDepositMovement.delete()
       }
       
-      throw er;
+      throw er
     }
   }
 }
