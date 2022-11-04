@@ -49,7 +49,7 @@ class Acl {
    *
    * @param {string[]} requiredPermissions
    * @param {{user: any}} auth
-   * @returns {boolean}
+   * @returns {Promise<boolean>}
    */
   async checkPermissions (requiredPermissions, auth) {
     const userPermissions = await this._getUserPermissions(auth.user)

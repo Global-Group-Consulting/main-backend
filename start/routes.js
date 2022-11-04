@@ -38,6 +38,7 @@ const FiltersRoutes = require('./routes/filters')
 const ProxyRoutes = require('./routes/proxy')
 const GeolocationRoutes = require('./routes/geolocation')
 const NewsRoutes = require('./routes/news')
+const SelectOptionRoutes = require('./routes/selectOptions')
 
 Route.on('/').render('welcome')
 
@@ -62,6 +63,7 @@ FiltersRoutes(Route)
 ProxyRoutes(Route)
 GeolocationRoutes(Route)
 NewsRoutes(Route)
+SelectOptionRoutes(Route)
 
 // const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64');
 

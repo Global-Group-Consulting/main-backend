@@ -22,7 +22,6 @@ module.exports = function (Route) {
     
     Route.get('/:id', 'UserController.read')
       .validator('users/UserRead')
-      .middleware(setAclMiddleware([UsersPermissions.ACL_USERS_TEAM_READ, UsersPermissions.ACL_USERS_ALL_READ]))
     
     Route.patch('/:id', 'UserController.update')
       .validator('users/UserUpdate')
