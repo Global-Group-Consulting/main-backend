@@ -63,7 +63,10 @@ module.exports = {
     },
     key: () => '$and'
   },
-  user: {},
+  user: {
+    key: () => 'userId',
+    query: (value) => castToObjectId(value)
+  },
   userId: {},
   status: {
     query: (value) => {
@@ -75,7 +78,11 @@ module.exports = {
       return value
     }
   },
-  referenceAgent: { key: () => 'user.referenceAgent' },
+  // disabled because i can't filter by a relation
+  /*referenceAgent: {
+    key: () => 'user.referenceAgent',
+    query: (value) => ({ '$in': [castToObjectId(value), value] })
+  },*/
   createdAt: {
     query: (value) => {
       let toReturn = []
@@ -124,7 +131,8 @@ module.exports = {
     },
     key: () => '$and'
   },
-  clubCardNumber: {},
+  // disabled because i can't filter by a relation
+  // clubCardNumber: {},
   autoWithdrawlAll: {
     query: (value) => {
       if (!value) {
