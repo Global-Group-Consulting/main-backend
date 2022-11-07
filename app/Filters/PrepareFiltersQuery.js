@@ -14,7 +14,15 @@ function prepareFiltersQuery (filters, map) {
       
       // if keyQuery is null, avoid adding it to the query
       if (keyQuery !== null) {
-        query[keyName] = keyQuery
+        if (query[keyName] instanceof Array) {
+          const value = keyQuery instanceof Array ? keyQuery : [keyQuery]
+          
+          if (value.length > 0) {
+            query[keyName].push(...value)
+          }
+        } else {
+          query[keyName] = keyQuery
+        }
       }
     }
   })
