@@ -3,19 +3,21 @@ const { UsersPermissions } = require('../../app/Helpers/Acl/enums/users.permissi
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/', 'UserController.getFiltered')
+    
+    // Todo:: remove in favor of dedicated controller method
     Route.get('/select/agents', 'UserController.getSelectOptions')
-    /*Route.get('/', 'UserController.getAll')
-      .validator('users/UserReadAll')*/
     
     Route.get('/me', 'UserController.me')
     Route.get('/count', 'UserController.getCounters')
     Route.get('/statistics', 'UserController.getStatistics')
       .validator('users/UserReadStatistics')
+    Route.get('/downloadFiltered', 'UserController.downloadFiltered')
+      .middleware(setAclMiddleware([UsersPermissions.ACL_USERS_ALL_READ]))
     
     /*
     CRUD Actions
      */
-     
+    
     Route.post('/', 'UserController.create')
       .validator('users/UserCreate')
       .middleware(setAclMiddleware([UsersPermissions.ACL_USERS_TEAM_WRITE, UsersPermissions.ACL_USERS_ALL_WRITE]))

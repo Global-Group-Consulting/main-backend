@@ -47,5 +47,33 @@
     "basic": "Basic",
     "fast": "Fast",
     "premium": "Premium"
+  },
+  "AccountStatuses": {
+    "draft": "Bozza",
+    "draft_desc": "L'account è appena stato creato ma i dati potrebbero non essere ancora completi.",
+    "created": "Da validare",
+    "created_desc": "Il profilo deve essere validato e confermato dal Serv. Clienti.",
+    "validated": "Attesa firma contratto",
+    "validated_desc": "Profilo validato dal Serv. Clienti ed in attesa dellì'approvazione finale dell'amministrazione.",
+    "incomplete": "Dati incompleti",
+    "incomplete_desc": "I dati del profilo sono incompleti o non corretti.",
+    "must_revalidate": "Da rivalidare",
+    "must_revalidate_desc": "I dati sono stati aggiornati e devono essere confermati dal Serv. Clienti",
+    "approved": "Attesa primo accesso",
+    "approved_desc": "Account approvato dall'amministrazione ma non ancora attivato dall'utente.",
+    "active": "Attivo",
+    "active_desc": "Account attivato anche dall'utente quindi perfettamente funzionale."
+  },
+  "UserRoles": {
+    "superAdmin ": "Super Admin",
+    "admin": "Amministrazione",
+    "admin_plural": "Amministrazione",
+    "servClienti": "Servizio clienti",
+    "servClienti_plural": "Servizio clienti",
+    "agente": "Agente",
+    "agente_plural": "Agenti",
+    "cliente": "Cliente",
+    "cliente_plural": "Clienti",
+    "cliente-new": "Cliente (da attivare)"
   }
 }
