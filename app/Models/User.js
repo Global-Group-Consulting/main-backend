@@ -351,19 +351,25 @@ class User extends Model {
    * @param filter
    * @param project
    * @param {import('/@types/HttpRequest').RequestPagination} requestPagination
+   * @param {boolean} returnAll
    * @return {Promise<*>}
    */
-  static async filter (filter = {}, project, requestPagination) {
+  static async filter (filter = {}, project, requestPagination, returnAll = false) {
     let sort = prepareSorting(requestPagination /*{ firstName: 1, lastName: 1 }*/)
     
-    let result = (await this.where(filter)
+    let result = this.where(filter)
       .with('referenceAgentData')
       .with('clients', query => {
         return query.setVisible(['id'])
       })
       .setVisible(project, null)
       .sort(sort)
-      .paginate(requestPagination.page)).toJSON()
+    
+    if (!returnAll) {
+      result = (await result.paginate(requestPagination.page)).toJSON()
+    } else {
+      return (await result.fetch()).toJSON()
+    }
     
     result.data.forEach(_entry => {
       _entry.clients = _entry.clients.length
@@ -658,7 +664,7 @@ class User extends Model {
     return toReturn
   }
   
-  static async getTeamUsersIds (agent, excludeUser = false) {
+  static async getTeamUsersIds (agent, excludeUser = false, returnObjectIds = false) {
     const subAgents = await this.getTeamAgents(agent)
     let ids = subAgents.map(_agent => _agent._id)
     
@@ -668,11 +674,7 @@ class User extends Model {
     
     const allUsers = await this.where({ 'referenceAgent': { $in: ids } }).fetch()
     
-    return allUsers.rows.reduce((acc, user) => {
-      acc.push(user._id.toString())
-      
-      return acc
-    }, [...ids.map(_id => _id.toString())])
+    return [...allUsers.rows, ...ids].map(user => returnObjectIds ? user._id : user._id.toString())
   }
   
   static async getPendingSignatures () {
@@ -1079,7 +1081,7 @@ class User extends Model {
   apiTokens () {
     return this.hasMany('App/Models/Token')
   }
-
+  
   /**
    * A relationship to add agents data to a user
    * Seems I must use a different name because if I use "referenceAgent", won't work

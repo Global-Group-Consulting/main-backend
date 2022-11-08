@@ -52,19 +52,28 @@ class SelectOptionController {
       throw new RequestException('Filter must be at least 2 characters long')
     }
     
-    // sanitize string
     filter = this.sanitizeFilterString(filter)
-    
-    const toReturn = await User.where({
-      role: UserRoles.AGENTE, $or: [
+    const query = {
+      role: UserRoles.AGENTE,
+      $or: [
         { firstName: { $regex: filter.replace(/\s/g, '|'), $options: 'i' } },
         { lastName: { $regex: filter.replace(/\s/g, '|'), $options: 'i' } }
       ]
-    })
+    }
+    
+    if (auth.user.isAgent()) {
+      const sugAgentIds = await User.getTeamUsersIds(auth.user, true, true)
+      
+      query['_id'] = {
+        $in: sugAgentIds
+      }
+    }
+    
+    const toReturn = await User.where(query)
       .setVisible(['_id', 'firstName', 'lastName', 'referenceAgent'])
       .sort({ lastName: 1, firstName: 1 })
       .fetch()
-  
+    
     // preparing options to return
     return toReturn.rows.map((user) => {
       return {
