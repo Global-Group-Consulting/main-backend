@@ -49,6 +49,8 @@ const {
   formatPaymentMethod
 } = require('../../../Helpers/ModelFormatters')
 
+const { downloadFiltered } = require('./users/reports')
+
 const rolesMap = {
   'admin': 'admin',
   'servClienti': 'clients_service',
@@ -57,6 +59,8 @@ const rolesMap = {
 }
 
 class UserController {
+  downloadFiltered = downloadFiltered.bind(this)
+  
   /**
    *
    * @param userId
