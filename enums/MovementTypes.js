@@ -26,6 +26,7 @@ class MovementTypes extends BasicEnum {
     
     this.COMMISSIONS_REINVESTMENT = 10
     
+    // Rimborso deposito
     this.DEPOSIT_REPAYMENT = 13
     
     this.IN_MOVEMENT_TYPES = [
