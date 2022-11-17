@@ -3,6 +3,10 @@
 /**
  * @typedef {import('../../../../@types/dto/statistics/SystemTotalsDto').SystemTotalsDto} SystemTotalsDto
  * @typedef {import('../../../../@types/dto/statistics/CommissionTotalsDto').CommissionTotalsDto} CommissionTotalsDto
+ * @typedef {import('../../../../@types/dto/statistics/UserStatusesDto').UserStatusesDto} UserStatusesDto
+ * @typedef {import('../../../../@types/dto/statistics/NewUsersCountDto').NewUsersCountDto} NewUsersCountDto
+ * @typedef {import('../../../../@types/dto/statistics/AgentNewUsersCount').AgentNewUsersCount} AgentNewUsersCount
+ * @typedef {import('../../../../@types/dto/statistics/AgentNewDepositsCountDto').AgentNewDepositsCountDto} AgentNewDepositsCountDto
  *
  * @typedef {import('../../../../@types/HttpRequest').HttpRequest} HttpRequest
  */
@@ -31,6 +35,7 @@ const StatisticsFiltersMap = require('../../../Filters/StatisticsFilters.map')
 
 class StatisticsController {
   /**
+   * Return totals of the movements in the system
    *
    * @param {HttpRequest} request
    * @return {Promise<SystemTotalsDto>}
@@ -42,6 +47,7 @@ class StatisticsController {
   }
   
   /**
+   * Return totals of the commissions in the system
    *
    * @param {HttpRequest} request
    * @return {Promise<CommissionTotalsDto>}
@@ -50,6 +56,54 @@ class StatisticsController {
     const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
     
     return Commission.getAdminTotals(filters)
+  }
+  
+  /**
+   * Return totals of the commissions in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<UserStatusesDto>}
+   */
+  async getUserStatuses ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+    
+    return User.getUsersStatusTotals(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<NewUsersCountDto>}
+   */
+  async getNewUsersCount ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+    
+    return User.getNewUsersTotals(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<AgentNewUsersCount[]>}
+   */
+  async getAgentNewUsersCount ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+
+    return User.getAgentsNewUsersTotals(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<AgentNewDepositsCountDto[]>}
+   */
+  async getAgentNewDepositsCount ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+
+    return User.getAgentsTotalEarnings(filters)
   }
   
 }
