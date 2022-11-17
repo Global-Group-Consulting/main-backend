@@ -820,7 +820,11 @@ class User extends Model {
     }
   }
   
-  static async getAgentsNewUsersTotals () {
+  /**
+   *
+   * @return {Promise<{_id: {agent: string}, totalUsers: number, agent: User}[]>}
+   */
+  static async getAgentsNewUsersTotals (filters) {
     /*
     - Cerco tutte le commissioni di tipo NewDeposit
     - Per ciascuna recupero il movimento relativo,
@@ -833,10 +837,11 @@ class User extends Model {
     const aggregation = [
       {
         '$match': {
+          ...filters,
           'commissionType': CommissionType.NEW_DEPOSIT,
           'indirectCommission': {
             '$ne': true
-          }
+          },
         }
       }, {
         '$lookup': {
@@ -909,9 +914,6 @@ class User extends Model {
           },
           'agent': {
             '$first': '$user'
-          },
-          'users': {
-            '$push': '$data.user'
           }
         }
       }, {
@@ -925,16 +927,16 @@ class User extends Model {
      * @type {{_id: {agent:string }, totalUsers: number, agent: User, users: any[]}[]}
      */
     const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray()
-    const toReturn = agentsList.map((agent) => {
-      agent.users = formatBySemester(agent.users, 'activationDate')
-      
-      return agent
-    })
+    /* const toReturn = agentsList.map((agent) => {
+       agent.users = formatBySemester(agent.users, 'activationDate')
+       
+       return agent
+     })*/
     
-    return toReturn
+    return agentsList
   }
   
-  static async getAgentsTotalEarnings () {
+  static async getAgentsTotalEarnings (filters) {
     /*
     - Cerco tutte le commissioni di tipo NewDeposit
     - Per ciascuna recupero il movimento relativo,
@@ -950,7 +952,8 @@ class User extends Model {
           'commissionType': CommissionType.NEW_DEPOSIT,
           'indirectCommission': {
             '$ne': true
-          }
+          },
+          ...filters
         }
       }, {
         '$lookup': {
@@ -998,9 +1001,9 @@ class User extends Model {
           'agent': {
             '$first': '$agent'
           },
-          'totals': {
+          /*'totals': {
             '$push': '$$ROOT'
-          }
+          }*/
         }
       }, {
         '$sort': {
@@ -1013,13 +1016,13 @@ class User extends Model {
      * @type {{_id: {agent:string }, totalUsers: number, agent: User, totals: any[]}[]}
      */
     const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray()
-    const toReturn = agentsList.map((agent) => {
+   /* const toReturn = agentsList.map((agent) => {
       agent.totals = formatBySemester(agent.totals, 'created_at', { field: 'commissionOnValue' })
       
       return agent
-    })
+    })*/
     
-    return toReturn
+    return agentsList
   }
   
   /**

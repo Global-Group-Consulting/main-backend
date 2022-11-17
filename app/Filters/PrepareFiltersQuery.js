@@ -21,6 +21,11 @@ function prepareFiltersQuery (filters, map) {
             query[keyName].push(...value)
           }
         } else {
+          // keyQuery could be an empty array, so we need to check if it's an array
+          if (keyQuery instanceof Array && keyQuery.length === 0) {
+            return
+          }
+          
           query[keyName] = keyQuery
         }
       }

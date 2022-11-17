@@ -39,6 +39,7 @@ const ProxyRoutes = require('./routes/proxy')
 const GeolocationRoutes = require('./routes/geolocation')
 const NewsRoutes = require('./routes/news')
 const SelectOptionRoutes = require('./routes/selectOptions')
+const StatisticsRoutes = require('./routes/statistics')
 
 Route.on('/').render('welcome')
 
@@ -64,6 +65,7 @@ ProxyRoutes(Route)
 GeolocationRoutes(Route)
 NewsRoutes(Route)
 SelectOptionRoutes(Route)
+StatisticsRoutes(Route)
 
 // const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64');
 
