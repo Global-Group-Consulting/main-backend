@@ -5,7 +5,7 @@
 /** @typedef {import('../../@types/User.d').User} IUser*/
 /** @typedef {IMovement & Movement} MovementInstance */
 
-/** @type {LucidModel} */
+/** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const Database = use('Database')
 
@@ -21,10 +21,15 @@ const { castToObjectId, castToIsoDate, castToNumber } = require('../Helpers/Mode
 const moment = require('moment')
 const RequestStatus = require('../../enums/RequestStatus')
 
-const adminTotals = require('./Movement/adminTotals')
+const { adminTotals } = require('./Movement/adminTotals')
 
+/**
+ * @class Movement
+ */
 class Movement extends Model {
   static db
+  
+  static getAdminTotals = adminTotals
   
   static get computed () {
     return ['id']
@@ -355,14 +360,6 @@ class Movement extends Model {
     }
     
     return toReturn
-  }
-  
-  /**
-   *
-   * @returns {Promise<{deposit: number, interests: number, withdrewDeposit: number, withdrewInterests: number}>}
-   */
-  static async getAdminTotals () {
-    return adminTotals.call(this)
   }
   
   /**

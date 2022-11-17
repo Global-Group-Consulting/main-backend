@@ -1,5 +1,5 @@
 'use strict'
-
+/** @namespace CommissionModel */
 /** @typedef {import('../../@types/Movement.d').default} Movement */
 /** @typedef {import('../../@types/User.d').User} User */
 /** @typedef {import('../../@types/User.d').CommissionAssigned} CommissionAssigned */
@@ -36,14 +36,19 @@ const AgentTeamType = require('../../enums/AgentTeamType')
 const UserRolesType = require('../../enums/UserRoles')
 const moment = require('moment')
 const { result } = require('lodash/object')
+const { adminTotals } = require('./Commission/adminTotals')
 
 /**
  * @property {number} amountBrite
  *   amountEuro: number,
  *   briteConversionPercentage: number
+ *
+ * @property {string} collection Provided by the Model
  */
 class Commission extends Model {
   static db
+  
+  static getAdminTotals = adminTotals
   
   static async boot () {
     super.boot()
@@ -750,58 +755,6 @@ class Commission extends Model {
   }
   
   /**
-   * @returns {Promise<{total: number, withdrew: number, reinvested: number}>}
-   */
-  static async getAdminTotals () {
-    /**
-     * @type {{_id: {commissionType: number}, totalAmount: number, count: number}[]}
-     */
-    const data = (await this.db.collection('commissions')
-        .aggregate([
-          {
-            '$group': {
-              '_id': {
-                'commissionType': '$commissionType'
-              },
-              'totalAmount': {
-                '$sum': '$amountChange'
-              },
-              'count': {
-                '$sum': 1
-              }
-            }
-          }
-        ])
-        .toArray()
-    )
-    
-    return {
-      total: data.reduce((acc, curr) => {
-        if ([CommissionType.NEW_DEPOSIT, CommissionType.TOTAL_DEPOSIT, CommissionType.MANUAL_ADD, CommissionType.MANUAL_TRANSFER, CommissionType.ANNUAL_DEPOSIT]
-          .includes(curr._id.commissionType)) {
-          acc += curr.totalAmount
-        }
-        
-        return acc
-      }, 0),
-      withdrew: data.reduce((acc, curr) => {
-        if ([CommissionType.COMMISSIONS_COLLECTED].includes(curr._id.commissionType)) {
-          acc += curr.totalAmount
-        }
-        
-        return acc
-      }, 0),
-      reinvested: data.reduce((acc, curr) => {
-        if ([CommissionType.COMMISSIONS_TO_REINVEST].includes(curr._id.commissionType)) {
-          acc += curr.totalAmount
-        }
-        
-        return acc
-      }, 0)
-    }
-  }
-  
-  /**
    *
    * @param {{type: 'withdrawals' | 'commissions', startDate: string, endDate: string, movementType?: number, user?: IUser, referenceAgent?: IUser}} filters
    * @return {Promise<*>}
@@ -1123,7 +1076,4 @@ class Commission extends Model {
   }
 }
 
-/**
- * @type {Commission}
- */
 module.exports = Commission
