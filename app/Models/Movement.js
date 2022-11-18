@@ -22,6 +22,9 @@ const moment = require('moment')
 const RequestStatus = require('../../enums/RequestStatus')
 
 const { adminTotals } = require('./Movement/adminTotals')
+const { statisticsRefundReport } = require('./Movement/statisticsRefundReport')
+const { withdrawalDepositReport } = require('./Movement/withdrawalDepositReport')
+const { withdrawalInterestReport } = require('./Movement/withdrawalInterestReport')
 
 /**
  * @class Movement
@@ -30,6 +33,9 @@ class Movement extends Model {
   static db
   
   static getAdminTotals = adminTotals
+  static getStatisticsRefundReport = statisticsRefundReport
+  static getWithdrawalDepositReport = withdrawalDepositReport
+  static getWithdrawalInterestReport = withdrawalInterestReport
   
   static get computed () {
     return ['id']
