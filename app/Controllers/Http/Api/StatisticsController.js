@@ -7,6 +7,9 @@
  * @typedef {import('../../../../@types/dto/statistics/NewUsersCountDto').NewUsersCountDto} NewUsersCountDto
  * @typedef {import('../../../../@types/dto/statistics/AgentNewUsersCount').AgentNewUsersCount} AgentNewUsersCount
  * @typedef {import('../../../../@types/dto/statistics/AgentNewDepositsCountDto').AgentNewDepositsCountDto} AgentNewDepositsCountDto
+ * @typedef {import('../../../../@types/dto/statistics/RefundReportDto').RefundReportDto} RefundReportDto
+ * @typedef {import('../../../../@types/dto/statistics/WithdrawalDepositReportDto').WithdrawalDepositReportDto} WithdrawalDepositReportDto
+ * @typedef {import('../../../../@types/dto/statistics/WithdrawalInterestReportDto').WithdrawalInterestReportDto} WithdrawalInterestReportDto
  *
  * @typedef {import('../../../../@types/HttpRequest').HttpRequest} HttpRequest
  */
@@ -90,7 +93,7 @@ class StatisticsController {
    */
   async getAgentNewUsersCount ({ request }) {
     const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
-
+    
     return User.getAgentsNewUsersTotals(filters)
   }
   
@@ -102,8 +105,44 @@ class StatisticsController {
    */
   async getAgentNewDepositsCount ({ request }) {
     const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
-
+    
     return User.getAgentsTotalEarnings(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<RefundReportDto[]>}
+   */
+  async getRefundReport ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+    
+    return Movement.getStatisticsRefundReport(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<WithdrawalDepositReportDto[]>}
+   */
+  async getWithdrawalDepositReport ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+    
+    return Movement.getWithdrawalDepositReport(filters)
+  }
+  
+  /**
+   * Return totals of new users in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<WithdrawalInterestReportDto[]>}
+   */
+  async getWithdrawalInterestReport ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+    
+    return Movement.getWithdrawalInterestReport(filters)
   }
   
 }

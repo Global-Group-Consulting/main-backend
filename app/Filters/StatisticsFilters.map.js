@@ -43,5 +43,12 @@ module.exports = {
       return toReturn
     },
     key: () => '$and'
-  }
+  },
+  userId: {
+    // key: () => 'userId',
+    query: (value) => {
+      return castToObjectId(value)
+    }
+  },
+  fromClub: {}
 }
