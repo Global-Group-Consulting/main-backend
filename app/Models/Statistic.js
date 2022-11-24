@@ -6,7 +6,7 @@ const MongoModel = require('../../classes/MongoModel')
 /** @type {typeof import('./Movement')} */
 const Movement = use('App/Models/Movement')
 
-const MovementTypes = require('../../Enums/MovementTypes')
+const MovementTypes = require('../../enums/MovementTypes')
 
 class Statistic extends MongoModel {
   
