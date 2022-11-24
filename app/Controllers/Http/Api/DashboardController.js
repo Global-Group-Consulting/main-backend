@@ -79,8 +79,8 @@ class DashboardController {
     const monthMovements = await MovementsModel.getMonthMovements(user.id)
     const pastRecapitalizations = await MovementsModel.getPastRecapitalizations(user.id)
     const refundStatistics = await MovementsModel.getStatisticsRefundReport(prepareFiltersQuery({ userId: user.id }, StatisticsFilters))
-  
-    let clubRepayment = refundStatistics[0].totals.filter(item => item.fromClub)
+    
+    let clubRepayment = refundStatistics.length > 0 ? refundStatistics[0].totals.filter(item => item.fromClub) : []
     
     return {
       blocks: {
@@ -101,8 +101,8 @@ class DashboardController {
     const monthMovements = await MovementsModel.getMonthMovements(user.id)
     const pastRecapitalizations = await MovementsModel.getPastRecapitalizations(user.id)
     const refundStatistics = await MovementsModel.getStatisticsRefundReport(prepareFiltersQuery({ userId: user.id }, StatisticsFilters))
-  
-    let clubRepayment = refundStatistics[0].totals.filter(item => item.fromClub)
+    
+    let clubRepayment = refundStatistics.length > 0 ? refundStatistics[0].totals.filter(item => item.fromClub) : []
     
     return {
       blocks: {
