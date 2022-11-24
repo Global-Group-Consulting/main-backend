@@ -1,7 +1,8 @@
 'use strict'
 
 /**
- * @typedef {import('../../../../@types/dto/statistics/SystemTotalsDto').SystemTotalsDto} SystemTotalsDto
+ * @typedef {import('../../../../@types/dto/statistics/SystemTotalsInDto').SystemTotalsInDto} SystemTotalsInDto
+ * @typedef {import('../../../../@types/dto/statistics/SystemTotalsOutDto').SystemTotalsOutDto} SystemTotalsOutDto
  * @typedef {import('../../../../@types/dto/statistics/CommissionTotalsDto').CommissionTotalsDto} CommissionTotalsDto
  * @typedef {import('../../../../@types/dto/statistics/UserStatusesDto').UserStatusesDto} UserStatusesDto
  * @typedef {import('../../../../@types/dto/statistics/NewUsersCountDto').NewUsersCountDto} NewUsersCountDto
@@ -23,30 +24,37 @@ const Movement = use('App/Models/Movement')
 /** @type {typeof import('../../../Models/Commission')} */
 const Commission = use('App/Models/Commission')
 
-/** @type {import('../../../../providers/Acl/index')} */
-const Acl = use('AclProvider')
+/** @type {typeof import('../../../Models/Statistic')} */
+const Statistic = use('App/Models/Statistic')
 
-const AclGenericException = require('../../../Exceptions/Acl/AclGenericException')
-const AclForbiddenException = require('../../../Exceptions/Acl/AclForbiddenException')
-const RequestException = require('../../../Exceptions/RequestException')
-
-const UserRoles = require('../../../../enums/UserRoles')
-const { UsersPermissions } = require('../../../Helpers/Acl/enums/users.permissions')
-const { user } = require('../../../Filters/RequestFilters.map')
 const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
 const StatisticsFiltersMap = require('../../../Filters/StatisticsFilters.map')
+const StatisticsFiltersAdminTotalsMap = require('../../../Filters/StatisticsFiltersAdminTotals.map')
+const ValidationException = require('../../../Exceptions/ValidationException')
 
 class StatisticsController {
   /**
    * Return totals of the movements in the system
    *
    * @param {HttpRequest} request
-   * @return {Promise<SystemTotalsDto>}
+   * @return {Promise<SystemTotalsInDto>}
    */
-  async getSystemTotals ({ request }) {
-    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
+  async getSystemTotalsIn ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersAdminTotalsMap)
     
-    return Movement.getAdminTotals(filters)
+    return Movement.getAdminTotalsIn(filters)
+  }
+  
+  /**
+   * Return totals of the movements in the system
+   *
+   * @param {HttpRequest} request
+   * @return {Promise<SystemTotalsOutDto>}
+   */
+  async getSystemTotalsOut ({ request }) {
+    const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersAdminTotalsMap)
+    
+    return Movement.getAdminTotalsOut(filters)
   }
   
   /**
@@ -143,6 +151,25 @@ class StatisticsController {
     const filters = prepareFiltersQuery(request.pagination.filters, StatisticsFiltersMap)
     
     return Movement.getWithdrawalInterestReport(filters)
+  }
+  
+  /**
+   * Refresh the statistics of a user in the system
+   * @return {Promise<any>}
+   */
+  async movementsRefresh ({ request }) {
+    const userId = request.input('userId')
+    const dates = request.input('dates').map(dateString => {
+      const date = new Date(dateString)
+      
+      if (date.toString() === 'Invalid Dates field') {
+        throw new ValidationException('Invalid date')
+      }
+      
+      return date
+    })
+    
+    return Statistic.refreshMovementStatistics(userId, dates)
   }
   
 }

@@ -37,13 +37,37 @@ class MovementTypes extends BasicEnum {
       this.CANCEL_INTEREST_COLLECTED,
       this.CANCEL_DEPOSIT_COLLECTED,
       this.CANCEL_COMMISSION_COLLECTED,
-      this.CANCEL_DEPOSIT_ADDED
+      this.COMMISSIONS_REINVESTMENT
+    ]
+    
+    this.IN_DEPOSIT_TYPES = [
+      this.INITIAL_DEPOSIT,
+      this.DEPOSIT_ADDED,
+      this.INTEREST_RECAPITALIZED,
+      this.DEPOSIT_REPAYMENT,
+      this.CANCEL_DEPOSIT_COLLECTED,
+      this.COMMISSIONS_REINVESTMENT
+    ]
+    
+    this.IN_INTEREST_TYPES = [
+      this.CANCEL_INTEREST_COLLECTED
     ]
     
     this.OUT_MOVEMENT_TYPES = [
       this.INTEREST_COLLECTED,
       this.DEPOSIT_COLLECTED,
       this.COMMISSION_COLLECTED,
+      this.MANUAL_INTEREST_COLLECTED,
+      this.CANCEL_DEPOSIT_ADDED
+    ]
+    
+    this.OUT_DEPOSIT_TYPES = [
+      this.DEPOSIT_COLLECTED,
+      this.CANCEL_DEPOSIT_ADDED
+    ]
+    
+    this.OUT_INTEREST_TYPES = [
+      this.INTEREST_COLLECTED,
       this.MANUAL_INTEREST_COLLECTED
     ]
     
