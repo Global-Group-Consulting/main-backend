@@ -16,8 +16,7 @@ module.exports.withdrawalDepositReport = async function (filters = {}) {
   /**
    * @type {WithdrawalDepositReportDto[]}
    */
-  const data = (await this.db.collection(this.collection)
-      .aggregate([
+  const data = await this.aggregateRaw([
         {
           '$match': {
             ...filters,
@@ -93,8 +92,6 @@ module.exports.withdrawalDepositReport = async function (filters = {}) {
           }
         }
       ])
-      .toArray()
-  )
   
   return data
 }

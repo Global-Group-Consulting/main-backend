@@ -5,10 +5,6 @@
 /** @typedef {import('../../@types/User.d').User} IUser*/
 /** @typedef {IMovement & Movement} MovementInstance */
 
-/** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
-const Model = use('Model')
-const Database = use('Database')
-
 const { Types: MongoTypes } = require('mongoose')
 const { camelCase: _camelCase, upperFirst: _upperFirst, filter } = require('lodash')
 
@@ -21,18 +17,18 @@ const { castToObjectId, castToIsoDate, castToNumber } = require('../Helpers/Mode
 const moment = require('moment')
 const RequestStatus = require('../../enums/RequestStatus')
 
-const { adminTotals } = require('./Movement/adminTotals')
+const { adminTotalsIn } = require('./Movement/adminTotalsIn')
+const { adminTotalsOut } = require('./Movement/adminTotalsOut')
 const { statisticsRefundReport } = require('./Movement/statisticsRefundReport')
 const { withdrawalDepositReport } = require('./Movement/withdrawalDepositReport')
 const { withdrawalInterestReport } = require('./Movement/withdrawalInterestReport')
 
-/**
- * @class Movement
- */
-class Movement extends Model {
-  static db
+const MongoModel = require('../../classes/MongoModel')
+
+module.exports = class Movement extends MongoModel {
   
-  static getAdminTotals = adminTotals
+  static getAdminTotalsIn = adminTotalsIn
+  static getAdminTotalsOut = adminTotalsOut
   static getStatisticsRefundReport = statisticsRefundReport
   static getWithdrawalDepositReport = withdrawalDepositReport
   static getWithdrawalInterestReport = withdrawalInterestReport
@@ -43,8 +39,6 @@ class Movement extends Model {
   
   static async boot () {
     super.boot()
-    
-    this.db = await Database.connect('mongodb')
     
     this.addHook('beforeCreate',
       /** @param { MovementInstance } data */
@@ -603,8 +597,7 @@ class Movement extends Model {
       }
     ]
     
-    const data = await this.db.collection('movements')
-      .aggregate([
+    const data = await this.aggregateRaw([
         {
           '$sort': {
             created_at: -1
@@ -660,7 +653,7 @@ class Movement extends Model {
             '_id.requestType': 1
           }
         }
-      ]).toArray()
+      ])
     
     /**
      * @type {{_id: string, users: any[]}[]}
@@ -792,7 +785,7 @@ class Movement extends Model {
     /**
      * @type {Movement[]}
      */
-    const data = await this.db.collection('movements').aggregate(aggregation).toArray()
+    const data = await this.aggregateRaw(aggregation)
     
     return data.map((entry, i) => {
       entry.newDeposit = 0
@@ -879,4 +872,3 @@ class Movement extends Model {
   
 }
 
-module.exports = Movement
