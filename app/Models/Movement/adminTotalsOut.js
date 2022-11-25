@@ -30,7 +30,6 @@ module.exports.adminTotalsOut = async function (filters = {}) {
           '$nin': [
             RequestTypes.COMMISSION_MANUAL_ADD,
             RequestTypes.COMMISSION_MANUAL_TRANSFER,
-            RequestTypes.RISC_INTERESSI_BRITE,
             RequestTypes.RISC_PROVVIGIONI
           ]
         }
@@ -81,7 +80,24 @@ module.exports.adminTotalsOut = async function (filters = {}) {
     return acc
   }, 0)
   
-  const withdrewInterestsClub = data.reduce((acc, curr) => {
+  // Interessi riscossi brite
+  const withdrewInterestsBrite = data.reduce((acc, curr) => {
+    // only CLUB interests
+    if (![RequestTypes.RISC_INTERESSI_BRITE].includes(curr._id.requestType)) {
+      return acc
+    }
+    
+    if (MovementTypes.OUT_INTEREST_TYPES.includes(curr._id.movementType)) {
+      acc += curr.totalAmount
+    } else if ([MovementTypes.CANCEL_INTEREST_COLLECTED].includes(curr._id.movementType)) {
+      acc -= curr.totalAmount
+    }
+    
+    return acc
+  }, 0)
+  
+  // Interessi ricossi in oro fisico
+  const withdrewInterestsGold = data.reduce((acc, curr) => {
     // only CLUB interests
     if (![RequestTypes.RISC_INTERESSI_GOLD].includes(curr._id.requestType)) {
       return acc
@@ -99,6 +115,7 @@ module.exports.adminTotalsOut = async function (filters = {}) {
   return {
     withdrewInterests,
     withdrewDeposit,
-    goldWithdrewInterests: withdrewInterestsClub
+    briteWithdrewInterests: withdrewInterestsBrite,
+    goldWithdrewInterests: withdrewInterestsGold
   }
 }

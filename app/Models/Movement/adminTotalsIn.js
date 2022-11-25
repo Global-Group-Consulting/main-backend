@@ -120,7 +120,8 @@ module.exports.adminTotalsIn = async function (filters = {}, out = false) {
     if (!acc[type]) {
       acc[type] = 0
     }
-    
+
+    // TODO:: aggiungere dettagli sui rimborsi. Se manuali o dal club
     acc[type] += curr.totalAmount
     
     return acc
