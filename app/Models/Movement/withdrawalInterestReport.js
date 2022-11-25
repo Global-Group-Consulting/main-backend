@@ -12,8 +12,7 @@ const MovementTypes = require('../../../enums/MovementTypes')
  * @return {Promise<WithdrawalInterestReportDto[]>}
  */
 module.exports.withdrawalInterestReport = async function (filters = {}) {
-  const data = (await this.db.collection(this.collection)
-      .aggregate([
+  const data = await this.aggregateRaw([
         {
           '$match': {
             ...filters,
@@ -89,8 +88,6 @@ module.exports.withdrawalInterestReport = async function (filters = {}) {
           }
         }
       ])
-      .toArray()
-  )
   
   return data
 }

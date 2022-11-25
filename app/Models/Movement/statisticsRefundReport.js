@@ -24,8 +24,7 @@ module.exports.statisticsRefundReport = async function (filters = {}) {
   /**
    * @type {RefundReportDto[]}
    */
-  const data = (await this.db.collection(this.collection)
-      .aggregate([
+  const data = await this.aggregateRaw([
         {
           '$match': {
             ...filters,
@@ -130,8 +129,6 @@ module.exports.statisticsRefundReport = async function (filters = {}) {
           }
         }
       ])
-      .toArray()
-  )
   
   return data
 }

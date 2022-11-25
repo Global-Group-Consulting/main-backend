@@ -1,5 +1,3 @@
-'use strict'
-
 const { addAgentCommission } = require('./Request')
 
 /** @type {import('../../providers/Queue')} */
