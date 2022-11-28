@@ -29,6 +29,7 @@ const moment = require('moment')
 const RequestStatus = require('../../enums/RequestStatus')
 const RequestTypes = require('../../enums/RequestTypes')
 const MovementTypes = require('../../enums/MovementTypes')
+const MongoModel = require('../../classes/MongoModel')
 const MovementErrorException = require('../Exceptions/MovementErrorException')
 const RequestException = require('../Exceptions/RequestException')
 const { query } = require('@adonisjs/lucid/src/Lucid/Model')
@@ -36,6 +37,8 @@ const { query } = require('@adonisjs/lucid/src/Lucid/Model')
 const { castToIsoDate, castToObjectId, castToNumber } = require('../Helpers/ModelFormatters')
 const { prepareFiltersQuery } = require('../Filters/PrepareFiltersQuery')
 const { prepareSorting, preparePaginatedResult } = require('../Utilities/Pagination')
+
+const { filter } = require('./Request/filter')
 
 const modelFields = {
   userId: '',
@@ -54,8 +57,8 @@ const modelFields = {
 /**
  * @property {string} _id
  */
-class Request extends Model {
-  static db
+class Request extends MongoModel {
+  static filter = filter
   
   static get hidden () {
     return ['__v']
@@ -73,8 +76,6 @@ class Request extends Model {
   
   static async boot () {
     super.boot()
-    
-    this.db = await Database.connect('mongodb')
     
     this.addTrait('RequestAmount')
     this.addTrait('RawDbConnection')
@@ -386,40 +387,6 @@ class Request extends Model {
   }
   
   /**
-   * @param {any} filter
-   * @param {any} project
-   * @param {import('/@types/HttpRequest').RequestPagination} requestPagination
-   * @return {Promise<PaginatedResult>}
-   */
-  static async filter (filter = {}, project, requestPagination) {
-    let sort = prepareSorting(requestPagination /*{ 'created_at': -1, 'updated_at': -1, 'completed_at': -1 }*/)
-    
-    let result = (await this.where(filter)
-      // add user data
-      .with('user', userQuery => {
-        userQuery.setVisible(['_id', 'firstName', 'lastName', 'email', 'contractNumber', 'referenceAgent'])
-          // add reference agent data if any
-          .with('referenceAgentData', refAgentQuery => {
-            refAgentQuery.setVisible(['_id', 'firstName', 'lastName', 'email'])
-          })
-      })
-      .with('targetUser', userQuery => {
-        userQuery.setVisible([
-          'id',
-          'firstName',
-          'lastName',
-          'email',
-          'contractNumber'
-        ])
-      })
-      .setVisible(project, null)
-      .sort(sort)
-      .paginate(requestPagination.page)).toJSON()
-    
-    return preparePaginatedResult(result, sort, filter)
-  }
-  
-  /**
    * @param {{}} match
    * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
    */
@@ -427,7 +394,7 @@ class Request extends Model {
     /**
      * @type {GetCountersDto[]}
      */
-    const data = await this.db.collection('requests').aggregate([
+    const data = await this.aggregateRaw([
       {
         '$match': match || {}
       },
@@ -444,7 +411,7 @@ class Request extends Model {
           }
         }
       }
-    ]).toArray()
+    ])
     
     return data.reduce((acc, curr) => {
       // We merge together the counters for status ANNULLATA and RIFIUTATA
@@ -474,84 +441,83 @@ class Request extends Model {
     /**
      * @type {Request[]}
      */
-    const data = await this.db.collection('requests')
-      .aggregate([
-        {
-          '$sort': sorting
-        },
-        {
-          '$lookup': {
-            'from': 'users',
-            'let': {
-              'userId': '$userId'
-            },
-            'as': 'user',
-            'pipeline': [
-              {
-                '$match': {
-                  '$expr': {
-                    '$eq': [
-                      '$_id', '$$userId'
-                    ]
-                  }
-                }
-              },
-              {
-                '$project': {
-                  'id': 1,
-                  'firstName': 1,
-                  'lastName': 1,
-                  'email': 1,
-                  'contractNumber': 1,
-                  'referenceAgent': 1
-                }
-              },
-              {
-                '$lookup': {
-                  'from': 'users',
-                  'let': {
-                    'agentId': '$referenceAgent'
-                  },
-                  'as': 'referenceAgentData',
-                  'pipeline': [
-                    {
-                      '$match': {
-                        '$expr': {
-                          '$eq': [
-                            '$_id', '$$agentId'
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      '$project': {
-                        'id': 1,
-                        'firstName': 1,
-                        'lastName': 1,
-                        'email': 1
-                      }
-                    }
+    const data = await this.aggregateRaw([
+      {
+        '$sort': sorting
+      },
+      {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': [
+                    '$_id', '$$userId'
                   ]
                 }
-              },
-              {
-                '$unwind': {
-                  'path': '$referenceAgentData',
-                  'preserveNullAndEmptyArrays': true
-                }
               }
-            ]
-          }
-        },
-        {
-          '$unwind': {
-            'path': '$user'
-          }
-        },
-        {
-          '$limit': 1000
+            },
+            {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'referenceAgent': 1
+              }
+            },
+            {
+              '$lookup': {
+                'from': 'users',
+                'let': {
+                  'agentId': '$referenceAgent'
+                },
+                'as': 'referenceAgentData',
+                'pipeline': [
+                  {
+                    '$match': {
+                      '$expr': {
+                        '$eq': [
+                          '$_id', '$$agentId'
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    '$project': {
+                      'id': 1,
+                      'firstName': 1,
+                      'lastName': 1,
+                      'email': 1
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              '$unwind': {
+                'path': '$referenceAgentData',
+                'preserveNullAndEmptyArrays': true
+              }
+            }
+          ]
         }
-      ]).toArray()
+      },
+      {
+        '$unwind': {
+          'path': '$user'
+        }
+      },
+      {
+        '$limit': 1000
+      }
+    ])
     
     const minDate = moment().date() > 15
       ? moment().set({ date: 16 }).startOf('day')
@@ -743,87 +709,86 @@ class Request extends Model {
        })
        .fetch()*/
     
-    const data = await this.db.collection('requests')
-      .aggregate([
-        {
-          '$sort': {
-            userId: 1,
-            type: 1
-          }
-        },
-        {
-          '$match': query
-        },
-        {
-          '$lookup': {
-            'from': 'users',
-            'let': {
-              'userId': '$userId'
-            },
-            'as': 'user',
-            'pipeline': [
-              {
-                '$match': {
-                  '$expr': {
-                    '$eq': ['$_id', '$$userId']
-                  }
-                }
-              },
-              {
-                '$project': {
-                  'id': 1,
-                  'firstName': 1,
-                  'lastName': 1,
-                  'email': 1,
-                  'contractNumber': 1,
-                  'contractNotes': 1,
-                  'referenceAgent': 1,
-                  'clubPack': 1
-                }
-              },
-              {
-                '$lookup': {
-                  'from': 'users',
-                  'let': {
-                    'agentId': '$referenceAgent'
-                  },
-                  'as': 'referenceAgentData',
-                  'pipeline': [
-                    {
-                      '$match': {
-                        '$expr': {
-                          '$eq': [
-                            '$_id', '$$agentId'
-                          ]
-                        }
-                      }
-                    },
-                    {
-                      '$project': {
-                        'id': 1,
-                        'firstName': 1,
-                        'lastName': 1,
-                        'email': 1
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                '$unwind': {
-                  'path': '$referenceAgentData',
-                  'preserveNullAndEmptyArrays': true
+    const data = await this.aggregateRaw([
+      {
+        '$sort': {
+          userId: 1,
+          type: 1
+        }
+      },
+      {
+        '$match': query
+      },
+      {
+        '$lookup': {
+          'from': 'users',
+          'let': {
+            'userId': '$userId'
+          },
+          'as': 'user',
+          'pipeline': [
+            {
+              '$match': {
+                '$expr': {
+                  '$eq': ['$_id', '$$userId']
                 }
               }
-            ]
-          }
-        },
-        {
-          '$unwind': {
-            'path': '$user'
-          }
+            },
+            {
+              '$project': {
+                'id': 1,
+                'firstName': 1,
+                'lastName': 1,
+                'email': 1,
+                'contractNumber': 1,
+                'contractNotes': 1,
+                'referenceAgent': 1,
+                'clubPack': 1
+              }
+            },
+            {
+              '$lookup': {
+                'from': 'users',
+                'let': {
+                  'agentId': '$referenceAgent'
+                },
+                'as': 'referenceAgentData',
+                'pipeline': [
+                  {
+                    '$match': {
+                      '$expr': {
+                        '$eq': [
+                          '$_id', '$$agentId'
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    '$project': {
+                      'id': 1,
+                      'firstName': 1,
+                      'lastName': 1,
+                      'email': 1
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              '$unwind': {
+                'path': '$referenceAgentData',
+                'preserveNullAndEmptyArrays': true
+              }
+            }
+          ]
         }
-      ]).toArray()
+      },
+      {
+        '$unwind': {
+          'path': '$user'
+        }
+      }
+    ])
     
     const jsonData = data //data.toJSON()
     
