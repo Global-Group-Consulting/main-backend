@@ -1,3 +1,8 @@
+const util = require('lucid-mongo/lib/util')
+const { AggregationCursor } = require('mongodb')
+const { preparePaginatedResult } = require('../app/Utilities/Pagination')
+const { AggregationBuilder } = require('./AggregationBuilder')
+
 /** @type {typeof import('lucid-mongo/src/LucidMongo/Model')} */
 const Model = use('Model')
 
@@ -17,19 +22,35 @@ module.exports = class MongoModel extends Model {
     }
     
     return this.db
-    
   }
   
   /**
    *
-   * @param {any[]} pipeline
-   * @param {string} [collection]
+   * @param {any[] | AggregationBuilder} pipeline
+   * @param {null | string} [collection]
    * @return {Promise<any[]>}
    */
   static async aggregateRaw (pipeline, collection = null) {
-    const connection = await this.getConnection()
+    let aggregation
     
-    return await connection.collection(collection || this.collection).aggregate(pipeline).toArray()
+    if (pipeline instanceof AggregationBuilder) {
+      aggregation = pipeline
+    } else {
+      aggregation = await this.createAggregation(collection)
+      aggregation.setRawPipeline(pipeline)
+    }
+    
+    return aggregation.execute()
   }
   
+  /**
+   *
+   * @param {string | null} collection
+   * @return {Promise<AggregationBuilder>}
+   */
+  static async createAggregation (collection = null) {
+    const connection = await this.getConnection()
+    
+    return new AggregationBuilder(connection, collection || this.collection)
+  }
 }
