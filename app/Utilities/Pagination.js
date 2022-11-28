@@ -39,8 +39,8 @@ module.exports.prepareSorting = function (requestPagination, defaultSort) {
 module.exports.preparePaginatedResult = function (result, sort, filters) {
   return {
     ...result,
-    sortBy: Object.keys(sort),
-    sortDesc: Object.values(sort).map((el) => el < 1),
+    sortBy: Object.keys(sort || {}),
+    sortDesc: Object.values(sort || {}).map((el) => el < 1),
     filter: filters
   }
 }
