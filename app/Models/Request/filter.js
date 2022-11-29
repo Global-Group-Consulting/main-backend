@@ -1,6 +1,8 @@
 const { prepareSorting, preparePaginatedResult } = require('../../Utilities/Pagination')
 const { AggregationBuilder } = require('../../../classes/AggregationBuilder')
-const { omit } = require('lodash')
+const { omit, clone } = require('lodash')
+
+const User = use('App/Models/User')
 
 /**
  * @param {any} filter
@@ -9,56 +11,23 @@ const { omit } = require('lodash')
  * @return {Promise<PaginatedResult>}
  */
 module.exports.filter = async function (filter = {}, project, requestPagination) {
+  // store original filter to use it later when returning the result
+  const originalFilter = clone(filter)
   let sort = prepareSorting(requestPagination /*{ 'created_at': -1, 'updated_at': -1, 'completed_at': -1 }*/)
   
-  // Aggregation executed only when is required a referenceAgent as a filter
-  // otherwise the query is executed with the lucid-mongo because it's faster
-  if (filter.referenceAgent) {
-    const refAgent = filter.referenceAgent
-    
-    const aggregation = await this.createAggregation('users')
-    
-    return aggregation.$match({ referenceAgent: refAgent })
-      .$project({
-        '_id': 1,
-        'firstName': 1,
-        'lastName': 1,
-        'email': 1,
-        'contractNumber': 1,
-        'referenceAgent': 1
-      })
-      .$lookupOne('users', 'referenceAgent', '_id', 'referenceAgentData', {
-        '_id': 1, 'firstName': 1, 'lastName': 1, 'email': 1
-      })
-      .$lookup('requests', '_id', 'userId', 'requests')
-      .$unwind('requests', false)
-      .$$pushRaw([
-        {
-          '$addFields': {
-            'requests.user': '$$ROOT'
-          }
-        }, {
-          '$project': {
-            'requests.user.requests': 0
-          }
-        }, {
-          '$replaceWith': '$requests'
-        }
-      ])
-      .$sort(sort)
-      .$match(omit(filter, 'referenceAgent'))
-      .$lookupOne('users', 'targetUserId', '_id', 'targetUser', {
-        '_id': 1,
-        'firstName': 1,
-        'lastName': 1,
-        'email': 1,
-        'contractNumber': 1
-      })
-      .$project(project)
-      .paginate(requestPagination)
-  }
-  
   const start = Date.now()
+  
+  // If referenceAgent is required,
+  // first we fetch the user with the given referenceAgent,
+  // then we add the user's id to the filter so that we can filter by it
+  // and speed up the query
+  if (filter.referenceAgent) {
+    const agentUsers = await User.where({ referenceAgent: filter.referenceAgent }).fetch()
+    
+    delete filter.referenceAgent
+    
+    filter.userId = { $in: agentUsers.rows.map(user => user._id) }
+  }
   
   let result = (await this.where(filter)
     // add user data
@@ -81,11 +50,12 @@ module.exports.filter = async function (filter = {}, project, requestPagination)
     .setVisible(project, null)
     .sort(sort)
     .paginate(requestPagination.page)).toJSON()
+  
   const end = Date.now()
   
   result.time = end - start
   
-  return preparePaginatedResult(result, sort, filter)
+  return preparePaginatedResult(result, sort, originalFilter)
 }
 
 
