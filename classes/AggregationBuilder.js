@@ -46,12 +46,17 @@ class AggregationBuilder {
   $lookup (collection, localField, foreignField = '_id', as = null, project = null) {
     const fieldName = as || util.makeEmbedName(collection)
     
+    const lookupPipeline = [{ $match: { $expr: { $eq: ['$' + foreignField, '$$localField'] } } }]
+    
+    if (project) {
+      lookupPipeline.push({ $project: project })
+    }
+    
     this._pipeline.push({
       $lookup: {
         from: collection,
-        localField,
-        foreignField,
-        pipeline: project ? [{ $project: project }] : [],
+        let: { localField: '$' + localField },
+        pipeline: lookupPipeline,
         as: fieldName
       }
     })
