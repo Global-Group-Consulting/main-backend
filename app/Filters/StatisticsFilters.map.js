@@ -35,7 +35,7 @@ module.exports = {
       }
       
       if (max) {
-        const maxDate = moment(max).endOf('month').toDate()
+        const maxDate = moment(max).endOf('day').toDate()
         
         toReturn.push({ created_at: { $lte: maxDate } })
       }
