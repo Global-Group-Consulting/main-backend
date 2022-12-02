@@ -29,13 +29,13 @@ module.exports = {
       }
       
       if (min) {
-        const minDate = moment(min).date(16).startOf("day").toDate()
+        const minDate = moment(min).startOf('day').toDate()
         
         toReturn.push({ created_at: { $gte: minDate } })
       }
       
       if (max) {
-        const maxDate = moment(max).add(1, "month").date(15).endOf("day").toDate()
+        const maxDate = moment(max).endOf('day').toDate()
         
         toReturn.push({ created_at: { $lte: maxDate } })
       }
