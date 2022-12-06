@@ -79,10 +79,10 @@ module.exports = {
     }
   },
   // disabled because i can't filter by a relation
-  /*referenceAgent: {
-    key: () => 'user.referenceAgent',
+  referenceAgent: {
+    // key: () => 'user.referenceAgent',
     query: (value) => ({ '$in': [castToObjectId(value), value] })
-  },*/
+  },
   createdAt: {
     query: (value) => {
       let toReturn = []

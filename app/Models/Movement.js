@@ -246,7 +246,8 @@ module.exports = class Movement extends MongoModel {
       createdByAdmin: data.createdByAdmin || false,
       createdBy: data.createdBy,
       requestType: data.requestType,
-      interestPercentage: data.interestPercentage
+      interestPercentage: data.interestPercentage,
+      app: data.app || 'main'
     }
     
     return Movement.create(newMovement)
@@ -598,62 +599,62 @@ module.exports = class Movement extends MongoModel {
     ]
     
     const data = await this.aggregateRaw([
-        {
-          '$sort': {
-            created_at: -1
-          }
-        },
-        ...joinUserWithRefAgent,
-        {
-          '$match': query
-        },
-        ...joinRequest,
-        {
-          '$group': {
-            '_id': {
-              'user': '$userId',
-              'requestType': '$request.type',
-              'movementType': '$movementType'
-            },
-            'movements': {
-              '$push': '$$ROOT'
-            },
-            'amount': {
-              '$sum': '$amountChange'
-            },
-            user: {
-              $addToSet: '$user'
-            },
-            reqNotes: {
-              $push: '$request.notes'
-            }
-          }
-        },
-        {
-          '$unwind': {
-            'path': '$user'
-          }
-        },
-        {
-          '$addFields': {
-            'created_at': {
-              '$arrayElemAt': ['$movements.created_at', 0]
-            }
-          }
-        },
-        {
-          '$addFields': {
-            'type': filters.type
-          }
-        },
-        {
-          '$sort': {
-            'user.lastName': 1,
-            'user.firstName': 1,
-            '_id.requestType': 1
+      {
+        '$sort': {
+          created_at: -1
+        }
+      },
+      ...joinUserWithRefAgent,
+      {
+        '$match': query
+      },
+      ...joinRequest,
+      {
+        '$group': {
+          '_id': {
+            'user': '$userId',
+            'requestType': '$request.type',
+            'movementType': '$movementType'
+          },
+          'movements': {
+            '$push': '$$ROOT'
+          },
+          'amount': {
+            '$sum': '$amountChange'
+          },
+          user: {
+            $addToSet: '$user'
+          },
+          reqNotes: {
+            $push: '$request.notes'
           }
         }
-      ])
+      },
+      {
+        '$unwind': {
+          'path': '$user'
+        }
+      },
+      {
+        '$addFields': {
+          'created_at': {
+            '$arrayElemAt': ['$movements.created_at', 0]
+          }
+        }
+      },
+      {
+        '$addFields': {
+          'type': filters.type
+        }
+      },
+      {
+        '$sort': {
+          'user.lastName': 1,
+          'user.firstName': 1,
+          '_id.requestType': 1
+        }
+      }
+    ])
     
     /**
      * @type {{_id: string, users: any[]}[]}

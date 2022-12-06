@@ -4,10 +4,10 @@ export interface PaginatedData {
   perPage: number;
   lastPage: number;
   data: any[];
-  
 }
 
 export interface PaginatedResult extends PaginatedData {
   sortDesc: boolean[];
-  filter: any
+  filter: any;
+  time: number;
 }
