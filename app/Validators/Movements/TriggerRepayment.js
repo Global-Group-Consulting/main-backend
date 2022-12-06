@@ -8,7 +8,8 @@ class MovementsAdd extends WhitelistValidator {
     return {
       userId: "required|idExists",
       amount: "required|number",
-      notes: "required|string"
+      notes: "required|string",
+      app: "string|in:main,club",
     }
   }
 }
