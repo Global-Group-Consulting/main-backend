@@ -261,7 +261,8 @@ class RequestController {
         requestType: incomingData.type,
         createdBy: auth.user.id,
         createdByAdmin: true,
-        interestPercentage: associatedUser.contractPercentage
+        interestPercentage: associatedUser.contractPercentage,
+        app: incomingData.clubRepayment ? 'club' : null
       })
     } else {
       newRequest = await RequestModel.create({
