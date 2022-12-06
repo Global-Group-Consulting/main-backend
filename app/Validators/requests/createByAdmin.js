@@ -14,6 +14,7 @@ const rules = {
   clubCardNumber: "string",
   typeClub: "string",
   notes: "string",
+  clubRepayment: "boolean",
 }
 
 class requestsCreate extends WhitelistValidator {
