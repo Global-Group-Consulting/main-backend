@@ -58,7 +58,8 @@ module.exports.adminTotalsIn = async function (filters = {}, out = false) {
         {
           _id: {
             movementType: '$movementType',
-            requestType: '$requestType'
+            requestType: '$requestType',
+            app: '$app'
           },
           totalAmount: {
             $sum: '$amountChange'
@@ -116,13 +117,20 @@ module.exports.adminTotalsIn = async function (filters = {}, out = false) {
   
   const details = data.reduce((acc, curr) => {
     const type = MovementTypes.get(curr._id.movementType).id
+    let key = type
     
-    if (!acc[type]) {
-      acc[type] = 0
+    // Change key if club repayment
+    if (curr._id.movementType === MovementTypes.DEPOSIT_REPAYMENT) {
+      // Handle only the club repayments
+      key = ['club'].includes(curr._id.app) ? (type + '_' + curr._id.app) : type
     }
-
-    // TODO:: aggiungere dettagli sui rimborsi. Se manuali o dal club
-    acc[type] += curr.totalAmount
+    
+    // if the key is not present, create it
+    if (!acc[key]) {
+      acc[key] = 0
+    }
+    
+    acc[key] += curr.totalAmount
     
     return acc
   }, {})
