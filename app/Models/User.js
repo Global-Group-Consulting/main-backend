@@ -841,7 +841,7 @@ class User extends Model {
           'commissionType': CommissionType.NEW_DEPOSIT,
           'indirectCommission': {
             '$ne': true
-          },
+          }
         }
       }, {
         '$lookup': {
@@ -1000,7 +1000,7 @@ class User extends Model {
           },
           'agent': {
             '$first': '$agent'
-          },
+          }
           /*'totals': {
             '$push': '$$ROOT'
           }*/
@@ -1016,11 +1016,11 @@ class User extends Model {
      * @type {{_id: {agent:string }, totalUsers: number, agent: User, totals: any[]}[]}
      */
     const agentsList = await this.db.collection('commissions').aggregate(aggregation).toArray()
-   /* const toReturn = agentsList.map((agent) => {
-      agent.totals = formatBySemester(agent.totals, 'created_at', { field: 'commissionOnValue' })
-      
-      return agent
-    })*/
+    /* const toReturn = agentsList.map((agent) => {
+       agent.totals = formatBySemester(agent.totals, 'created_at', { field: 'commissionOnValue' })
+       
+       return agent
+     })*/
     
     return agentsList
   }
@@ -1078,7 +1078,7 @@ class User extends Model {
   
   contractFiles () {
     return this.hasMany('App/Models/File', '_id', 'userId')
-      .where({ 'fieldName': { $in: ['contractDoc', 'contractDocSignLog'] } })
+      .where({ 'fieldName': { $in: ['contractDoc', 'contractDocSignLog'] }, 'deleted_at': { $exists: false } })
   }
   
   apiTokens () {
