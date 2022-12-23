@@ -6,7 +6,7 @@
 /** @typedef {IMovement & Movement} MovementInstance */
 
 const { Types: MongoTypes } = require('mongoose')
-const { camelCase: _camelCase, upperFirst: _upperFirst, filter } = require('lodash')
+const { camelCase: _camelCase, upperFirst: _upperFirst } = require('lodash')
 
 const MovementTypes = require('../../enums/MovementTypes')
 const RequestTypes = require('../../enums/RequestTypes')
@@ -22,6 +22,7 @@ const { adminTotalsOut } = require('./Movement/adminTotalsOut')
 const { statisticsRefundReport } = require('./Movement/statisticsRefundReport')
 const { withdrawalDepositReport } = require('./Movement/withdrawalDepositReport')
 const { withdrawalInterestReport } = require('./Movement/withdrawalInterestReport')
+const { filter } = require('./Movement/filter')
 
 const MongoModel = require('../../classes/MongoModel')
 
@@ -31,7 +32,7 @@ module.exports = class Movement extends MongoModel {
   static getAdminTotalsOut = adminTotalsOut
   static getStatisticsRefundReport = statisticsRefundReport
   static getWithdrawalDepositReport = withdrawalDepositReport
-  static getWithdrawalInterestReport = withdrawalInterestReport
+  static filter = filter
   
   static get computed () {
     return ['id']
