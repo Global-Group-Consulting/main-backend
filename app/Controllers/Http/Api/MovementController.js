@@ -31,11 +31,37 @@ const { MovementsPermissions } = require('../../../Helpers/Acl/enums/movements.p
 const { AclPermissions } = require('../../../Helpers/Acl/enums/acl.permissions')
 const { camelCase: _camelCase, upperFirst: _upperFirst } = require('lodash')
 const { is } = require('consis/lib/object')
+const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
+const MovementFiltersMap = require('../../../Filters/MovementFilters.map')
+const { castToObjectId } = require('../../../Helpers/ModelFormatters')
 
 /** @type {typeof import('../../../Exceptions/ImportException')} */
 const ImportException = use('App/Exceptions/ImportException')
 
 class MovementController {
+  
+  async readAll ({ auth, request, params }) {
+    const authAsAdmin = AclProvider.isAdmin(auth)
+    const forId = params['id']
+    let userId = auth.user._id.toString()
+    
+    // it the auth user is an admin, we show forId movements
+    if (authAsAdmin) {
+      // if user is admin and no userId is passed, we throw an error
+      if (!forId) {
+        throw new MovementError('Missing user id.')
+      }
+      
+      userId = forId
+    }
+    
+    request.pagination.filters.userId = { $in: [userId, castToObjectId(userId)] }
+    
+    const filtersQuery = prepareFiltersQuery(request.pagination.filters, MovementFiltersMap)
+    
+    return await MovementModel.filter(filtersQuery, null, request.pagination)
+  }
+  
   /**
    *
    * @param {Auth} auth
@@ -269,7 +295,7 @@ class MovementController {
     const userRole = user.role
     let userId = params.id || user._id.toString()
     let hasSubAgents = false
-  
+    
     await AclProvider.checkAccessToUser(auth.user, params.id)
     
     // If is required data for a different user than the logged one

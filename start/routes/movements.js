@@ -1,12 +1,12 @@
 module.exports = function (Route) {
   Route.group(() => {
-    Route.get('/', "MovementController.read")
+    // Route.get('/', "MovementController.readAll")
 
     Route.get('/status/:id?', "MovementController.currentStatus")
 
-    Route.get('/list/:id?', "MovementController.getList")
+    // Route.get('/list/:id?', "MovementController.getList")
 
-    Route.get('/:id', "MovementController.read")
+    Route.get('/:id?', "MovementController.readAll")
       .validator("Movements/Read")
 
     Route.post('/', 'MovementController.add')
