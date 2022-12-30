@@ -46,7 +46,7 @@ class MovementController {
     let userId = auth.user._id.toString()
     
     // it the auth user is an admin, we show forId movements
-    if (authAsAdmin) {
+    if (authAsAdmin || auth.user.isAgent()) {
       // if user is admin and no userId is passed, we throw an error
       if (!forId) {
         throw new MovementError('Missing user id.')
