@@ -955,13 +955,15 @@ class Commission extends Model {
             'amount': {
               '$sum': {
                 $cond: {
-                  if: {
-                    $or: [
-                      { $not: ['$briteConversionPercentage'] }
-                    ]
-                  },
+                  if: { $not: ['$briteConversionPercentage'] },
                   then: '$amountChange',
-                  else: '$request.amountEuro'
+                  else: {
+                    $cond: [
+                      {$not: ['$request.amountEuro']},
+                      '$amountEuro',
+                      '$request.amountEuro'
+                    ]
+                  }
                 }
               }
             },
