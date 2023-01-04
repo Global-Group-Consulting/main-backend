@@ -230,6 +230,9 @@ class RequestController {
     
     /** @type {typeof import('../../../Validators/requests/create').rules} */
     const incomingData = request.all()
+  
+    // ensure the value is a boolean
+    incomingData.clubRepayment = incomingData.clubRepayment === 'true';
     
     /** @type {import('../../../../@types/User').User} */
     const associatedUser = await UserModel.find(incomingData.userId)
