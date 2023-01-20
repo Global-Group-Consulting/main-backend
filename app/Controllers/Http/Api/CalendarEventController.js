@@ -26,7 +26,7 @@ class CalendarEventController {
     
     // TODO:: must filter by dates and logged user
     return CalendarEvent.query()
-      .with('category')
+      .with(['category', "client", "user"])
       .fetch()
   }
   

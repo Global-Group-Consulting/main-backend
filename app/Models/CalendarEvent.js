@@ -22,9 +22,16 @@ class CalendarEvent extends Model {
     return super.dates.concat(['start', 'end'])
   }
   
+  client () {
+    return this.belongsTo('App/Models/User', 'clientId', '_id').select(['_id', 'firstName', 'lastName'])
+  }
+  
+  user () {
+    return this.belongsTo('App/Models/User', 'userId', '_id').select(['_id', 'firstName', 'lastName'])
+  }
   
   category () {
-    return this.belongsTo('App/Models/CalendarCategory')
+    return this.belongsTo('App/Models/CalendarCategory', 'categoryId', '_id')
   }
   
   setTimed (timed) {

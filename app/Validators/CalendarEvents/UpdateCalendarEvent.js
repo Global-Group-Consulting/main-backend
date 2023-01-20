@@ -1,6 +1,8 @@
 'use strict'
 
-class UpdateCalendarEvent {
+const { WhitelistValidator } = require('../WhitelistValidator')
+
+class UpdateCalendarEvent extends WhitelistValidator {
   get rules () {
     return {
       'name': 'required|string',

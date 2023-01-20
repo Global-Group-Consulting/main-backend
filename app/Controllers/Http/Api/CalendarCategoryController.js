@@ -28,22 +28,6 @@ class CalendarCategoryController {
   }
   
   /**
-   * Create/save a new calendarcategory.
-   * POST calendarcategories
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   */
-  async store ({ request, response }) {
-    const data = request.all()
-    
-    const calendarCategory = await CalendarCategory.create(data)
-    
-    return calendarCategory
-  }
-  
-  /**
    * Update calendarcategory details.
    * PUT or PATCH calendarcategories/:id
    *
@@ -51,14 +35,18 @@ class CalendarCategoryController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async update ({ params, request, response }) {
+  async upsert ({ params, request, response }) {
     const categoryId = params.id
     const data = request.all()
-    const calendarCategory = await CalendarCategory.findOrFail(categoryId)
+    let calendarCategory = categoryId ? await CalendarCategory.findOrFail(categoryId) : null
     
-    calendarCategory.merge(data)
-    
-    await calendarCategory.save()
+    if (calendarCategory) {
+      calendarCategory.merge(data)
+      
+      await calendarCategory.save()
+    } else {
+      calendarCategory = await CalendarCategory.create(data)
+    }
     
     return calendarCategory
   }

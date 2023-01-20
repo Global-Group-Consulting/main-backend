@@ -10,7 +10,7 @@ const Model = use('Model')
 class CalendarCategory extends Model {
   
   events () {
-    return this.hasMany('App/Models/CalendarEvent')
+    return this.hasMany('App/Models/CalendarEvent', '_id', 'categoryId')
   }
 }
 
