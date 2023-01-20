@@ -25,7 +25,9 @@ class CalendarEventController {
   async index ({ request, response }) {
     
     // TODO:: must filter by dates and logged user
-    return CalendarEvent.all()
+    return CalendarEvent.query()
+      .with('category')
+      .fetch()
   }
   
   /**
@@ -52,18 +54,6 @@ class CalendarEventController {
   }
   
   /**
-   * Display a single calendarevent.
-   * GET calendar events/:id
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
-   */
-  async show ({ params, request, response, view }) {
-  }
-  
-  /**
    * Update calendarevent details.
    * PUT or PATCH calendar events/:id
    *
@@ -72,6 +62,15 @@ class CalendarEventController {
    * @param {Response} ctx.response
    */
   async update ({ params, request, response }) {
+    const eventId = params.id
+    const data = request.all()
+    const calendarEvent = await CalendarEvent.findOrFail(eventId)
+    
+    calendarEvent.merge(data)
+    
+    await calendarEvent.save()
+    
+    return calendarEvent
   }
   
   /**
@@ -83,6 +82,10 @@ class CalendarEventController {
    * @param {Response} ctx.response
    */
   async destroy ({ params, request, response }) {
+    const eventId = params.id
+    const calendarEvent = await CalendarEvent.findOrFail(eventId)
+    
+    await calendarEvent.delete()
   }
 }
 

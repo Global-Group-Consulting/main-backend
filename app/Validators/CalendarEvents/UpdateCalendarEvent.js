@@ -1,11 +1,19 @@
 'use strict'
 
-class CalendarEventsUpdateCalendarEvent {
+class UpdateCalendarEvent {
   get rules () {
     return {
-      // validation rules
+      'name': 'required|string',
+      'notes': 'string',
+      'timed': 'boolean',
+      'start': 'required|date',
+      'end': 'required|date',
+      'categoryId': 'objectId',
+      'place': 'string',
+      'userId': 'objectId',
+      'clientId': 'objectId'
     }
   }
 }
 
-module.exports = CalendarEventsUpdateCalendarEvent
+module.exports = UpdateCalendarEvent

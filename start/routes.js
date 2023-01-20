@@ -41,6 +41,7 @@ const NewsRoutes = require('./routes/news')
 const SelectOptionRoutes = require('./routes/selectOptions')
 const StatisticsRoutes = require('./routes/statistics')
 const CalendarEvents = require('./routes/calendarEvents')
+const CalendarCategories = require('./routes/calendarCategories')
 
 Route.on('/').render('welcome')
 
@@ -66,6 +67,7 @@ NewsRoutes(Route)
 SelectOptionRoutes(Route)
 StatisticsRoutes(Route)
 CalendarEvents(Route)
+CalendarCategories(Route)
 // Set this route at the end due to the use of the wildcard
 ProxyRoutes(Route)
 

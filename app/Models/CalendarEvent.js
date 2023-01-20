@@ -23,6 +23,10 @@ class CalendarEvent extends Model {
   }
   
   
+  category () {
+    return this.belongsTo('App/Models/CalendarCategory')
+  }
+  
   setTimed (timed) {
     return castToBoolean(timed)
   }
