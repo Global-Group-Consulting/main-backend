@@ -1,9 +1,7 @@
 'use strict'
 
-const { WhitelistValidator } = require('../WhitelistValidator')
 const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
-
-class UpsertCalendarCategory extends WhitelistValidator {
+class DeleteCalendarCategory {
   async authorize () {
     
     if (!this.ctx.auth.user.isAdmin()) {
@@ -15,10 +13,9 @@ class UpsertCalendarCategory extends WhitelistValidator {
   
   get rules () {
     return {
-      name: 'string|required',
-      color: 'string|required'
+      // validation rules
     }
   }
 }
 
-module.exports = UpsertCalendarCategory
+module.exports = DeleteCalendarCategory

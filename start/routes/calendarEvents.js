@@ -5,6 +5,8 @@
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/', 'CalendarEventController.index')
+      .validator('CalendarEvents/IndexCalendarEvent')
+    
     Route.post('/', 'CalendarEventController.store')
       .validator('CalendarEvents/StoreCalendarEvent')
     
@@ -12,6 +14,7 @@ module.exports = function (Route) {
       .validator('CalendarEvents/UpdateCalendarEvent')
     
     Route.delete('/:id', 'CalendarEventController.destroy')
+      .validator('CalendarEvents/DeleteCalendarEvent')
   }).prefix('/api/calendarEvents')
     .middleware('auth')
     .namespace('Api')

@@ -48,6 +48,12 @@ export class Model implements LucidMongo {
   
   static create (data: any): Promise<Model>;
   
+  static where (query: any): this;
+  
+  static with (load: string | string[]): this;
+  
+  static fetch (): Promise<Model[]>;
+  
   fill (data: any): void;
   
   save (): Promise<Model>;

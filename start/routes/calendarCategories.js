@@ -10,6 +10,8 @@ module.exports = function (Route) {
       .validator('CalendarCategories/UpsertCalendarCategory')
     
     Route.delete('/:id', 'CalendarCategoryController.destroy')
+      .validator('CalendarCategories/DeleteCalendarCategory')
+    
   }).prefix('/api/calendarCategories')
     .middleware('auth')
     .namespace('Api')
