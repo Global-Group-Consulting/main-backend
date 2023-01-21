@@ -62,6 +62,9 @@ export interface User extends UserModel {
   clubPack: string;
   _id: string;
   id: string;
+  
+  isAdmin(): boolean
+  isAgent(): boolean
 }
 
 export interface CommissionAssigned {
