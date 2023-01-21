@@ -632,7 +632,7 @@ class User extends Model {
    * @param {boolean} includeReferenceAgentData=false
    * @returns {Promise<typeof User[]>}
    */
-  static async getTeamAgents (agent, includeReferenceAgentData = false) {
+  static async getTeamAgents (agent, includeReferenceAgentData = false, onlyIds = false, idsToString = false) {
     let agentId
     
     if (typeof agent === 'string') {
@@ -658,12 +658,28 @@ class User extends Model {
      */
     for (const subAgent of directSubAgents.rows) {
       // I should avoid recursive call and use a while instead
-      toReturn.push(...(await this.getTeamAgents(subAgent, includeReferenceAgentData)))
+      toReturn.push(...(await this.getTeamAgents(subAgent, includeReferenceAgentData, onlyIds)))
+    }
+    
+    if (onlyIds) {
+      return toReturn.map(el => {
+        if (idsToString) {
+          return el._id.toString()
+        }
+        return el._id
+      })
     }
     
     return toReturn
   }
   
+  /**
+   *
+   * @param agent
+   * @param excludeUser Default `false`. If `true` exclude the specified agent from the results
+   * @param returnObjectIds
+   * @return {Promise<*[]>}
+   */
   static async getTeamUsersIds (agent, excludeUser = false, returnObjectIds = false) {
     const subAgents = await this.getTeamAgents(agent)
     let ids = subAgents.map(_agent => _agent._id)

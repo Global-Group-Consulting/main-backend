@@ -40,6 +40,8 @@ const GeolocationRoutes = require('./routes/geolocation')
 const NewsRoutes = require('./routes/news')
 const SelectOptionRoutes = require('./routes/selectOptions')
 const StatisticsRoutes = require('./routes/statistics')
+const CalendarEvents = require('./routes/calendarEvents')
+const CalendarCategories = require('./routes/calendarCategories')
 
 Route.on('/').render('welcome')
 
@@ -60,12 +62,14 @@ WebhooksRoutes(Route)
 MagazineRoutes(Route)
 ReportsRoutes(Route)
 FiltersRoutes(Route)
-// Set this route at the end due to the use of the wildcard
-ProxyRoutes(Route)
 GeolocationRoutes(Route)
 NewsRoutes(Route)
 SelectOptionRoutes(Route)
 StatisticsRoutes(Route)
+CalendarEvents(Route)
+CalendarCategories(Route)
+// Set this route at the end due to the use of the wildcard
+ProxyRoutes(Route)
 
 // const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64');
 

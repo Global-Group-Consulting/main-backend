@@ -92,7 +92,7 @@ class SelectOptionController {
    * @return {Promise<*>}
    */
   async getUsersList ({ request, auth }) {
-    const userIsAllowed = await Acl.checkPermissions([UsersPermissions.ACL_USERS_ALL_READ], auth)
+    const userIsAllowed = await Acl.checkPermissions([UsersPermissions.ACL_USERS_ALL_READ, UsersPermissions.ACL_USERS_TEAM_READ], auth)
     /** @type {string} */
     let filter = request.input('name')
     
@@ -107,13 +107,24 @@ class SelectOptionController {
     // sanitize string
     filter = this.sanitizeFilterString(filter)
     
-    const toReturn = await User.where({
+    const query = {
       role: { $in: [UserRoles.CLIENTE, UserRoles.AGENTE] },
       $or: [
         { firstName: { $regex: filter.replace(/\s/g, '|'), $options: 'i' } },
         { lastName: { $regex: filter.replace(/\s/g, '|'), $options: 'i' } }
       ]
-    })
+    }
+    
+    // If user is agent, can only see his team clients
+    if (auth.user.isAgent()) {
+      const sugAgentIds = await User.getTeamUsersIds(auth.user, false, true)
+      
+      query['_id'] = {
+        $in: sugAgentIds
+      }
+    }
+    
+    const toReturn = await User.where(query)
       .setVisible(['_id', 'firstName', 'lastName', 'referenceAgent'])
       .sort({ lastName: 1, firstName: 1 })
       .fetch()
