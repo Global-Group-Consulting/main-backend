@@ -61,6 +61,7 @@ class CalendarEventController {
     
     return CalendarEvent.where(query)
       .with(['category', 'client', 'user'])
+      .sort({ 'start': 1 })
       .fetch()
   }
   
@@ -130,18 +131,18 @@ class CalendarEventController {
     if (calendarEvent.authorId.toString() !== auth.user._id.toString() && !auth.user.isAdmin()) {
       throw new AclForbiddenException('You don\'t have permission to access this resource')
     }
-  
+    
     /**
      * @type {User}
      */
     const authUser = auth.user
-  
+    
     let userId = !auth.user.isAdmin() ? auth.user._id.toString() : data.userId
-  
+    
     // if user is not admin, must check if the userId is the same as the authorId or of one of its subagents
     if (!auth.user.isAdmin() && data.userId) {
       const subagentIds = await User.getTeamAgents(authUser, false, true, true)
-    
+      
       // if the specified user is not a subagents of the author, set as user itself
       if (!subagentIds.includes(data.userId)) {
         userId = authUser._id.toString()

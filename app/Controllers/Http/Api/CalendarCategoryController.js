@@ -24,7 +24,7 @@ class CalendarCategoryController {
    * @param {View} ctx.view
    */
   async index ({ request, response, view }) {
-    return await CalendarCategory.all()
+    return await CalendarCategory.sort({ 'name': 1 }).fetch()
   }
   
   /**
