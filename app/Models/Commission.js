@@ -362,6 +362,17 @@ class Commission extends Model {
     
     /** @type {{name: CommissionType, percent: number}} */
     const currentCommissionSettings = agentCommissions.find(_entry => _entry.name === requiredType)
+  
+    // If the agent has a group percentage, and is requested commission for "newDeposit",
+    // then use the personalClientDeposit if available,
+    // otherwise use the newDeposit
+    if (requiredType === CommissionType.NEW_DEPOSIT && agent.agentTeamType === AgentTeamType.GROUP_PERCENTAGE) {
+      const personalClientDeposit = agentCommissions.find(_entry => _entry.name === CommissionType.PERSONAL_CLIENT_DEPOSIT)
+      
+      if (personalClientDeposit) {
+        return personalClientDeposit
+      }
+    }
     
     if (!agentCommissions || !currentCommissionSettings) {
       throw new CommissionException('This type of commission is not activated for this agent.')
@@ -394,7 +405,7 @@ class Commission extends Model {
     // If data.percentageToApply is set, will be used because indicates is a indirect commission
     // that comes from a subAgent client. If is null (in the most cases), will be used the one set
     // in the commissionsAssigned array, if any.
-    const agentCommissionPercentage = data.percentageToApply || currentCommissionSettings.percent
+    const agentCommissionPercentage = data.percentageToApply || (currentCommissionSettings.percent)
     const commissionValue = (agentCommissionPercentage * newDeposit) / 100
     
     // get the date specified for the deposit (specified by admin when confirming a new deposit. This is the date when the money fiscally arrived in our bank account)
@@ -959,7 +970,7 @@ class Commission extends Model {
                   then: '$amountChange',
                   else: {
                     $cond: [
-                      {$not: ['$request.amountEuro']},
+                      { $not: ['$request.amountEuro'] },
                       '$amountEuro',
                       '$request.amountEuro'
                     ]
