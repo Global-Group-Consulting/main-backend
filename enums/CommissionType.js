@@ -7,6 +7,8 @@ class AccountStatuses extends BasicEnum {
     super('AccountStatuses')
 
     this.NEW_DEPOSIT = "newDeposit"
+    // Only to distinguish the percentage on direct clients from the group one.
+    this.PERSONAL_CLIENT_DEPOSIT = "personalClientDeposit"
     this.TOTAL_DEPOSIT = "totalDeposit"
     this.ANNUAL_DEPOSIT = "annualDeposit"
     this.MANUAL_ADD = "manualAdd"
@@ -18,6 +20,7 @@ class AccountStatuses extends BasicEnum {
     this.COMMISSIONS_COLLECTED = "commissionsCollected"
     this.CANCEL_COMMISSIONS_COLLECTED = "cancelCommissionsCollected"
     this.CANCEL_COMMISSIONS_NEW_DEPOSIT = "cancelCommissionsNewDeposit"
+    
 
     //  Status used when the month end and i must block the months commissions, waiting for reinvestment date.
     this.COMMISSIONS_TO_REINVEST = "commissionsToReinvest"
