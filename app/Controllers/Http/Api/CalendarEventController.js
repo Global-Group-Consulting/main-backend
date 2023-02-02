@@ -1,11 +1,10 @@
 'use strict'
 
-/** @typedef {Adonis.Http.Request} Request */
+/** @typedef {HttpRequest} HttpRequest */
 /** @typedef {import('../../../../@types/HttpRequest').HttpRequest} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 /** @typedef {import('../../../../@types/Auth').Auth} Auth */
 
-const { castToObjectId } = require('../../../Helpers/ModelFormatters')
 /**
  * @type {typeof import('../../../Models/CalendarEvent')}
  */
@@ -13,6 +12,10 @@ const CalendarEvent = use('App/Models/CalendarEvent')
 const User = use('App/Models/User')
 
 const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
+
+const CalendarFiltersMap = require('../../../Filters/CalendarFilters.map')
+const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
+const { preparePaginatedResult, prepareSorting } = require('../../../Utilities/Pagination')
 
 /**
  * Resourceful controller for interacting with calendar events
@@ -29,16 +32,10 @@ class CalendarEventController {
    */
   async index ({ request, response, auth }) {
     const authId = auth.user._id
-    const { start, end } = request.only(['start', 'end'])
     
-    const query = {
-      start: {
-        $gte: new Date(start)
-      },
-      end: {
-        $lte: new Date(end)
-      }
-    }
+    const filtersQuery = prepareFiltersQuery(request.pagination.filters, CalendarFiltersMap)
+    const pagination = request.pagination
+    let sort = prepareSorting(pagination, { 'start': 1 })
     
     // Only show events to admins or agents
     if (!auth.user.isAdmin() && !auth.user.isAgent()) {
@@ -49,7 +46,7 @@ class CalendarEventController {
     
     // if user is agent, must see only his events and those of his subagents
     if (auth.user.isAgent()) {
-      query.$or = [
+      filtersQuery.$or = [
         // get all public events and those of the user, alongside those of his subagents
         { isPublic: true },
         // Temporarily we'll just get the events of the user because getting those of the subagents is more slower
@@ -59,9 +56,15 @@ class CalendarEventController {
       ]
     }
     
-    return CalendarEvent.where(query)
+    const query = CalendarEvent.where(filtersQuery)
       .with(['category', 'client', 'user'])
-      .fetch()
+      .sort(sort)
+    
+    if (request.input('paginate') === 'true') {
+      return preparePaginatedResult((await query.paginate(pagination.page)).toJSON(), sort, filtersQuery)
+    } else {
+      return await query.fetch()
+    }
   }
   
   /**
@@ -130,18 +133,18 @@ class CalendarEventController {
     if (calendarEvent.authorId.toString() !== auth.user._id.toString() && !auth.user.isAdmin()) {
       throw new AclForbiddenException('You don\'t have permission to access this resource')
     }
-  
+    
     /**
      * @type {User}
      */
     const authUser = auth.user
-  
+    
     let userId = !auth.user.isAdmin() ? auth.user._id.toString() : data.userId
-  
+    
     // if user is not admin, must check if the userId is the same as the authorId or of one of its subagents
     if (!auth.user.isAdmin() && data.userId) {
       const subagentIds = await User.getTeamAgents(authUser, false, true, true)
-    
+      
       // if the specified user is not a subagents of the author, set as user itself
       if (!subagentIds.includes(data.userId)) {
         userId = authUser._id.toString()

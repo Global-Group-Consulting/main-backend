@@ -5,10 +5,18 @@
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 /** @typedef {import('../../../../@types/Auth').Auth} Auth */
 
+const { castToObjectId } = require('../../../Helpers/ModelFormatters')
 /**
  * @type {typeof import('../../../Models/CalendarCategory')}
  */
 const CalendarCategory = use('App/Models/CalendarCategory')
+
+/**
+ * @type {typeof import('../../../Models/CalendarEvent')}
+ */
+const CalendarEvent = use('App/Models/CalendarEvent')
+
+const CalendarException = use('App/Exceptions/CalendarException')
 
 /**
  * Resourceful controller for interacting with calendarcategories
@@ -24,7 +32,7 @@ class CalendarCategoryController {
    * @param {View} ctx.view
    */
   async index ({ request, response, view }) {
-    return await CalendarCategory.all()
+    return await CalendarCategory.sort({ 'name': 1 }).fetch()
   }
   
   /**
@@ -62,6 +70,12 @@ class CalendarCategoryController {
   async destroy ({ params, request, response }) {
     const categoryId = params.id
     const calendarCategory = await CalendarCategory.findOrFail(categoryId)
+    
+    const usedCounter = await CalendarEvent.where({ 'categoryId': castToObjectId(categoryId) }).count()
+    
+    if (usedCounter > 0) {
+      throw new CalendarException('Questa categoria è in uso e non può essere eliminata')
+    }
     
     await calendarCategory.delete()
   }
