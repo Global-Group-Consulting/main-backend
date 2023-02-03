@@ -19,3 +19,6 @@ module.exports.accountStatus = function (user) {
   
   return 'Da firmare'
 }
+module.exports.userFullName = function (user) {
+  return `${user.firstName} ${user.lastName}`
+}

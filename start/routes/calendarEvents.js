@@ -5,6 +5,7 @@
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/', 'CalendarEventController.index')
+    Route.get('/download', 'CalendarEventController.download')
     
     Route.post('/', 'CalendarEventController.store')
       .validator('CalendarEvents/StoreCalendarEvent')

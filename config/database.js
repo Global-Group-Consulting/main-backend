@@ -26,6 +26,7 @@ module.exports = {
       // useFindAndModify: false,
       useNewUrlParser: true
     },
+    debug: true
     /*connection: {
       host: Env.get('DB_HOST', 'localhost'),
       port: Env.get('DB_PORT', 27017),

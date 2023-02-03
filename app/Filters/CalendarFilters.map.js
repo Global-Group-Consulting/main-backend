@@ -1,7 +1,8 @@
+const { castToObjectId } = require('../Helpers/ModelFormatters')
+
 /**
  * @type {import('/@types/FilterMap').FilterMap}
  */
-const { castToObjectId } = require('../Helpers/ModelFormatters')
 module.exports = {
   name: {
     query: value => ({ $regex: value, $options: 'i' })
@@ -16,6 +17,7 @@ module.exports = {
     query: (value) => ({ '$lte': new Date(value) })
   },
   userId: {
+    key: () => 'userIds',
     query: value => (castToObjectId(value))
   },
   clientId: {

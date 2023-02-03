@@ -2,16 +2,14 @@
 
 /** @type {import('@adonisjs/framework/src/Server')} */
 const Server = use('Server')
-const {sanitizor} = use('Validator')
+const { sanitizor } = use('Validator')
 const Persona = use('Persona')
 const Antl = use('Antl')
 const GE = require('@adonisjs/generic-exceptions')
 
 const moment = require('moment')
-const {get: _get, template: _template, templateSettings: _templateSettings} = require('lodash')
+const { get: _get, template: _template, templateSettings: _templateSettings } = require('lodash')
 const randtoken = require('rand-token')
-
-const {cast} = require("consis/lib")
 
 /*
 |--------------------------------------------------------------------------
@@ -28,8 +26,8 @@ const globalMiddleware = [
   'Adonis/Middleware/Shield',
   'Adonis/Middleware/AuthInit',
   'App/Middleware/ConvertEmptyStringsToNull',
-  "App/Middleware/MaintenanceMode",
-  "App/Middleware/PaginationHandler"
+  'App/Middleware/MaintenanceMode',
+  'App/Middleware/PaginationHandler'
 ]
 
 /*
@@ -55,7 +53,7 @@ const namedMiddleware = {
   authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
   authAdmin: 'App/Middleware/AuthAdmin',
   guest: 'App/Middleware/AllowGuestOnly',
-  acl: 'App/Middleware/Acl',
+  acl: 'App/Middleware/Acl'
   //requestsBlock: 'App/Middleware/RequestsBlock',
 }
 
@@ -79,13 +77,11 @@ Server
   .registerNamed(namedMiddleware)
   .use(serverMiddleware)
 
-
 class InvalidTokenException extends GE.LogicalException {
-  static invalidToken() {
+  static invalidToken () {
     return new this('The token is invalid or expired', 400)
   }
 }
-
 
 Persona.registerationRules = function () {
   // disable this control in favor of Validators/users
@@ -99,14 +95,14 @@ Persona.getUserByUids = async function (value) {
    * any identifier
    */
   this.config.uids.forEach((uid) => userQuery.where(uid, value))
-
+  
   /**
    * Search for user
    */
   const user = await userQuery.first()
   if (!user) {
-    const data = {field: 'uid', validation: 'exists', value}
-
+    const data = { field: 'uid', validation: 'exists', value }
+    
     throw this.Validator.ValidationException.validationFailed([
       {
         message: this._makeCustomMessage('uid.exists', data, 'Unable to locate user'),
@@ -115,20 +111,20 @@ Persona.getUserByUids = async function (value) {
       }
     ])
   }
-
+  
   return user
 }
 
 Persona.verifyEmail = async function (token) {
-  const AccountStatuses = require("../enums/AccountStatuses")
+  const AccountStatuses = require('../enums/AccountStatuses')
   const tokenRow = await this.getToken(token, 'email')
-
+  
   if (!tokenRow) {
     throw new Error('The token is invalid or expired')
   }
-
+  
   const user = tokenRow.getRelated('user')
-
+  
   /**
    * Update user account only when in the newAccountState
    */
@@ -137,7 +133,7 @@ Persona.verifyEmail = async function (token) {
     this.removeToken(token, 'email')
     await user.save()
   }
-
+  
   return user
 }
 
@@ -158,7 +154,7 @@ Persona.generateToken = async function (user, type) {
   }
   
   const token = this._encrypter.encrypt(randtoken.generate(16))
-  await user.tokens().create({type, token})
+  await user.tokens().create({ type, token })
   return token
 }
 
@@ -187,10 +183,31 @@ Antl.compile = function (locale, key, data) {
   const tmplString = _template(translation, {
     interpolate: /{([\s\S]+?)}/g
   })
-
+  
   return tmplString(data || {})
 }
 
+Antl.str = function (str, path, data = {}) {
+  const strPath = [this.currentLocale() || 'it']
+  
+  if (path) {
+    strPath.push(path)
+  }
+  
+  strPath.push(str.replace(/\./g, '_'))
+  
+  const translation = _get(this._messages, strPath.join('.'))
+  
+  if (!translation) {
+    return str
+  }
+  
+  const tmplString = _template(translation, {
+    interpolate: /{([\s\S]+?)}/g
+  })
+  
+  return tmplString(data || {})
+}
 
 sanitizor.toFloat = function (value) {
   return cast.float(value)
