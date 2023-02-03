@@ -19,8 +19,8 @@ const CalendarException = use('App/Exceptions/CalendarException')
 /** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 
-const AclUserRoles = require('../../../../Enums/AclUserRoles')
-const CalendarCategoryVisibility = require('../../../../Enums/CalendarCategoryVisibility')
+const AclUserRoles = require('../../../../enums/AclUserRoles')
+const CalendarCategoryVisibility = require('../../../../enums/CalendarCategoryVisibility')
 
 /**
  * Resourceful controller for interacting with calendarcategories
