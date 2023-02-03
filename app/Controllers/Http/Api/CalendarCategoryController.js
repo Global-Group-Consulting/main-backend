@@ -15,8 +15,12 @@ const CalendarCategory = use('App/Models/CalendarCategory')
  * @type {typeof import('../../../Models/CalendarEvent')}
  */
 const CalendarEvent = use('App/Models/CalendarEvent')
-
 const CalendarException = use('App/Exceptions/CalendarException')
+/** @type {import('../../../../providers/Acl/index')} */
+const AclProvider = use('AclProvider')
+
+const AclUserRoles = require('../../../../Enums/AclUserRoles')
+const CalendarCategoryVisibility = require('../../../../Enums/CalendarCategoryVisibility')
 
 /**
  * Resourceful controller for interacting with calendarcategories
@@ -27,12 +31,43 @@ class CalendarCategoryController {
    * GET calendarcategories
    *
    * @param {object} ctx
-   * @param {Request} ctx.request
+   * @param {Auth} ctx.auth
    * @param {Response} ctx.response
    * @param {View} ctx.view
    */
-  async index ({ request, response, view }) {
-    return await CalendarCategory.sort({ 'name': 1 }).fetch()
+  async index ({ auth }) {
+    /**
+     * @type {User}
+     */
+    const authUser = auth.user
+    
+    const query = {}
+    
+    // if user is admin or super admin, show all categories
+    if (!authUser.hasRoles([AclUserRoles.ADMIN, AclUserRoles.SUPER_ADMIN])) {
+      const roles = [...authUser.roles]
+      
+      if (roles.includes(AclUserRoles.SUPER_ADMIN) && !roles.includes(AclUserRoles.ADMIN)) {
+        roles.push(AclUserRoles.ADMIN)
+      }
+      
+      query['$or'] = [
+        { visibility: CalendarCategoryVisibility.ALL },
+        {
+          visibility: CalendarCategoryVisibility.ME,
+          authorId: castToObjectId(authUser._id)
+        },
+        {
+          visibility: { '$in': roles }
+        }
+      ]
+    }
+    
+    return await CalendarCategory
+      .where(query)
+      .with('author')
+      .sort({ 'name': 1 })
+      .fetch()
   }
   
   /**
@@ -43,7 +78,7 @@ class CalendarCategoryController {
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    */
-  async upsert ({ params, request, response }) {
+  async upsert ({ params, request, auth }) {
     const categoryId = params.id
     const data = request.all()
     let calendarCategory = categoryId ? await CalendarCategory.findOrFail(categoryId) : null
@@ -53,7 +88,10 @@ class CalendarCategoryController {
       
       await calendarCategory.save()
     } else {
-      calendarCategory = await CalendarCategory.create(data)
+      calendarCategory = new CalendarCategory()
+      calendarCategory.fill(data)
+      calendarCategory.authorId = auth.user._id
+      await calendarCategory.save()
     }
     
     return calendarCategory

@@ -5,9 +5,9 @@ const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
 
 class UpsertCalendarCategory extends WhitelistValidator {
   async authorize () {
-    
+    // Only admins can create or update calendar categories
     if (!this.ctx.auth.user.isAdmin()) {
-      throw new AclForbiddenException('You don\'t have permission to access this resource')
+      throw new AclForbiddenException()
     }
     
     return true
@@ -16,7 +16,8 @@ class UpsertCalendarCategory extends WhitelistValidator {
   get rules () {
     return {
       name: 'string|required',
-      color: 'string|required'
+      color: 'string|required',
+      visibility: 'string|required'
     }
   }
 }

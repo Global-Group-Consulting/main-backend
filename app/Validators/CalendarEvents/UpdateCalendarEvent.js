@@ -12,7 +12,7 @@ class UpdateCalendarEvent extends WhitelistValidator {
       'end': 'required|date',
       'categoryId': 'objectId',
       'place': 'string',
-      'userId': 'objectId',
+      'userIds': 'objectId:allowArray',
       'clientId': 'objectId'
     }
   }

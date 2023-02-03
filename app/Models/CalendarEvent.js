@@ -14,7 +14,7 @@ const Model = use('Model')
  * @property {string} place
  * @property {boolean} isPublic - true if the event is public, false if it's private
  * @property {ObjectId} authorId - the user who created the event
- * @property {ObjectId} userId - the user who the event belongs to. This is the user who will see the event in their calendar. For admins, this could be empty, indicating global events.
+ * @property {ObjectId[]} userIds - the users who the event belongs to. This is the user who will see the event in their calendar. For admins, this could be empty, indicating global events.
  * @property {ObjectId} clientId - the client indirectly related to the event
  */
 class CalendarEvent extends Model {
@@ -30,21 +30,25 @@ class CalendarEvent extends Model {
     return this.belongsTo('App/Models/User', 'clientId', '_id').select(['_id', 'firstName', 'lastName'])
   }
   
-  user () {
-    return this.belongsTo('App/Models/User', 'userId', '_id').select(['_id', 'firstName', 'lastName'])
+  author () {
+    return this.belongsTo('App/Models/User', 'authorId', '_id').select(['_id', 'firstName', 'lastName'])
+  }
+  
+  users () {
+    return this.referMany('App/Models/User', '_id', 'userIds').select(['_id', 'firstName', 'lastName'])
   }
   
   category () {
     return this.belongsTo('App/Models/CalendarCategory', 'categoryId', '_id')
   }
   
-/*  getCanEdit ({ authorId, userId, isPublic }) {
-    if (isPublic) {
-      return false
-    }
-    
-    return authorId === userId
-  }*/
+  /*  getCanEdit ({ authorId, userId, isPublic }) {
+      if (isPublic) {
+        return false
+      }
+      
+      return authorId === userId
+    }*/
   
   setTimed (timed) {
     return castToBoolean(timed)
@@ -58,8 +62,11 @@ class CalendarEvent extends Model {
     return castToObjectId(authorId)
   }
   
-  setUserId (userId) {
-    return castToObjectId(userId)
+  setUserIds (userIds) {
+    if (!Array.isArray(userIds)) {
+      return []
+    }
+    return userIds.map(userId => castToObjectId(userId))
   }
   
   setClientId (clientId) {

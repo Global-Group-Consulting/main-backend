@@ -1,19 +1,20 @@
 'use strict'
 
-const {LogicalException} = require('@adonisjs/generic-exceptions')
-const {StatusCodes} = require("http-status-codes")
+const { LogicalException } = require('@adonisjs/generic-exceptions')
+const { StatusCodes } = require('http-status-codes')
+const { LocalizedException } = require('../LocalizedException')
 
-const defaultMessage = "Not enough permissions"
+const defaultMessage = 'Not enough permissions'
 
-class AclForbiddenException extends LogicalException {
+class AclForbiddenException extends LocalizedException {
   /**
    * @returns {typeof StatusCodes}
    */
-  static get statusCodes() {
+  static get statusCodes () {
     return StatusCodes
   }
-
-  constructor(message = defaultMessage, status = StatusCodes.FORBIDDEN) {
+  
+  constructor (message = defaultMessage, status = StatusCodes.FORBIDDEN) {
     super(message || defaultMessage, status)
   }
 }

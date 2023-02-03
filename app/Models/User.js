@@ -39,6 +39,8 @@ const { formatBySemester } = require('../Helpers/Utilities/formatBySemester.js')
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require('lodash')
 const { prepareSorting, preparePaginatedResult } = require('../Utilities/Pagination')
 
+const AclUserRoles = require('../../Enums/AclUserRoles')
+
 /**
  * @property {string} _id MongoId of the user
  * @property {string[]} roles
@@ -1200,6 +1202,22 @@ class User extends Model {
     return [UserRoles.AGENTE].includes(+this.role)
   }
   
+  /**
+   *
+   * @param {string[]} roles
+   */
+  hasRoles (roles) {
+    if (!roles) {
+      return true
+    }
+    
+    if (!Array.isArray(roles)) {
+      throw new Error('Roles must be an array')
+    }
+    
+    return roles.some(role => this.roles.includes(role))
+  }
+  
   get_id (value) {
     return value.toString()
   }
@@ -1260,6 +1278,18 @@ class User extends Model {
   
   setDocType (value) {
     return castToNumber(value)
+  }
+  
+  setCommissionsAssigned (value) {
+    return value ? value.map(_entry => {
+      const entry = JSON.parse(_entry)
+      
+      if (!entry.percent) {
+        entry.percent = 0
+      }
+      
+      return JSON.stringify(entry)
+    }) : []
   }
   
   setContractPercentage (value) {
