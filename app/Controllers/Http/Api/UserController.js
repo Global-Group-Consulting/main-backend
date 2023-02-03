@@ -298,6 +298,10 @@ class UserController {
       }
     }
     
+    if (+incomingUser.role === UserRoles.AGENTE && !incomingUser.commissionsAssigned) {
+      incomingUser.commissionsAssigned = []
+    }
+    
     const result = await Persona.updateProfile(user, incomingUser)
     const files = request.files()
     
