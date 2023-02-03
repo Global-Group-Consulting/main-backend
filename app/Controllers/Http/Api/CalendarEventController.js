@@ -156,7 +156,7 @@ class CalendarEventController {
       // If a user is NOT and admin, the userId must be the same as the authorId
       userIds: userIds,
       // if user is admin and a userId is provided, the event is not public, otherwise it is
-      isPublic: auth.user.isAdmin() ? (!data.userIds) : false
+      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false
     })
     
     return calendarEvent
@@ -211,7 +211,7 @@ class CalendarEventController {
       // If a user is NOT and admin, the userId must be the same as the authorId
       userIds,
       // if user is admin and a userId is provided, the event is not public, otherwise it is
-      isPublic: auth.user.isAdmin() ? (!data.userIds) : false
+      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false
     })
     
     await calendarEvent.save()
