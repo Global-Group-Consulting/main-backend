@@ -39,8 +39,6 @@ const { formatBySemester } = require('../Helpers/Utilities/formatBySemester.js')
 const { groupBy: _groupBy, omit: _omit, pick: _pick } = require('lodash')
 const { prepareSorting, preparePaginatedResult } = require('../Utilities/Pagination')
 
-const AclUserRoles = require('../../Enums/AclUserRoles')
-
 /**
  * @property {string} _id MongoId of the user
  * @property {string[]} roles
