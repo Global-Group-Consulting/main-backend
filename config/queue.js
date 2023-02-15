@@ -33,7 +33,7 @@ const queueConfig = {
     },
     agent_commissions_on_total_deposit: {
       options: {
-        concurrency: 5,
+        concurrency: 1,
         lockLimit: 5
       }
     },
