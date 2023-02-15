@@ -70,7 +70,9 @@ class Request extends MongoModel {
   
   static get revertableRequests () {
     return [
-      RequestTypes.VERSAMENTO
+      RequestTypes.VERSAMENTO,
+      // restore the ability to revert Risc rendite brite as request by the client on 2023-02-15
+      RequestTypes.RISC_INTERESSI_BRITE,
     ]
   }
   
