@@ -871,14 +871,18 @@ class Request extends MongoModel {
     
     try {
       const user = await UserModel.find(this.userId)
+      const lastMovement = await MovementModel.getLast(jsonData.userId)
       
       const movement = await MovementModel.create({
         ...jsonData,
         movementType,
-        depositOld: jsonData.deposit,
+        depositOld: lastMovement.deposit || jsonData.deposit,
+        interestAmountOld: lastMovement.interestAmount || jsonData.interestAmount,
         cancelRef: movementRef._id,
         cancelReason: this.cancelReason,
-        interestPercentage: +user.contractPercentage
+        interestPercentage: +user.contractPercentage,
+        // set the current date to avoid calculation errors
+        created_at: new Date()
       })
       
       if (movement.cancelRef) {
