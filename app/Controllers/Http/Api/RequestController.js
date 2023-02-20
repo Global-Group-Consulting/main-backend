@@ -61,15 +61,30 @@ class RequestController {
    * @return {Promise<*>}
    */
   async readAll ({ auth, request }) {
-    const authAsAdmin = AclProvider.isAdmin(auth)
+    const authIsAdmin = AclProvider.isAdmin(auth)
+    const forId = request.pagination.filters.userId
+    let filterUserId = null
+  
+    // it the auth user is not an admin, we show only his requests
+    if (auth.user.isAgent() && forId) {
+      // check if the user is a client of the agent
+      const clientUser = await UserModel.where({ referenceAgent: auth.user._id, _id: castToObjectId(forId) }).first()
     
-    // it the auth user is an admin, we show all available requests
-    if (!authAsAdmin) {
-      request.pagination.filters.userId = { $in: [auth.user._id.toString(), auth.user._id] }
+      if (clientUser) {
+        filterUserId = clientUser._id
+      } else {
+        filterUserId = { $in: [auth.user._id.toString(), auth.user._id] }
+      }
+    } else if (!authIsAdmin) {
+      filterUserId = { $in: [auth.user._id.toString(), auth.user._id] }
     }
-    
+  
+    if (filterUserId) {
+      request.pagination.filters.userId = filterUserId
+    }
+  
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, RequestFiltersMap)
-    
+  
     return await RequestModel.filter(filtersQuery, null, request.pagination)
   }
   
