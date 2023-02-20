@@ -47,6 +47,7 @@ module.exports.filter = async function (filter = {}, project, requestPagination)
         'contractNumber'
       ])
     })
+    .with('files')
     .setVisible(project, null)
     .sort(sort)
     .paginate(requestPagination.page)).toJSON()
