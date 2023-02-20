@@ -27,6 +27,7 @@ const AgentBrite = use('App/Models/AgentBrite')
 /** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 const Event = use('Event')
+const { validate } = use('Validator')
 
 const RequestNotFoundException = require('../../../Exceptions/RequestNotFoundException')
 const RequestException = require('../../../Exceptions/RequestException')
@@ -198,7 +199,7 @@ class RequestController {
     const files = request.files()
     
     if (Object.keys(files).length > 0) {
-      await FileModel.store(files, associatedUser.id, auth.user._id, {
+      await FileModel.store(files, associatedUser._id, auth.user._id, {
         requestId: newRequest.id
       })
     }
@@ -277,7 +278,7 @@ class RequestController {
       const files = request.files()
       
       if (Object.keys(files).length > 0) {
-        await FileModel.store(files, associatedUser.id, auth.user._id, {
+        await FileModel.store(files, associatedUser._id, auth.user._id, {
           requestId: newRequest.id
         })
       }
@@ -610,8 +611,29 @@ class RequestController {
       if (userDepositMovement) {
         userDepositMovement.delete()
       }
-      
+  
       throw er
+    }
+  }
+  
+  async attachments ({ params, request, auth, response }) {
+    const requestId = params.id
+    const existingRequest = await RequestModel.findOrFail(requestId)
+    const files = request.files()
+    const validation = await validate(request.files(), {
+      requestAttachment: 'required|file|size:4500'
+    })
+    
+    if (validation.fails()) {
+      return response.badRequest(validation.messages())
+    }
+    
+    if (Object.keys(files).length > 0) {
+      const storedFiles = await FileModel.store(files, (existingRequest.userId.toString()), auth.user._id, {
+        requestId: existingRequest._id
+      })
+      
+      return storedFiles
     }
   }
 }
