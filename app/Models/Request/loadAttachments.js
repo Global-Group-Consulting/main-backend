@@ -33,9 +33,9 @@ module.exports.loadAttachments = async function (data, asBool = false) {
       let match
       
       if (request.initialMovement) {
-        match = file.userId.toString() === request.userId && file.fieldName === 'contractInvestmentAttachment'
+        match = file.userId ? (file.userId.toString() === request.userId && file.fieldName === 'contractInvestmentAttachment') : false
       } else {
-        match = file.requestId ? file.requestId.toString() === request._id : false
+        match = file.requestId ? (file.requestId.toString() === request._id) : false
       }
       
       if (match) {
