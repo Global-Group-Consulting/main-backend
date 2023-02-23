@@ -631,7 +631,7 @@ class RequestController {
     }
   }
   
-  async attachments ({ params, request, auth, response }) {
+  async storeAttachments ({ params, request, auth, response }) {
     const requestId = params.id
     const existingRequest = await RequestModel.findOrFail(requestId)
     const files = request.files()

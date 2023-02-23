@@ -42,7 +42,7 @@ module.exports = function (Route) {
       .validator('requests/reject')
   
     Route
-      .post('/:id/attachments', 'RequestController.attachments')
+      .post('/:id/attachments', 'RequestController.storeAttachments')
     
     Route
       .put('/:id/revert', 'RequestController.revert')
