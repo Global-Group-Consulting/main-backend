@@ -644,10 +644,17 @@ class RequestController {
     }
     
     if (Object.keys(files).length > 0) {
+      if (existingRequest.initialMovement) {
+        files['requestAttachment'].fieldName = 'contractInvestmentAttachment'
+        files['contractInvestmentAttachment'] = files['requestAttachment']
+    
+        delete files['requestAttachment']
+      }
+  
       const storedFiles = await FileModel.store(files, (existingRequest.userId.toString()), auth.user._id, {
         requestId: existingRequest._id
       })
-      
+  
       return storedFiles
     }
   }
