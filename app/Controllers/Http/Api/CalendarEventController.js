@@ -25,26 +25,26 @@ const { userFullName } = require('../../../Utilities/Formatters')
  * Resourceful controller for interacting with calendar events
  */
 class CalendarEventController {
+ 
+ async _prepareFiltersQuery (pagination, auth) {
+   const authId = auth.user._id
+   const filtersQuery = prepareFiltersQuery(pagination.filters, CalendarFiltersMap)
+   let sort = prepareSorting(pagination, { 'start': -1 })
   
-  _prepareFiltersQuery (pagination, auth) {
-    const authId = auth.user._id
-    const filtersQuery = prepareFiltersQuery(pagination.filters, CalendarFiltersMap)
-    let sort = prepareSorting(pagination, { 'start': -1 })
-    
-    // Only show events to admins or agents
-    if (!auth.user.isAdmin() && !auth.user.isAgent()) {
-      throw new AclForbiddenException('You don\'t have permission to access this resource')
-    }
-    // If user is an admin, must see all events
-    // No authId filter must be added
+   // Only show events to admins or agents
+   if (!auth.user.isAdmin() && !auth.user.isAgent()) {
+     throw new AclForbiddenException('You don\'t have permission to access this resource')
+   }
+   // If user is an admin, must see all events
+   // No authId filter must be added
     
     // if user is agent, must see only his events and those of his subagents
     if (auth.user.isAgent()) {
       filtersQuery.$or = [
-        // get all public events and those of the user, alongside those of his subagents
+        // get all public events and those of the user,
         { isPublic: true },
-        // Temporarily we'll just get the events of the user because getting those of the subagents is more slower
-        // { authorId: { $in: await User.getTeamUsersIds(auth.user, false, true) } }
+        // alongside those of his subagents
+        { authorId: { $in: await User.getTeamAgents(auth.user, false, true) } },
         { authorId: authId },
         { userIds: authId }
       ]
@@ -66,7 +66,7 @@ class CalendarEventController {
    * @param {Auth} ctx.auth
    */
   async index ({ request, response, auth }) {
-    const { filtersQuery, sort } = this._prepareFiltersQuery(request.pagination, auth)
+    const { filtersQuery, sort } = await this._prepareFiltersQuery(request.pagination, auth)
     
     const query = CalendarEvent.where(filtersQuery)
       .with(['category', 'client', 'users'])
@@ -80,7 +80,7 @@ class CalendarEventController {
   }
   
   async download ({ request, response, auth }) {
-    const { filtersQuery, sort } = this._prepareFiltersQuery(request.pagination, auth)
+    const { filtersQuery, sort } = await this._prepareFiltersQuery(request.pagination, auth)
     const query = CalendarEvent.where(filtersQuery)
       .with(['category', 'client', 'users', 'author'])
       .sort(sort)
