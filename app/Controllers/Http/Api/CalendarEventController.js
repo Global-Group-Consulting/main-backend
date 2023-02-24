@@ -138,7 +138,7 @@ class CalendarEventController {
     // if user is not admin, must check if the userId is the same as the authorId or of one of its subagents
     if (!auth.user.isAdmin() && data.userIds) {
       const subagentIds = await User.getTeamAgents(authUser, false, true, true)
-      
+  
       // if the specified user is not a subagents of the author, set as user itself
       if (!subagentIds.some((id) => data.userIds.includes(id))) {
         userIds = [authUser._id.toString()]
@@ -146,7 +146,7 @@ class CalendarEventController {
         userIds = data.userIds
       }
     }
-    
+  
     /**
      * @type {CalendarEvent & Model}
      */
@@ -204,6 +204,11 @@ class CalendarEventController {
       } else {
         userIds = data.userIds
       }
+    }
+  
+    // if a clientId is provided, ensure clientName gets reset
+    if (data.clientId) {
+      data.clientName = null
     }
     
     calendarEvent.merge({
