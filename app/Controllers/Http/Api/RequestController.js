@@ -27,6 +27,7 @@ const AgentBrite = use('App/Models/AgentBrite')
 /** @type {import('../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 const Event = use('Event')
+const { validate } = use('Validator')
 
 const RequestNotFoundException = require('../../../Exceptions/RequestNotFoundException')
 const RequestException = require('../../../Exceptions/RequestException')
@@ -60,15 +61,30 @@ class RequestController {
    * @return {Promise<*>}
    */
   async readAll ({ auth, request }) {
-    const authAsAdmin = AclProvider.isAdmin(auth)
+    const authIsAdmin = AclProvider.isAdmin(auth)
+    const forId = request.pagination.filters.userId
+    let filterUserId = null
+  
+    // it the auth user is not an admin, we show only his requests
+    if (auth.user.isAgent() && forId) {
+      // check if the user is a client of the agent
+      const clientUser = await UserModel.where({ referenceAgent: auth.user._id, _id: castToObjectId(forId) }).first()
     
-    // it the auth user is an admin, we show all available requests
-    if (!authAsAdmin) {
-      request.pagination.filters.userId = { $in: [auth.user._id.toString(), auth.user._id] }
+      if (clientUser) {
+        filterUserId = clientUser._id
+      } else {
+        filterUserId = { $in: [auth.user._id.toString(), auth.user._id] }
+      }
+    } else if (!authIsAdmin) {
+      filterUserId = { $in: [auth.user._id.toString(), auth.user._id] }
     }
-    
+  
+    if (filterUserId) {
+      request.pagination.filters.userId = filterUserId
+    }
+  
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, RequestFiltersMap)
-    
+  
     return await RequestModel.filter(filtersQuery, null, request.pagination)
   }
   
@@ -198,7 +214,7 @@ class RequestController {
     const files = request.files()
     
     if (Object.keys(files).length > 0) {
-      await FileModel.store(files, associatedUser.id, auth.user._id, {
+      await FileModel.store(files, associatedUser._id, auth.user._id, {
         requestId: newRequest.id
       })
     }
@@ -277,7 +293,7 @@ class RequestController {
       const files = request.files()
       
       if (Object.keys(files).length > 0) {
-        await FileModel.store(files, associatedUser.id, auth.user._id, {
+        await FileModel.store(files, associatedUser._id, auth.user._id, {
           requestId: newRequest.id
         })
       }
@@ -610,8 +626,36 @@ class RequestController {
       if (userDepositMovement) {
         userDepositMovement.delete()
       }
-      
+  
       throw er
+    }
+  }
+  
+  async storeAttachments ({ params, request, auth, response }) {
+    const requestId = params.id
+    const existingRequest = await RequestModel.findOrFail(requestId)
+    const files = request.files()
+    const validation = await validate(request.files(), {
+      requestAttachment: 'required|file|size:4500'
+    })
+    
+    if (validation.fails()) {
+      return response.badRequest(validation.messages())
+    }
+    
+    if (Object.keys(files).length > 0) {
+      if (existingRequest.initialMovement) {
+        files['requestAttachment'].fieldName = 'contractInvestmentAttachment'
+        files['contractInvestmentAttachment'] = files['requestAttachment']
+    
+        delete files['requestAttachment']
+      }
+  
+      const storedFiles = await FileModel.store(files, (existingRequest.userId.toString()), auth.user._id, {
+        requestId: existingRequest._id
+      })
+  
+      return storedFiles
     }
   }
 }

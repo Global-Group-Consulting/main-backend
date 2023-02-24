@@ -95,13 +95,47 @@ class CustomValidatorProvider extends ServiceProvider {
       if (Number.isNaN(+value)) {
         return
       }
-      
+  
       const existingType = MovementTypes.data[value]
-      
+  
       if (!existingType) {
         throw 'Invalid movement type'
       }
-      
+  
+    })
+  
+    Validator.extend('file', async function (data, field, message, args, get) {
+      let valid = true
+    
+      if (data) {
+        Object.keys(data).forEach(key => {
+          if (!data[key].constructor || data[key].constructor.name !== 'File') {
+            valid = false
+          }
+        })
+      }
+    
+      if (!data || !valid) {
+        throw 'Invalid file'
+      }
+    
+    })
+  
+    Validator.extend('size', async function (data, field, message, args, get) {
+      let valid = true
+    
+      if (data) {
+        Object.keys(data).forEach(key => {
+          if (data[key].constructor && data[key].constructor.name === 'File' && (data[key].size / 1024) > args[0]) {
+            valid = false
+          }
+        })
+      }
+    
+      if (!valid) {
+        throw 'Invalid file size'
+      }
+    
     })
   }
 }

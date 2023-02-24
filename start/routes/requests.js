@@ -40,6 +40,9 @@ module.exports = function (Route) {
     Route
       .put('/:id/cancel', 'RequestController.cancel')
       .validator('requests/reject')
+  
+    Route
+      .post('/:id/attachments', 'RequestController.storeAttachments')
     
     Route
       .put('/:id/revert', 'RequestController.revert')

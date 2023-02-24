@@ -67,7 +67,9 @@ module.exports = {
     key: () => 'userId',
     query: (value) => castToObjectId(value)
   },
-  userId: {},
+  userId: {
+    query: (value) => castToObjectId(value)
+  },
   status: {
     query: (value) => {
       // When requesting RIFIUTATA, include also ANNULATA
