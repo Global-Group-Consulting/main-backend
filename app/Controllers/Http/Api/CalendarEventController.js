@@ -67,11 +67,11 @@ class CalendarEventController {
    */
   async index ({ request, response, auth }) {
     const { filtersQuery, sort } = await this._prepareFiltersQuery(request.pagination, auth)
-    
+  
     const query = CalendarEvent.where(filtersQuery)
       .with(['category', 'client', 'users'])
       .sort(sort)
-    
+  
     if (request.input('paginate') === 'true') {
       return preparePaginatedResult((await query.paginate(request.pagination.page)).toJSON(), sort, filtersQuery)
     } else {
@@ -156,7 +156,8 @@ class CalendarEventController {
       // If a user is NOT and admin, the userId must be the same as the authorId
       userIds: userIds,
       // if user is admin and a userId is provided, the event is not public, otherwise it is
-      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false
+      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false,
+      updatedBy: auth.user._id
     })
     
     return calendarEvent
@@ -216,7 +217,9 @@ class CalendarEventController {
       // If a user is NOT and admin, the userId must be the same as the authorId
       userIds,
       // if user is admin and a userId is provided, the event is not public, otherwise it is
-      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false
+      isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false,
+      // I must store the id of the user who updated the event so that I can use it to decide tho whom to send the notification
+      updatedBy: auth.user._id
     })
     
     await calendarEvent.save()
