@@ -14,7 +14,7 @@ module.exports = {
     query: (value) => ({ '$gte': new Date(value) })
   },
   end: {
-    query: (value) => ({ '$lte': new Date(value) })
+    query: (value) => ({ '$lte': new Date((new Date(value)).setHours(23, 59, 59, 999)) })
   },
   userId: {
     key: () => 'userIds',
