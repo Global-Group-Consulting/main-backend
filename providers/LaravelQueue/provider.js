@@ -29,7 +29,17 @@ class QueueProvider extends ServiceProvider {
    * @return {void}
    */
   boot() {
-  
+    if (!Helpers.isAceCommand()) {
+    
+      /**
+       * I import it where so that the provider can start immediately
+       *
+       * @type {import('./index')}
+       * */
+      const LaravelQueueProvider = this.app.use('LaravelQueueProvider')
+    
+      LaravelQueueProvider.ping()
+    }
   }
 }
 

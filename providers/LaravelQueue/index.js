@@ -10,6 +10,10 @@ class QueueProvider {
     this.logger = Logger
   }
   
+  ping() {
+    return "ok"
+  }
+  
   /**
    *
    * @param {{userId: string, amountEuro: float, amount: integer}} payload
@@ -26,9 +30,15 @@ class QueueProvider {
    */
   dispatchCreateNotification(payload) {
     return this.queue.pushTo("CreateNotification", {
+      // Add extra data here so that we can override the default values with the payload
+      extraData: {
+        subject: payload.title,
+        title: payload.title,
+        content: payload.content
+      },
       ...payload,
-      app: "main",
-      type: "calendarUpdate"
+      app: 'main',
+      type: 'calendarUpdate'
     });
   }
 }
