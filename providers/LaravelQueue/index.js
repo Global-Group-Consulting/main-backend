@@ -19,6 +19,18 @@ class QueueProvider {
     return this.queue.pushTo("TriggerBriteRecapitalization", payload);
   }
   
+  /**
+   *
+   * @param {{title: string, content: string, app: string, type: string, platforms: array, receivers: [], action: {text:string, link: string}}} payload
+   * @returns {*}
+   */
+  dispatchCreateNotification(payload) {
+    return this.queue.pushTo("CreateNotification", {
+      ...payload,
+      app: "main",
+      type: "calendarUpdate"
+    });
+  }
 }
 
 /**

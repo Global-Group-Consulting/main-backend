@@ -15,7 +15,7 @@ class QueueProvider extends ServiceProvider {
   register() {
     ioc.singleton('LaravelQueueProvider', (app) => {
       const Config = app.use('Adonis/Src/Config')
-      
+
       return new (require("./index"))(Config.get("laravelQueue"))
     })
   }
