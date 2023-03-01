@@ -7,6 +7,7 @@ const Hash = use('Hash')
 /** @type {typeof import('@adonisjs/lucid/src/Lucid/Model')} */
 const Model = use('Model')
 const File = use('App/Models/File')
+const CalendarEvent = use('App/Models/CalendarEvent')
 const Event = use('Event')
 const Database = use('Database')
 
@@ -1133,6 +1134,24 @@ class User extends Model {
   
   signinLogs () {
     return this.hasMany(SignRequestModel, '_id', 'userId')
+  }
+  
+  todayCalendarEvents (userId) {
+    const query = {
+      $and: [
+        { start: { $gte: new Date(new Date().setHours(0, 0, 0, 0)) } },
+        { start: { $lte: new Date(new Date().setHours(23, 59, 59, 999)) } }
+      ],
+      $or: [
+        { isPublic: true },
+        { authorId: castToObjectId(userId) },
+        { userIds: {$in: [castToObjectId(userId)]} }
+      ]
+    }
+    
+    // console.log(JSON.stringify(query))
+    
+    return CalendarEvent.where(query).sort({ 'start': -1 }).fetch()
   }
   
   async fetchSigningLogs () {

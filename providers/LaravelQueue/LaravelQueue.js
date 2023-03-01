@@ -48,7 +48,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 exports.__esModule = true;
 exports.LaravelQueue = exports.JobOptions = exports.QueueOptions = exports.LaravelJob = exports.AvailableJob = void 0;
-var mysql_1 = require("mysql");
+var mysql2_1 = require("mysql2");
 var lodash_1 = require("lodash");
 var php_serialization_1 = require("php-serialization");
 var AvailableJob = /** @class */ (function () {
@@ -78,7 +78,7 @@ exports.JobOptions = JobOptions;
 var LaravelQueue = /** @class */ (function () {
     function LaravelQueue(config) {
         this.config = config;
-        this.mySqlConnection = (0, mysql_1.createPool)(config.db);
+        this.mySqlConnection = (0, mysql2_1.createPool)(config.db);
         /*this.connectionReady = new Promise((resolve, reject) => {
           this.mySqlConnection.connect((err) => {
             if (err) {
@@ -157,7 +157,7 @@ var LaravelQueue = /** @class */ (function () {
                     case 2:
                         job = _a.sent();
                         data = this.prepareData(job, encodedPayload, options);
-                        sql = "INSERT INTO jobs (queue, payload, attempts, available_at, created_at)\n                 VALUES ('" + data.queue + "',\n                         " + (0, mysql_1.escape)(data.payload) + ",\n                         " + data.attempts + ",\n                         " + data.available_at + ",\n                         " + data.created_at + ")";
+                        sql = "INSERT INTO jobs (queue, payload, attempts, available_at, created_at)\n                 VALUES ('" + data.queue + "',\n                         " + (0, mysql2_1.escape)(data.payload) + ",\n                         " + data.attempts + ",\n                         " + data.available_at + ",\n                         " + data.created_at + ")";
                         return [4 /*yield*/, this.query(sql)
                             // console.log(data.payload);
                         ];

@@ -90,6 +90,8 @@ Route.group(() => {
   Route.put('/repayment', 'SecretCommandController.triggerRepayment')
     .validator('App/Validators/Movements/TriggerRepayment')
   
+  Route.put('/send_calendar_reports', 'SecretCommandController.sendCalendarReports')
+  
   // Route.post("/initialize_movements", "SecretCommandController.initializeUserMovements");
 }).prefix(process.env.SERVER_KEY)
   .middleware('authBasic')

@@ -16,6 +16,7 @@ const Model = use('Model')
  * @property {ObjectId} authorId - the user who created the event
  * @property {ObjectId[]} userIds - the users who the event belongs to. This is the user who will see the event in their calendar. For admins, this could be empty, indicating global events.
  * @property {ObjectId} clientId - the client indirectly related to the event
+ * @property {ObjectId} updatedBy - the user who created/updated the event
  */
 class CalendarEvent extends Model {
   static get computed () {
@@ -24,6 +25,13 @@ class CalendarEvent extends Model {
   
   static get dates () {
     return super.dates.concat(['start', 'end'])
+  }
+  
+  static boot () {
+    super.boot()
+    
+    this.addHook('afterCreate', 'CalendarHook.afterCreate')
+    this.addHook('afterUpdate', 'CalendarHook.afterUpdate')
   }
   
   client () {
