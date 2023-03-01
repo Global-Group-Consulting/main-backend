@@ -12,6 +12,7 @@ const CalendarEvent = use('App/Models/CalendarEvent')
 const User = use('App/Models/User')
 
 const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
+const CalendarException = use('App/Exceptions/CalendarException')
 
 const CalendarFiltersMap = require('../../../Filters/CalendarFilters.map')
 const { prepareFiltersQuery } = require('../../../Filters/PrepareFiltersQuery')
@@ -132,13 +133,22 @@ class CalendarEventController {
      * @type {User}
      */
     const authUser = auth.user
-    
+  
     let userIds = !auth.user.isAdmin() ? [auth.user._id.toString()] : data.userIds
-    
+  
+    // Validate the return date for agents
+    if (auth.user.isAgent() && !data.returnDate) {
+      throw new CalendarException('La data di ricontatto è obbligatoria per gli agenti')
+    }
+  
+    if (data.returnDate && moment(data.returnDate).isBefore(moment(data.end), 'day')) {
+      throw new CalendarException('La data di ricontatto non può essere antecedente alla data di fine evento')
+    }
+  
     // if user is not admin, must check if the userId is the same as the authorId or of one of its subagents
     if (!auth.user.isAdmin() && data.userIds) {
       const subagentIds = await User.getTeamAgents(authUser, false, true, true)
-  
+    
       // if the specified user is not a subagents of the author, set as user itself
       if (!subagentIds.some((id) => data.userIds.includes(id))) {
         userIds = [authUser._id.toString()]
@@ -157,9 +167,13 @@ class CalendarEventController {
       userIds: userIds,
       // if user is admin and a userId is provided, the event is not public, otherwise it is
       isPublic: auth.user.isAdmin() ? (!data.userIds || !data.userIds.length) : false,
-      updatedBy: auth.user._id
+      updatedBy: auth.user._id,
+      isReturnEvent: false
     })
-    
+  
+    // if there is a return date and is different from the endDate of the event, create a new event for the return
+    await this._createReturnEvent(data, calendarEvent)
+  
     return calendarEvent
   }
   
@@ -211,7 +225,7 @@ class CalendarEventController {
     if (data.clientId) {
       data.clientName = null
     }
-    
+  
     calendarEvent.merge({
       ...data,
       // If a user is NOT and admin, the userId must be the same as the authorId
@@ -221,9 +235,28 @@ class CalendarEventController {
       // I must store the id of the user who updated the event so that I can use it to decide tho whom to send the notification
       updatedBy: auth.user._id
     })
-    
+  
+    // if there is a return date and is different from the endDate of the event, create a new event for the return
+    await this._createReturnEvent(data, calendarEvent)
+  
     await calendarEvent.save()
+  
+    // if the event is a return event, update the original event as well
+    if (calendarEvent.isReturnEvent) {
+      /**
+       * @type {CalendarEvent & Model}
+       */
+      const originalEvent = await CalendarEvent.where({ 'returnEventId': calendarEvent._id }).first()
     
+      // Original event could no more exist so we must check if it exists
+      if (originalEvent) {
+        // Update the returnDate of the original event
+        originalEvent.returnDate = calendarEvent.start.toDate()
+      
+        await originalEvent.save()
+      }
+    }
+  
     return calendarEvent
   }
   
@@ -242,13 +275,34 @@ class CalendarEventController {
      * @type {CalendarEvent & Model}
      */
     const calendarEvent = await CalendarEvent.findOrFail(eventId)
-    
+  
     // Users can delete only their own events, or if they are admins, they can delete any event
     if (calendarEvent.authorId.toString() !== auth.user._id.toString() && !auth.user.isAdmin()) {
       throw new AclForbiddenException()
     }
-    
+  
     await calendarEvent.delete()
+  }
+  
+  async _createReturnEvent (data, calendarEvent) {
+    if (data.returnDate && moment(data.returnDate).isAfter(moment(data.end), 'day') && !calendarEvent.returnEventId) {
+      const originalEvent = calendarEvent.toObject()
+      
+      delete originalEvent._id
+      
+      const returnEvent = await CalendarEvent.create({
+        ...originalEvent,
+        name: 'Ricontatto: ' + originalEvent.name,
+        start: data.returnDate,
+        end: moment(data.returnDate).add(1, 'hour').toDate(),
+        returnDate: null,
+        isReturnEvent: true
+      })
+      
+      // store the return event id in the original event
+      calendarEvent.returnEventId = returnEvent._id
+      await calendarEvent.save()
+    }
   }
 }
 

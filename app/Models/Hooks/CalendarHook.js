@@ -121,7 +121,7 @@ async function getReceivers (modelInstance) {
 async function getPublicReceivers (creatorId) {
   // get all users (agents) except the creator
   const res = await User.where({
-    'roles': [AclUserRoles.AGENT],
+    'roles': AclUserRoles.AGENT,
     '_id': { '$ne': castToObjectId(creatorId) }
   })
     .select('_id', 'email', 'firstName', 'lastName')

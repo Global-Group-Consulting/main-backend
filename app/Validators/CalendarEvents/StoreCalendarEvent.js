@@ -14,7 +14,8 @@ class StoreCalendarEvent extends WhitelistValidator {
       'place': 'string',
       'userIds': 'objectId:allowArray',
       'clientId': 'objectId',
-      'clientName': 'string'
+      'clientName': 'string',
+      'returnDate': 'date'
     }
   }
 }
