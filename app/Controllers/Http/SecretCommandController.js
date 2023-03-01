@@ -4,6 +4,7 @@ const QueueProvider = use('QueueProvider')
 /** @type {import('../../Models/Movement.js')} **/
 const Movement = use('App/Models/Movement')
 const CronUser = use('App/Models/CronUser')
+const User = use('App/Models/User')
 const { validate } = use('Validator')
 const CronException = use('App/Exceptions/CronException')
 
