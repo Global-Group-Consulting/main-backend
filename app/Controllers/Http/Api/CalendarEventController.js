@@ -282,6 +282,16 @@ class CalendarEventController {
     }
   
     await calendarEvent.delete()
+  
+    // If we are deleting a return event, we must edit the related original event as well and remove the returnDate and returnEventId
+    if (calendarEvent.isReturnEvent) {
+      /** @type {CalendarEvent & Model} */
+      const originalEvent = await CalendarEvent.where({ 'returnEventId': calendarEvent._id }).first()
+      originalEvent.returnDate = null
+      originalEvent.returnEventId = null
+    
+      await originalEvent.save()
+    }
   }
   
   async _createReturnEvent (data, calendarEvent) {
