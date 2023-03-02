@@ -106,19 +106,25 @@ class CustomValidatorProvider extends ServiceProvider {
   
     Validator.extend('file', async function (data, field, message, args, get) {
       let valid = true
+  
+      if (data && data[field]) {
+        if (data[field].constructor.name === 'File') {
+          return true
+        }
     
-      if (data) {
-        Object.keys(data).forEach(key => {
+        throw message
+    
+        /*Object.keys(data).forEach(key => {
           if (!data[key].constructor || data[key].constructor.name !== 'File') {
             valid = false
           }
-        })
+        })*/
       }
-    
-      if (!data || !valid) {
-        throw 'Invalid file'
-      }
-    
+  
+      /* if (!data || !valid) {
+         throw 'Invalid file'
+       }*/
+  
     })
   
     Validator.extend('size', async function (data, field, message, args, get) {
