@@ -138,7 +138,7 @@ function sendNotification (title, content, receivers, link) {
     receivers,
     action: {
       text: 'Visualizza evento',
-      link: Env.get('APP_URL') + link
+      link: Env.get('PUBLIC_URL') + link
     }
   })
 }
