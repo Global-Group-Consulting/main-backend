@@ -1,3 +1,5 @@
 {
-
+  "email.required": "L'email è obbligatoria",
+  "email.email": "L'email inserita non è valida",
+  "password.required": "La password è obbligatoria"
 }

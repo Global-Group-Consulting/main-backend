@@ -46,7 +46,7 @@ class AuthController {
         .withRefreshToken()
         .attempt(lowerEmail, password)
     } catch (e) {
-      throw new InvalidLoginException("Dati di accesso non validi. Controllare il nome utente e la password inserita.")
+      throw new InvalidLoginException("Invalid credentials. Please check your email and password.")
     }
     
     const user = await User.where({email: lowerEmail}).first()
@@ -54,12 +54,12 @@ class AuthController {
     const requestedApp = await SecretKey.getClientApp(request.headers()["client-key"])
   
     if (!apps.includes(requestedApp)) {
-      throw new InvalidLoginException("Permessi insufficienti per accedere a questa applicazione.")
+      throw new InvalidLoginException("You don't have permission to access this app")
     }
   
     if (![AccountStatuses.APPROVED, AccountStatuses.ACTIVE].includes(user.account_status)
       || user.suspended) {
-      throw new InvalidLoginException("Utente non valido o sospeso.")
+      throw new InvalidLoginException("Invalid user or suspended")
     }
   
     return response.json({
