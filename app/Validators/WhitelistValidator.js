@@ -1,6 +1,4 @@
-const { IntlValidator } = require('./IntlValidator')
-
-class WhitelistValidator extends IntlValidator {
+class WhitelistValidator {
   get includeParams () {
     return false;
   }
