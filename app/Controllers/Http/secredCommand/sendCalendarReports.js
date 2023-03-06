@@ -35,9 +35,10 @@ module.exports.sendCalendarReports = async () => {
 async function sendAgentsReport () {
   const now = new Date()
   const agentEmails = []
+  const isMorning = now.getUTCHours() >= times.morning && now.getUTCHours() < times.evening
   
   // if time not between 7:00 and 17 UTC, avoid sending the report to agents
-  if (now.getUTCHours() < times.morning && now.getUTCHours() > times.evening) {
+  if (!isMorning) {
     return []
   }
   

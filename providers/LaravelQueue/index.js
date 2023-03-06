@@ -63,7 +63,7 @@ class QueueProvider {
         events,
         action: {
           text: 'Visualizza eventi',
-          link: Env.get('APP_URL') + '/calendar?date=' + moment().format('YYYY-MM-DD')
+          link: Env.get('PUBLIC_URL') + '/calendar?date=' + moment().format('YYYY-MM-DD')
         }
       }
     })
@@ -102,7 +102,7 @@ class QueueProvider {
         events,
         action: {
           text: 'Visualizza eventi',
-          link: Env.get('APP_URL') + url
+          link: Env.get('PUBLIC_URL') + url
         }
       }
     })

@@ -21,7 +21,12 @@ class ExceptionHandler extends BaseExceptionHandler {
    *
    * @return {void}
    */
-  async handle(error, { request, response }) {
+  async handle (error, { request, response, antl }) {
+    // try to translate the error message
+    if (antl.get(`exceptions.${error.message}`)) {
+      error.message = antl.get(`exceptions.${error.message}`)
+    }
+  
     //response.status(error.status).json(error)
     return super.handle(...arguments)
   }
