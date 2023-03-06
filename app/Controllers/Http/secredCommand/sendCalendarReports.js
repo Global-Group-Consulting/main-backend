@@ -44,12 +44,39 @@ async function sendAgentsReport () {
   
   // get all agents
   const agents = await User.where({ roles: AclUserRoles.AGENT }).select(userFields).fetch()
+  /*
+  // Only for testing purposes
+  const agents = await User.where({
+    roles: AclUserRoles.AGENT,
+    _id: castToObjectId('60688e5852483a0020f99a81')
+  }).select(userFields).fetch()*/
   
   // For each agent, get all today's events and send the report
   await Promise.all(agents.rows.map(async (user) => {
     try {
-      // get all today's events
-      const events = (await user.todayCalendarEvents(user._id)).rows
+      // if the user has subagents, also include their events
+      // getTeamAgents returns an array of users, including the user itself
+      const subAgents = await User.getTeamAgents(user)
+      let events = []
+      
+      if (subAgents.length > 1) {
+        await Promise.all(
+          subAgents.map(async (agent) => {
+            const subEvents = (await agent.todayCalendarEvents(agent._id)).rows
+            
+            if (subEvents.length) {
+              events.push({
+                userName: agent._id.toString() === user._id.toString() ? 'Eventi Personali' : agent.firstName + ' ' + agent.lastName,
+                user: agent,
+                events: subEvents
+              })
+            }
+          })
+        )
+      } else {
+        // get all today's events
+        events = (await user.todayCalendarEvents(user._id)).rows
+      }
       
       // I can't show the event's date in the email, because I don't know the timezone of the user
       // for each event, add a date field with the start and end date formatted
@@ -68,7 +95,7 @@ async function sendAgentsReport () {
       // add the user and the events to the list of sent reports
       agentEmails.push({
         user: user.email,
-        events: events.map((event) => event._id.toString())
+        events: subAgents.length > 1 ? events : events.map((event) => event._id.toString())
       })
     } catch (e) {
       // if an error occurs, add the user and the error to the list of sent reports
