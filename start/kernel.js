@@ -11,6 +11,8 @@ const moment = require('moment')
 const { get: _get, template: _template, templateSettings: _templateSettings } = require('lodash')
 const randtoken = require('rand-token')
 
+const { cast } = require('consis/lib')
+
 /*
 |--------------------------------------------------------------------------
 | Global Middleware

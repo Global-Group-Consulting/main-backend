@@ -28,7 +28,7 @@ module.exports.getCounters = async function ({ request, auth }) {
   
   const match = prepareFiltersQuery(request.pagination.filters || {}, RequestFiltersMap)
   
-  if (!authUser.isAdmin()) {
+  if (!authUser.isAdmin() && !authUser.isAgent()) {
     match['userId'] = authUser._id
   }
   

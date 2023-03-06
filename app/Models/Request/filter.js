@@ -1,6 +1,7 @@
 const { prepareSorting, preparePaginatedResult } = require('../../Utilities/Pagination')
 const { AggregationBuilder } = require('../../../classes/AggregationBuilder')
 const { omit, clone } = require('lodash')
+const { castToObjectId } = require('../../Helpers/ModelFormatters')
 
 const User = use('App/Models/User')
 
@@ -47,9 +48,13 @@ module.exports.filter = async function (filter = {}, project, requestPagination)
         'contractNumber'
       ])
     })
+    // .with('files')
     .setVisible(project, null)
     .sort(sort)
     .paginate(requestPagination.page)).toJSON()
+  
+  // fetch all related attachments
+  result.data = await this.loadAttachments(result.data, true)
   
   const end = Date.now()
   

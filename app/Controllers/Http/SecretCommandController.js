@@ -1,10 +1,10 @@
 'use strict'
 
 const QueueProvider = use('QueueProvider')
-const User = use('App/Models/User')
 /** @type {import('../../Models/Movement.js')} **/
 const Movement = use('App/Models/Movement')
 const CronUser = use('App/Models/CronUser')
+const User = use('App/Models/User')
 const { validate } = use('Validator')
 const CronException = use('App/Exceptions/CronException')
 
@@ -15,9 +15,14 @@ const { HttpException, LogicalException } = require('@adonisjs/generic-exception
 const UserRoles = require('../../../enums/UserRoles')
 const AccountStatuses = require('../../../enums/AccountStatuses')
 const MovementTypes = require('../../../enums/MovementTypes')
+const AclUserRoles = require('../../../enums/AclUserRoles')
 const { v4: uuidv4 } = require('uuid')
 
+const { sendCalendarReports } = require('./secredCommand/sendCalendarReports')
+
 class SecretCommandController {
+  sendCalendarReports = sendCalendarReports
+  
   /**
    * Trigger the agents commissions block
    * @returns {Promise<*>}
@@ -265,7 +270,7 @@ class SecretCommandController {
     
     for (const user of users.rows) {
       const lastRecap = await Movement.getLastRecapitalization(user._id)
-      
+  
       if (lastRecap && lastRecap.amountChange) {
         LaravelQueueProvider.dispatchBriteRecapitalization({
           userId: lastRecap.userId.toString(),
@@ -275,6 +280,7 @@ class SecretCommandController {
       }
     }
   }
+  
 }
 
 module.exports = SecretCommandController

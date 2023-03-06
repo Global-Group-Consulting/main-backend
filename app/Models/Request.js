@@ -39,6 +39,8 @@ const { prepareFiltersQuery } = require('../Filters/PrepareFiltersQuery')
 const { prepareSorting, preparePaginatedResult } = require('../Utilities/Pagination')
 
 const { filter } = require('./Request/filter')
+const { loadAttachments } = require('./Request/loadAttachments')
+const { withAttachments } = require('./Request/instanceMethods/withAttachments')
 
 const modelFields = {
   userId: '',
@@ -59,6 +61,9 @@ const modelFields = {
  */
 class Request extends MongoModel {
   static filter = filter
+  static loadAttachments = loadAttachments
+  
+  withAttachments = withAttachments
   
   static get hidden () {
     return ['__v']
@@ -70,7 +75,9 @@ class Request extends MongoModel {
   
   static get revertableRequests () {
     return [
-      RequestTypes.VERSAMENTO
+      RequestTypes.VERSAMENTO,
+      // restore the ability to revert Risc rendite brite as request by the client on 2023-02-15
+      RequestTypes.RISC_INTERESSI_BRITE,
     ]
   }
   
@@ -291,7 +298,7 @@ class Request extends MongoModel {
   }
   
   static async reqWithUser (id) {
-    return this.query()
+    const toReturn = await this.query()
       .where('_id', castToObjectId(id))
       .with('user', query => {
         query.setVisible([
@@ -324,8 +331,11 @@ class Request extends MongoModel {
           _creatorQuery => _creatorQuery.setVisible(['firstName', 'lastName', 'id'])
         )
       })
-      .with('files')
       .first()
+  
+    await toReturn.withAttachments()
+  
+    return toReturn
   }
   
   static async allWithUser (sorting = {}) {
@@ -869,14 +879,18 @@ class Request extends MongoModel {
     
     try {
       const user = await UserModel.find(this.userId)
+      const lastMovement = await MovementModel.getLast(jsonData.userId)
       
       const movement = await MovementModel.create({
         ...jsonData,
         movementType,
-        depositOld: jsonData.deposit,
+        depositOld: lastMovement.deposit || jsonData.deposit,
+        interestAmountOld: lastMovement.interestAmount || jsonData.interestAmount,
         cancelRef: movementRef._id,
         cancelReason: this.cancelReason,
-        interestPercentage: +user.contractPercentage
+        interestPercentage: +user.contractPercentage,
+        // set the current date to avoid calculation errors
+        created_at: new Date()
       })
       
       if (movement.cancelRef) {
@@ -904,9 +918,9 @@ class Request extends MongoModel {
     return this.belongsTo('App/Models/User', 'userId', '_id')
   }
   
-  files () {
+  /*files () {
     return this.hasMany('App/Models/File', '_id', 'requestId')
-  }
+  }*/
   
   movement () {
     if (this.type === RequestTypes.RISC_PROVVIGIONI) {
