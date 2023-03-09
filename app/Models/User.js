@@ -581,9 +581,10 @@ class User extends Model {
    *
    * @param {string} agentId
    * @param {string[]} subAgentsIdList
-   * @returns {Promise<User[]>}
+   * @param {boolean} onlyIds
+   * @returns {Promise<User[]|ObjectId[]>}
    */
-  static async getClientsList (agentId, subAgentsIdList = []) {
+  static async getClientsList (agentId, subAgentsIdList = [], onlyIds = false) {
     if (subAgentsIdList.length === 0 || subAgentsIdList.indexOf(agentId) === -1) {
       subAgentsIdList.push(agentId)
     }
@@ -594,6 +595,11 @@ class User extends Model {
       .with('referenceAgentData')
       .sort({ role: 1, _id: 1 })
       .fetch()
+  
+    // if onlyIds is true, return a list of ids
+    if (onlyIds) {
+      return result.rows.map(el => el._id)
+    }
     
     return Promise.all(result.rows.map(async (el) => {
       if (el.role === UserRoles.AGENTE) {
