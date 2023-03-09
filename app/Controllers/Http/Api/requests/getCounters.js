@@ -1,6 +1,8 @@
 /** @type {import('../../../../../providers/Acl/index')} */
 const AclProvider = use('AclProvider')
 
+const User = use('App/Models/User')
+
 /** @type { import('../../../../Models/Request').Request} */
 const RequestModel = use('App/Models/Request')
 
@@ -28,7 +30,13 @@ module.exports.getCounters = async function ({ request, auth }) {
   
   const match = prepareFiltersQuery(request.pagination.filters || {}, RequestFiltersMap)
   
-  if (!authUser.isAdmin() && !authUser.isAgent()) {
+  // If user is agent and no userId is provided, then we need to get all requests for his team
+  if (authUser.isAgent() && !match['userId']) {
+    const subUserIds = await User.getTeamUsersIds(auth.user, true, true)
+    const userIds = await User.getClientsList(auth.user._id, [], true)
+    
+    match['userId'] = { $in: [...subUserIds, ...userIds] }
+  } else if (!authUser.isAdmin() && !authUser.isAgent()) {
     match['userId'] = authUser._id
   }
   

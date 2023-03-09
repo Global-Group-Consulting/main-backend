@@ -581,9 +581,10 @@ class User extends Model {
    *
    * @param {string} agentId
    * @param {string[]} subAgentsIdList
-   * @returns {Promise<User[]>}
+   * @param {boolean} onlyIds
+   * @returns {Promise<User[]|ObjectId[]>}
    */
-  static async getClientsList (agentId, subAgentsIdList = []) {
+  static async getClientsList (agentId, subAgentsIdList = [], onlyIds = false) {
     if (subAgentsIdList.length === 0 || subAgentsIdList.indexOf(agentId) === -1) {
       subAgentsIdList.push(agentId)
     }
@@ -594,6 +595,11 @@ class User extends Model {
       .with('referenceAgentData')
       .sort({ role: 1, _id: 1 })
       .fetch()
+  
+    // if onlyIds is true, return a list of ids
+    if (onlyIds) {
+      return result.rows.map(el => el._id)
+    }
     
     return Promise.all(result.rows.map(async (el) => {
       if (el.role === UserRoles.AGENTE) {
@@ -735,16 +741,17 @@ class User extends Model {
   }
   
   /**
-   *
+   * @param {any} filters
    * @returns {Promise<{ thisMonth: number, last3Months: number, last6Months: number,  last12Months: number}>}
    */
-  static async getNewUsersTotals () {
+  static async getNewUsersTotals (filters = {}) {
     // Recupera la lista di tutti gli utenti attivati negli ultimi 12 mesi,
     // partendo dal loro movimento iniziale che si trova nei movimenti di ogni utente
     const users = await this.db.collection('movements')
       .aggregate([
         {
           '$match': {
+            ...(filters || {}),
             'movementType': MovementTypes.INITIAL_DEPOSIT,
             'created_at': {
               '$gte': moment().startOf('month').subtract(12, 'months').toDate()
@@ -805,14 +812,18 @@ class User extends Model {
   }
   
   /**
+   * @param {any} filters
    * @returns {Promise<{draft: number, active: number, pendingAccess: number, pendingSignature: number, suspended: number}>}
    */
-  static async getUsersStatusTotals () {
+  static async getUsersStatusTotals (filters = {}) {
     /**
      * @type {{_id: {status: string}, suspended: number, count: number}[]}
      */
     const users = await this.db.collection('users')
       .aggregate([
+        {
+          $match: filters || {}
+        },
         {
           $group:
             {

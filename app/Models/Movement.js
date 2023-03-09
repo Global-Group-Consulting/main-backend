@@ -32,6 +32,7 @@ module.exports = class Movement extends MongoModel {
   static getAdminTotalsOut = adminTotalsOut
   static getStatisticsRefundReport = statisticsRefundReport
   static getWithdrawalDepositReport = withdrawalDepositReport
+  static getWithdrawalInterestReport = withdrawalInterestReport
   static filter = filter
   
   static get computed () {
