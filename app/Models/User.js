@@ -735,16 +735,17 @@ class User extends Model {
   }
   
   /**
-   *
+   * @param {any} filters
    * @returns {Promise<{ thisMonth: number, last3Months: number, last6Months: number,  last12Months: number}>}
    */
-  static async getNewUsersTotals () {
+  static async getNewUsersTotals (filters = {}) {
     // Recupera la lista di tutti gli utenti attivati negli ultimi 12 mesi,
     // partendo dal loro movimento iniziale che si trova nei movimenti di ogni utente
     const users = await this.db.collection('movements')
       .aggregate([
         {
           '$match': {
+            ...(filters || {}),
             'movementType': MovementTypes.INITIAL_DEPOSIT,
             'created_at': {
               '$gte': moment().startOf('month').subtract(12, 'months').toDate()
@@ -805,14 +806,18 @@ class User extends Model {
   }
   
   /**
+   * @param {any} filters
    * @returns {Promise<{draft: number, active: number, pendingAccess: number, pendingSignature: number, suspended: number}>}
    */
-  static async getUsersStatusTotals () {
+  static async getUsersStatusTotals (filters = {}) {
     /**
      * @type {{_id: {status: string}, suspended: number, count: number}[]}
      */
     const users = await this.db.collection('users')
       .aggregate([
+        {
+          $match: filters || {}
+        },
         {
           $group:
             {
