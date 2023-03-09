@@ -6,7 +6,7 @@
 const Env = use("Env")
 const UserRoles = require("../../enums/UserRoles")
 
-class AuthSuperAdmin {
+class AuthAdmin {
   /**
    * @param {object} ctx
    * @param {Request} ctx.request
@@ -33,4 +33,4 @@ class AuthSuperAdmin {
   }
 }
 
-module.exports = AuthSuperAdmin
+module.exports = AuthAdmin
