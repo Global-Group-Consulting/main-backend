@@ -54,6 +54,7 @@ const namedMiddleware = {
   authBasic: 'App/Middleware/AuthBasic',
   authSuperAdmin: 'App/Middleware/AuthSuperAdmin',
   authAdmin: 'App/Middleware/AuthAdmin',
+  authByRole: 'App/Middleware/AuthByRole',
   guest: 'App/Middleware/AllowGuestOnly',
   acl: 'App/Middleware/Acl'
   //requestsBlock: 'App/Middleware/RequestsBlock',

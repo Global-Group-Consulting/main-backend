@@ -3,34 +3,31 @@
 /** @typedef {import('../../@types/HttpResponse').ResponseDescriptiveMethods} Response */
 /** @typedef {import('@adonisjs/framework/src/View')} View */
 
-const Env = use("Env")
-const UserRoles = require("../../enums/UserRoles")
+const Env = use('Env')
+const UserRoles = require('../../enums/UserRoles')
 
-class AuthAdmin {
+class AuthByRole {
   /**
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    * @param {Function} next
+   * @param {AclUserRoles[]} requiredRoles
    */
-  async handle({request, auth, response}, next) {
-
-   /* if (request.hostname() === "localhost" && request.headers()["user-agent"].startsWith("PostmanRuntime") && Env.get("NODE_ENV") === "development") {
-      return next()
-    }*/
-
+  async handle ({ request, auth, response }, next, requiredRoles) {
     if (!auth.authenticatorInstance.user) {
       return response.unauthorized()
     }
-
-    const userRole = auth.authenticatorInstance.user.role
-
-    if (![UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(userRole)) {
+    
+    const userRoles = auth.authenticatorInstance.user.roles
+    
+    // if none of the requiredRoles are in the userRoles, unauthorized
+    if (!requiredRoles.find(role => userRoles.includes(role))) {
       return response.unauthorized()
     }
-
+    
     await next()
   }
 }
 
-module.exports = AuthAdmin
+module.exports = AuthByRole
