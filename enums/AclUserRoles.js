@@ -9,16 +9,20 @@ class AclUserRoles extends BasicEnum {
     this.CLIENTS_SERVICE = "clients_service";
     this.AGENT = "agent";
     this.CLIENT = "client";
-    this.CLUB_ADMIN = "admin_club";
-    
+    this.CLUB_ADMIN = 'admin_club'
+  
     this.data = {
-      [this.ADMIN]: {id: "admin"},
-      [this.SUPER_ADMIN]: {id: "super_admin"},
-      [this.CLIENTS_SERVICE]: {id: "clients_service"},
-      [this.AGENT]: {id: "agent"},
-      [this.CLIENT]: {id: "client"},
-      [this.CLUB_ADMIN]: {id: "admin_club"},
+      [this.ADMIN]: { id: 'admin' },
+      [this.SUPER_ADMIN]: { id: 'super_admin' },
+      [this.CLIENTS_SERVICE]: { id: 'clients_service' },
+      [this.AGENT]: { id: 'agent' },
+      [this.CLIENT]: { id: 'client' },
+      [this.CLUB_ADMIN]: { id: 'admin_club' }
     }
+  
+    this.admins = [
+      this.ADMIN, this.SUPER_ADMIN, this.CLIENTS_SERVICE
+    ]
   }
   
 }

@@ -1,3 +1,5 @@
+const AclUserRoles = require('../../enums/AclUserRoles')
+
 module.exports = function (Route) {
   Route.group(() => {
     Route.get('/systemTotalsIn', 'StatisticsController.getSystemTotalsIn')
@@ -13,8 +15,9 @@ module.exports = function (Route) {
     
     Route.post('/movements/refresh', 'StatisticsController.movementsRefresh')
       .validator('Statistics/Movements/RefreshRequest')
+      .middleware([`authAdmin`])
   })
     .prefix('/api/statistics')
-    .middleware('authAdmin')
+    .middleware([`authByRole:${AclUserRoles.admins.join(',') + ',' + AclUserRoles.AGENT}`])
     .namespace('Api')
 }

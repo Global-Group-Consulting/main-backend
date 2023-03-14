@@ -139,11 +139,23 @@ class Acl {
   }
   
   /**
-   *
+   * Return true if the user is admin
+   * 
    * @param {{user: User}} auth
+   * @returns {boolean}
    */
   isAdmin (auth) {
     return auth.user.isAdmin()
+  }
+  
+  /**
+   * Return true if the user is agent
+   * 
+   * @param {{user: User}} auth
+   * @returns {boolean}
+   */
+  isAgent (auth) {
+    return auth.user.isAgent()
   }
 }
 
