@@ -20,6 +20,10 @@ class CalendarEventComment extends Model {
     return this.belongsTo('App/Models/User', 'authorId', '_id').select(['_id', 'firstName', 'lastName'])
   }
   
+  event () {
+    return this.belongsTo('App/Models/CalendarEvent', 'eventId', '_id')
+  }
+  
   setAuthorId (value) {
     return castToObjectId(value)
   }
