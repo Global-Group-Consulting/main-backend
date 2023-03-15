@@ -287,6 +287,9 @@ class CalendarEventController {
   
     await calendarEvent.delete()
   
+    // also delete all related comments
+    await CalendarEventComment.where({ 'eventId': calendarEvent._id }).delete()
+  
     // If we are deleting a return event, we must edit the related original event as well and remove the returnDate and returnEventId
     if (calendarEvent.isReturnEvent) {
       /** @type {CalendarEvent & Model} */
