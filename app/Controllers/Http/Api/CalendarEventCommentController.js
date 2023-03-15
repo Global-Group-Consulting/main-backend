@@ -96,6 +96,35 @@ class CalendarEventCommentController extends WithPolicyController {
   
     response.ok()
   }
+  
+  /**
+   * Set the comment as read by the current user. No policy check is done here.
+   *
+   * @param params
+   * @param request
+   * @param response
+   * @param auth
+   * @return {Promise<void>}
+   */
+  async markAsRead ({ params, request, response, auth }) {
+    // get the comment
+    const comment = await CalendarEventComment.findOrFail(params.id)
+    
+    // check if the user has already read the comment
+    const reading = comment.readings.find((reading) => reading.userId.toString() === auth.user._id.toString())
+    
+    // if not, we add a new reading
+    if (!reading) {
+      comment.readings.push({
+        userId: auth.user._id,
+        createdAt: new Date()
+      })
+      
+      await comment.save()
+    }
+    
+    return comment.readings
+  }
 }
 
 module.exports = CalendarEventCommentController
