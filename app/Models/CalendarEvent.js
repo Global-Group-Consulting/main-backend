@@ -50,6 +50,15 @@ class CalendarEvent extends Model {
     return this.belongsTo('App/Models/CalendarCategory', 'categoryId', '_id')
   }
   
+  comments () {
+    return this.hasMany('App/Models/CalendarEventComment', '_id', 'eventId')
+  }
+  
+  unreadComments () {
+    return this.hasMany('App/Models/CalendarEventComment', '_id', 'eventId')
+      .select(['_id', "authorId", "eventId"])
+  }
+  
   /*  getCanEdit ({ authorId, userId, isPublic }) {
       if (isPublic) {
         return false
