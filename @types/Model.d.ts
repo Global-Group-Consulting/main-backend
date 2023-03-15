@@ -30,23 +30,23 @@ export class Model implements LucidMongo {
   
   static all (): Promise<Model[]>;
   
-  static find (id: string): Promise<Model>;
+  static find (id: string): Promise<this>;
   
-  static findOrFail (id: string): Promise<Model>;
+  static findOrFail (id: string): Promise<this>;
   
-  static findBy (key: string, value: string): Promise<Model>;
+  static findBy (key: string, value: string): Promise<this>;
   
-  static findByOrFail (key: string, value: string): Promise<Model>;
+  static findByOrFail (key: string, value: string): Promise<typeof this>;
   
-  static first (): Promise<Model>;
+  static first (): Promise<this>;
   
-  static firstOrFail (): Promise<Model>;
+  static firstOrFail (): Promise<this>;
   
   static ids (): Promise<string[]>;
   
-  static create<T = Model> (data: any): Promise<T>;
+  static create<T = this> (data: any): Promise<T>;
   
-  static create (data: any): Promise<Model>;
+  static create (data: any): Promise<this>;
   
   static where (query: any): this;
   
@@ -54,9 +54,13 @@ export class Model implements LucidMongo {
   
   static fetch (): Promise<Model[]>;
   
+  static sort (query: any): this;
+  
   fill (data: any): void;
   
-  save (): Promise<Model>;
+  save (): Promise<this>;
+  
+  delete (): Promise<void>;
   
   toJSON (): string;
   

@@ -1,5 +1,6 @@
 const SettingModel = use("App/Models/Setting")
 const Logger = use("Logger")
+const Helpers = use("Helpers")
 
 const {get} = require("lodash")
 
@@ -8,6 +9,10 @@ class Settings {
     this.config = config
 
     this.globalSettings = {}
+  
+    if (Helpers.isAceCommand()) {
+      return
+    }
 
     this.logInfo("Called constructor of SETTINGS PROVIDER")
 

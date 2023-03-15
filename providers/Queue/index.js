@@ -35,6 +35,10 @@ class Queue {
     this.queuesList = {}
     this.jobsList = {}
   
+    if (Helpers.isAceCommand()) {
+      return
+    }
+  
     Database.connect("mongodb")
       .then(resp => {
       

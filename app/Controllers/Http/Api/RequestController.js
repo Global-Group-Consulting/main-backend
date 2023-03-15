@@ -75,6 +75,8 @@ class RequestController {
       } else {
         filterUserId = { $in: [auth.user._id.toString(), auth.user._id] }
       }
+    } else if (auth.user.isUser()) {
+      filterUserId = auth.user._id
     } else if (!authIsAdmin) {
       // if user is an admin and no forId is specified, we show all requests that belongs to the user subagents and clients
       const subUserIds = await UserModel.getTeamUsersIds(auth.user, true, true)
