@@ -29,10 +29,12 @@ class CalendarEventComment extends Model {
   }
   
   setReadings (value) {
-    return {
-      ...value,
-      userId: castToObjectId(value.userId)
-    }
+    return value.map((reading) => ({
+        ...reading,
+        userId: castToObjectId(reading.userId)
+      })
+    )
+    
   }
 }
 
