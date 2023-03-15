@@ -1230,6 +1230,10 @@ class User extends Model {
     return [UserRoles.AGENTE].includes(+this.role)
   }
   
+  isUser () {
+    return [UserRoles.CLIENTE].includes(+this.role)
+  }
+  
   /**
    *
    * @param {string[]} roles
