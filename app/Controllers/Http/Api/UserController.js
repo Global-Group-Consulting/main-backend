@@ -50,6 +50,7 @@ const {
 } = require('../../../Helpers/ModelFormatters')
 
 const { downloadFiltered } = require('./users/reports')
+const { replaceContract } = require('./users/replaceContract')
 
 const rolesMap = {
   'admin': 'admin',
@@ -59,6 +60,8 @@ const rolesMap = {
 }
 
 class UserController {
+  replaceContract = replaceContract.bind(this)
+  
   downloadFiltered = downloadFiltered.bind(this)
   
   /**
@@ -550,9 +553,9 @@ class UserController {
     } catch (er) {
       throw er
     }
-    
+  
     await user.save()
-    
+  
     return user.full()
   }
   
