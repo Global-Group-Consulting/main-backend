@@ -2,6 +2,7 @@
 import { AclProvider } from 'Acl/AclProvider.d'
 import { AgentBrites } from './AgentBrites'
 import SettingsProvider from '../providers/Settings/index'
+import UserModel from "../app/Models/User"
 
 declare namespace Adonis {
   type WorkInProgress = any
@@ -510,3 +511,5 @@ declare function use (namespace: AdonisNamespaces.View): Adonis.View
 declare function use (namespace: AdonisNamespaces.Ws): Adonis.WorkInProgress
 declare function use (namespace: 'App/Models/AgentBrites'): AgentBrites
 declare function use (namespace: 'SettingsProvider'): SettingsProvider
+
+declare function use (namespace: 'App/Models/User'): UserModel

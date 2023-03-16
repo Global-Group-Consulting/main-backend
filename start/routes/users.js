@@ -45,6 +45,8 @@ module.exports = function (Route) {
     Route.post('/:id/incomplete', 'UserController.incomplete')
     Route.post('/:id/validate', 'UserController.validate')
     Route.post('/:id/importContract', 'UserController.importContract')
+    Route.post('/:id/replaceContract', 'UserController.replaceContract')
+      .validator('users/UserReplaceContract')
     
     Route.get('/:id/clientsList', 'UserController.getClientsList')
       .validator('users/UserRead')
