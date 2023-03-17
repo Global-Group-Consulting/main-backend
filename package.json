@@ -7,6 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "start:dev": "adonis serve --dev",
+    "start:ts": "tsc --watch",
     "start:dev:remove": "heroku local",
     "watch": "nodemon --inspect=0.0.0.0 --watch app server.js",
     "test": "node ace test",
@@ -79,6 +80,8 @@
     "postmark": "^2.6.0",
     "signrequest-client": "^1.1.1",
     "tmp": "^0.2.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5",
     "uuid": "^8.3.2",
     "written-number": "^0.9.1"
   },

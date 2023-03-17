@@ -1,0 +1,11 @@
+{
+  "watch": [
+    "app",
+    "classes",
+    "config",
+    "enums",
+    "start"
+  ],
+  "ext": "json,js",
+  "exec": "node ./server.js"
+}
