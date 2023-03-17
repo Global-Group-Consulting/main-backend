@@ -29,7 +29,8 @@ class CalendarEventCommentController extends WithPolicyController {
   async readForEvent ({ request, response, view, params }) {
     return CalendarEventComment.where({ 'eventId': castToObjectId(params.eventId) })
       .with('author')
-      .sort({ created_at: -1 }).fetch()
+      .sort({ created_at: -1 })
+      .fetch()
   }
   
   /**
@@ -100,19 +101,19 @@ class CalendarEventCommentController extends WithPolicyController {
   /**
    * Set the comment as read by the current user. No policy check is done here.
    *
-   * @param params
+   * @param {id: string} params
    * @param request
    * @param response
    * @param auth
-   * @return {Promise<void>}
+   * @return {Promise<any[]>}
    */
   async markAsRead ({ params, request, response, auth }) {
-    // get the comment
+    /** Get the comment */
     const comment = await CalendarEventComment.findOrFail(params.id)
-    
+  
     // check if the user has already read the comment
     const reading = comment.readings.find((reading) => reading.userId.toString() === auth.user._id.toString())
-    
+  
     // if not, we add a new reading
     if (!reading) {
       comment.readings.push({
