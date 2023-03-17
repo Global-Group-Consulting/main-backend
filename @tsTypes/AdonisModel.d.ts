@@ -1,5 +1,6 @@
 import * as LucidMongo from './@adonisjs/lucid-mongo/src/LucidMongo/Model'
 import { ObjectId } from 'mongodb'
+import VanillaSerializer from '@adonisjs/lucid-mongo/src/LucidMongo/Serializers/Vanilla'
 
 export class AdonisModel extends LucidMongo {
   declare readonly _id: ObjectId
@@ -14,7 +15,7 @@ export class AdonisModel extends LucidMongo {
   static sort (key: string, value: any): typeof this
   static sort (query: any): typeof this
   
-  static fetch<T extends AdonisModel> (this: Constructor<T>): Promise<T[]>
+  static fetch<T extends AdonisModel> (this: Constructor<T>): Promise<VanillaSerializer<T>>
   
   static find<T extends AdonisModel> (this: Constructor<T>, id: string): Promise<T | null>
   

@@ -12,13 +12,8 @@ class CalendarEventCommentController extends WithPolicyController {
   /**
    * Show a list of all CalendarEventComments.
    * GET CalendarEventComments
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
-   * @param {View} ctx.view
    */
-  async readForEvent ({ request, response, view, params }: ControllerContext<{ eventId: string }>) {
+  async readForEvent ({ params }: ControllerContext<{ eventId: string }>) {
     return CalendarEventComment.where({ 'eventId': castToObjectId(params.eventId) })
       .with('author')
       .sort({ created_at: -1 })
@@ -28,12 +23,8 @@ class CalendarEventCommentController extends WithPolicyController {
   /**
    * Create/save a new CalendarEventComment.
    * POST CalendarEventComments
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
    */
-  async upsert ({ request, response, params, auth }: ControllerContext<{ eventId: string, id: string }>) {
+  async upsert ({ request, params, auth }: ControllerContext<{ eventId: string, id: string }>) {
     const eventId = params.eventId
     const commentId = params.id
     let comment
@@ -75,12 +66,8 @@ class CalendarEventCommentController extends WithPolicyController {
   /**
    * Delete a CalendarEventComment with id.
    * DELETE CalendarEventComments/:id
-   *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
    */
-  async destroy ({ params, request, response, auth }: ControllerContext<{ id: string }>) {
+  async destroy ({ params, response, auth }: ControllerContext<{ id: string }>) {
     const comment = await CalendarEventComment.findOrFail(params.id)
     
     if (comment.authorId.toString() !== auth.user._id.toString()) {
@@ -94,14 +81,8 @@ class CalendarEventCommentController extends WithPolicyController {
   
   /**
    * Set the comment as read by the current user. No policy check is done here.
-   *
-   * @param {id: string} params
-   * @param request
-   * @param response
-   * @param auth
-   * @return {Promise<any[]>}
    */
-  async markAsRead ({ params, request, response, auth }: ControllerContext<{ id: string }>) {
+  async markAsRead ({ params, auth }: ControllerContext<{ id: string }>) {
     /** Get the comment */
     const comment = await CalendarEventComment.findOrFail(params.id)
     

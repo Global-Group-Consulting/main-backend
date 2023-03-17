@@ -7,7 +7,7 @@ export = VanillaSerializer;
  * @class VanillaSerializer
  * @constructor
  */
-declare class VanillaSerializer {
+declare class VanillaSerializer<T> {
     constructor(rows: any, pages?: null, isOne?: boolean);
     /**
      * The serializer rows. All rows should be instance
@@ -17,7 +17,7 @@ declare class VanillaSerializer {
      *
      * @type {Array}
      */
-    rows: any[];
+    rows: T[];
     /**
      * The pagination meta data
      *
