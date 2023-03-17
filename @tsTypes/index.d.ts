@@ -5,13 +5,17 @@ import Auth from './@adonisjs/auth/src/Auth/index'
 
 import { User } from '../app/Models/User'
 import { AdonisModel } from './AdonisModel'
-import { CalendarEventComment } from '../app/Models/CalendarEventComment'
+import CalendarEventComment from '../app/Models/CalendarEventComment'
 import CalendarEventCommentPolicy from '../app/Policies/CalendarEventCommentPolicy'
 import AclForbiddenException from '../app/Exceptions/Acl/AclForbiddenException'
 import { ControllerContext } from '../app/Controllers/Http/Controller'
 
 // Generic
 declare global {
+  interface Constructor<M> {
+    new (...args: any[]): M
+  }
+  
   function use<T> (namespace: string): T
   
   interface ControllerContext<P = any> {
