@@ -8,6 +8,7 @@
     "start": "node server.js",
     "start:dev": "adonis serve --dev",
     "start:ts": "tsc --watch",
+    "dev": "concurrently --kill-others \"yarn run start:dev\" \"yarn run start:ts\"",
     "start:dev:remove": "heroku local",
     "watch": "nodemon --inspect=0.0.0.0 --watch app server.js",
     "test": "node ace test",
@@ -85,7 +86,9 @@
     "uuid": "^8.3.2",
     "written-number": "^0.9.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
   "autoload": {
     "App": "./app"
   },
