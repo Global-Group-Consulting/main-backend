@@ -1,0 +1,11 @@
+export const BelongsTo: typeof import("./BelongsTo");
+export const BelongsToMany: typeof import("./BelongsToMany");
+export const HasMany: typeof import("./HasMany");
+export const HasManyThrough: typeof import("./HasManyThrough");
+export const HasOne: typeof import("./HasOne");
+export const MorphMany: typeof import("./MorphMany");
+export const MorphTo: typeof import("./MorphTo");
+export const MorphOne: typeof import("./MorphOne");
+export const EmbedsOne: typeof import("./EmbedsOne");
+export const EmbedsMany: typeof import("./EmbedsMany");
+export const ReferMany: typeof import("./ReferMany");

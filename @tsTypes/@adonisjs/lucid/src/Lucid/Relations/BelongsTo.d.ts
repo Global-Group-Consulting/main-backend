@@ -1,3 +1,5 @@
+import BaseRelation = require("./BaseRelation");
+
 export = BelongsTo;
 /**
  * The BelongsTo relationship defines a relation between
@@ -6,7 +8,7 @@ export = BelongsTo;
  * @class BelongsTo
  * @constructor
  */
-declare class BelongsTo {
+declare class BelongsTo extends BaseRelation {
     /**
      * Returns the first row for the related model
      *
@@ -14,7 +16,7 @@ declare class BelongsTo {
      *
      * @return {Object|Null}
      */
-    first(): any | null;
+    first(): Object | null;
     /**
      * Map values from model instances to an array. It is required
      * to make `whereIn` query when eagerloading results.
@@ -35,7 +37,7 @@ declare class BelongsTo {
      *
      * @return {Object} @multiple([key=String, values=Array, defaultValue=Null])
      */
-    group(relatedInstances: any[]): any;
+    group(relatedInstances: any[]): Object;
     /**
      * Overriding fetch to call first, since belongsTo
      * can never have many rows
@@ -45,7 +47,7 @@ declare class BelongsTo {
      *
      * @return {Object}
      */
-    fetch(): any;
+    fetch(): Object;
     /**
      * Adds a where clause to limit the select search
      * to related rows only.
@@ -57,8 +59,7 @@ declare class BelongsTo {
      *
      * @return {Object}
      */
-    relatedWhere(count: boolean, counter: Integer): any;
-    relatedTableAlias: string;
+    relatedWhere(count: boolean, counter: Integer): Object;
     /**
      * Adds `on` clause to the innerjoin context. This
      * method is mainly used by HasManyThrough
@@ -67,7 +68,7 @@ declare class BelongsTo {
      *
      * @param  {Object}   context
      */
-    addWhereOn(context: any): void;
+    addWhereOn(context: Object): void;
     create(): void;
     save(): void;
     createMany(): void;
@@ -84,7 +85,7 @@ declare class BelongsTo {
      *
      * @return {Promise}
      */
-    associate(relatedInstance: any, trx?: any): Promise<any>;
+    associate(relatedInstance: Object, trx?: Object | undefined): Promise<any>;
     /**
      * Dissociate relationship from database by setting `foriegnKey` to null
      *
@@ -95,5 +96,7 @@ declare class BelongsTo {
      *
      * @return {Promise}
      */
-    dissociate(trx?: any): Promise<any>;
+    dissociate(trx?: Object | undefined): Promise<any>;
+    
+    select (strings: string[]) : BelongsTo
 }

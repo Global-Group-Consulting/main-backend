@@ -1,10 +1,45 @@
-import { AdonisModel } from './AdonisModel'
+import Request from './@adonisjs/framework/src/Request'
+import Response from './@adonisjs/framework/src/Response'
+import View from './@adonisjs/framework/src/View'
+import Auth from './@adonisjs/auth/src/Auth/index'
 
+import { User } from '../app/Models/User'
+import { AdonisModel } from './AdonisModel'
+import { CalendarEventComment } from '../app/Models/CalendarEventComment'
+import CalendarEventCommentPolicy from '../app/Policies/CalendarEventCommentPolicy'
+import AclForbiddenException from '../app/Exceptions/Acl/AclForbiddenException'
+import { ControllerContext } from '../app/Controllers/Http/Controller'
+
+// Generic
 declare global {
+  function use<T> (namespace: string): T
   
-  function use (module: string): typeof AdonisModel
+  interface ControllerContext<P = any> {
+    request: Request
+    response: Response
+    view: View
+    params: P
+    auth: Auth & {
+      user: User
+    }
+  }
 }
 
-declare module '*.lucid-mongo'{
-  export class BelongsTo extends AdonisModel {}
-};
+// Models
+declare global {
+  function use (namespace: 'Model'): typeof AdonisModel
+  
+  function use (namespace: 'App/Models/CalendarEventComment'): typeof CalendarEventComment
+}
+
+// Exceptions
+declare global {
+  function use (namespace: 'App/Exceptions/Acl/AclForbiddenException'): AclForbiddenException
+  
+}
+
+// Policies
+declare global {
+  function use (namespace: 'App/Policies/CalendarEventCommentPolicy'): CalendarEventCommentPolicy
+  
+}
