@@ -28,35 +28,39 @@ export class Model implements LucidMongo {
   
   static boot (): void
   
-  static all (): Promise<Model[]>;
+  static all (): Promise<{ rows: typeof this[] }>;
   
-  static find (id: string): Promise<Model>;
+  static find (id: string): Promise<typeof this>;
   
-  static findOrFail (id: string): Promise<Model>;
+  static findOrFail (id: string): Promise<typeof this>;
   
-  static findBy (key: string, value: string): Promise<Model>;
+  static findBy (key: string, value: string): Promise<typeof this>;
   
-  static findByOrFail (key: string, value: string): Promise<Model>;
+  static findByOrFail (key: string, value: string): Promise<typeof this>;
   
-  static first (): Promise<Model>;
+  static first (): Promise<typeof this>;
   
-  static firstOrFail (): Promise<Model>;
+  static firstOrFail (): Promise<typeof this>;
   
   static ids (): Promise<string[]>;
   
-  static create<T = Model> (data: any): Promise<T>;
+  static create<T = this> (data: any): Promise<T>;
   
-  static create (data: any): Promise<Model>;
+  static create (data: any): Promise<typeof this>;
   
-  static where (query: any): this;
+  static where (query: any): typeof Model;
   
-  static with (load: string | string[]): this;
+  static with (load: string | string[]): typeof Model;
   
-  static fetch (): Promise<Model[]>;
+  static fetch (): Promise<typeof this[]>;
+  
+  static sort (query: any): typeof Model;
   
   fill (data: any): void;
   
-  save (): Promise<Model>;
+  save (): Promise<this>;
+  
+  delete (): Promise<void>;
   
   toJSON (): string;
   

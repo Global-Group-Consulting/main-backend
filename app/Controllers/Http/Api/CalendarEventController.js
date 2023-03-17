@@ -9,6 +9,7 @@
  * @type {typeof import('../../../Models/CalendarEvent')}
  */
 const CalendarEvent = use('App/Models/CalendarEvent')
+const CalendarEventComment = use('App/Models/CalendarEventComment')
 const User = use('App/Models/User')
 
 const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
@@ -71,6 +72,9 @@ class CalendarEventController {
   
     const query = CalendarEvent.where(filtersQuery)
       .with(['category', 'client', 'users'])
+      .with('unreadComments', (builder) => {
+        builder.where('readings.userId', { $ne: auth.user._id })
+      })
       .sort(sort)
   
     if (request.input('paginate') === 'true') {
@@ -282,6 +286,9 @@ class CalendarEventController {
     }
   
     await calendarEvent.delete()
+  
+    // also delete all related comments
+    await CalendarEventComment.where({ 'eventId': calendarEvent._id }).delete()
   
     // If we are deleting a return event, we must edit the related original event as well and remove the returnDate and returnEventId
     if (calendarEvent.isReturnEvent) {

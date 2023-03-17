@@ -29,7 +29,8 @@ const globalMiddleware = [
   'Adonis/Middleware/AuthInit',
   'App/Middleware/ConvertEmptyStringsToNull',
   'App/Middleware/MaintenanceMode',
-  'App/Middleware/PaginationHandler'
+  'App/Middleware/PaginationHandler',
+  'App/Middleware/PolicyHandler',
 ]
 
 /*

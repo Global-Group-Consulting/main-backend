@@ -6,7 +6,6 @@ const Request = use('Adonis/Src/Request')
  */
 const User = use('App/Models/User')
 const AclForbiddenException = use('App/Exceptions/Acl/AclForbiddenException')
-
 const UserRole = require('../../enums/UserRoles')
 
 class Acl {
@@ -139,8 +138,19 @@ class Acl {
   }
   
   /**
+   *
+   * @param {string[]} requiredRoles
+   * @param {user: User} auth
+   * @return {boolean}
+   */
+  checkRoles (requiredRoles, auth) {
+    // check if any of the requiredRoles is in the user roles
+    return auth.user.roles.some(role => requiredRoles.includes(role))
+  }
+  
+  /**
    * Return true if the user is admin
-   * 
+   *
    * @param {{user: User}} auth
    * @returns {boolean}
    */
@@ -150,7 +160,7 @@ class Acl {
   
   /**
    * Return true if the user is agent
-   * 
+   *
    * @param {{user: User}} auth
    * @returns {boolean}
    */
