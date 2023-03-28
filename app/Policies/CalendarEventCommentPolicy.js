@@ -1,5 +1,6 @@
 const Acl = use('AclProvider')
 const CalendarEvent = use('App/Models/CalendarEvent')
+const User = use('App/Models/User')
 const CalendarEventComment = use('App/Models/CalendarEventComment')
 const AclUserRoles = require('../../enums/AclUserRoles')
 
@@ -15,6 +16,7 @@ class CalendarEventCommentPolicy {
     // if adding, the user must be an admin or agent (or the author of the comment)
     // if updating, the user must be the author of the comment
     if (inserting) {
+      const userSubAgents = await User.getTeamAgents(auth.user, false, true)
       /**
        * @type {CalendarEvent}
        */
@@ -29,6 +31,8 @@ class CalendarEventCommentPolicy {
         || event.userIds.find(u => u.toString() === auth.user._id.toString())
         // user is the author of the event
         || event.authorId.toString() === auth.user._id.toString()
+        // author is a subAgent of the logged user
+        || userSubAgents.find(u => u._id.toString() === event.authorId.toString())
       ) {
         canProceed = true
       }
