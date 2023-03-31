@@ -185,9 +185,9 @@ class UserController {
     
     // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
     signRequest.userId = user._id
-    
+  
     await SignRequestModel.create(signRequest)
-    
+  
     return signRequest
   }
   
@@ -195,8 +195,14 @@ class UserController {
     return [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(auth.user.role)
   }
   
+  /**
+   *
+   * @param {ControllerContext} ctx
+   * @return {Promise<User>}
+   */
   async create ({ request, response, auth }) {
     const incomingUser = request.only(User.updatableFields)
+    const userOnlyClub = request.input('userOnlyClub') === 'true'
     
     if (+auth.user.role === UserRoles.AGENTE) {
       incomingUser.referenceAgent = auth.user._id.toString()
@@ -224,29 +230,35 @@ class UserController {
   
   async update ({ request, params, auth, response }) {
     await AclProvider.checkAccessToUser(auth.user, params.id)
-    
+  
     const incomingUser = request.only(User.updatableFields)
     const roleChangeData = request.input('roleChangeData')
     const incompleteData = request.input('incompleteData')
-    
+  
     // non so perchè avevo vietato di cambiare il ruolo. Ora lo rimetto
     // delete incomingUser.role
     delete incomingUser.roles
-    
+  
     /**
      * @type {typeof User}
      */
     const user = await User.find(params.id)
     const userRoleChanged = incomingUser.role && incomingUser.role !== user.role
     const userWasAgent = userRoleChanged && user.role === UserRoles.AGENTE
-    
+  
+    // Allow to change the prop userOnlyClub only if the user is in draft
+    // otherwise, avoid it by deleting the prop from the incomingUser
+    if (user.account_status !== AccountStatuses.DRAFT) {
+      delete incomingUser.userOnlyClub
+    }
+  
     // If still in draft OR the auth user is a superAdmin, allow to change the email
     // otherwise, avoid it.
     if (user.account_status !== AccountStatuses.DRAFT && !auth.user.superAdmin) {
       delete incomingUser.email
     } else {
       const emailExists = await User.where({ 'email': incomingUser.email, '_id': { $not: { $eq: user._id } } }).first()
-      
+    
       if (emailExists) {
         throw new UserException('Email already exists')
       }
@@ -380,12 +392,16 @@ class UserController {
   
   async approve ({ params, auth, response }) {
     const user = await this._checkIncomingUser(params.id)
-    
-    if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(+user.role)) {
+  
+    // Check if the user we're trying to edit is a client or an agent
+    // AND is not a "userOnlyClub" user
+    // if so, avoid the approval
+    if ([UserRoles.CLIENTE, UserRoles.AGENTE].includes(+user.role)
+      && !user.userOnlyClub) {
       // if (!auth.user.superAdmin) {
       throw new UserException('You can\'t perform this action.', UserException.statusCodes.FORBIDDEN)
       // }
-      
+    
       /*const userContract = await user.contractFiles().fetch()
 
       if (userContract.rows.length === 0) {

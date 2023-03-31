@@ -28,7 +28,9 @@ module.exports = class MongoModel extends Model {
    *
    * @param {any[] | AggregationBuilder} pipeline
    * @param {null | string} [collection]
-   * @return {Promise<any[]>}
+   * @return {Promise<{
+   *
+   * }[]>}
    */
   static async aggregateRaw (pipeline, collection = null) {
     let aggregation

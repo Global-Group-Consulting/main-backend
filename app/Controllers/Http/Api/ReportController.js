@@ -1,10 +1,7 @@
 'use strict'
 
-/** @type {typeof import("../../../Models/Movement")} */
 const Movement = use('App/Models/Movement')
 const Commission = use('App/Models/Commission')
-const MovementTypes = require('../../../../enums/MovementTypes')
-const CommissionType = require('../../../../enums/CommissionType')
 
 class ReportController {
 

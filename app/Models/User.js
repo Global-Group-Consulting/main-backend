@@ -99,7 +99,8 @@ class User extends Model {
     'clubPack': 'basic',
     'agentTeamType': '',
     'roles': [],
-    'directPermissions': []
+    'directPermissions': [],
+    "userOnlyClub": false,
   }
   static rolesMap = {
     'admin': 'admin',
@@ -1369,6 +1370,10 @@ class User extends Model {
   }
   
   setGold (value) {
+    return castToBoolean(value)
+  }
+  
+  setUserOnlyClub(value){
     return castToBoolean(value)
   }
 }
