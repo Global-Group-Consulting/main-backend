@@ -9,6 +9,7 @@ import { AdonisModel } from './AdonisModel'
 import { CalendarEventComment } from '../app/Models/CalendarEventComment'
 import CalendarEventCommentPolicy from '../app/Policies/CalendarEventCommentPolicy'
 import AclForbiddenException from '../app/Exceptions/Acl/AclForbiddenException'
+import { LaravelQueueProvider } from '../providers/LaravelQueue/LaravelQueue'
 
 // Generic
 declare global {
@@ -28,6 +29,12 @@ declare global {
   
   // Policies
   function use (namespace: 'App/Policies/CalendarEventCommentPolicy'): CalendarEventCommentPolicy
+  
+  // Filters
+  function use (namespace: 'App/Filters/ReportWithdrawalFilters.map'): typeof import('../app/Filters/ReportWithdrawalFilters.map')
+  
+  // Providers
+  function use (namespace: 'LaravelQueueProvider'): LaravelQueueProvider
   
   // Generic
   function use<T> (namespace: string): T
