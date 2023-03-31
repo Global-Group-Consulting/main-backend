@@ -4,6 +4,9 @@ const { LaravelQueue } = require('./LaravelQueue')
 const moment = require('moment')
 
 class QueueProvider {
+  /**
+   * @type {LaravelQueue}
+   */
   queue
   logger
   
@@ -30,17 +33,19 @@ class QueueProvider {
    * @param {{title: string, content: string, app: string, type: string, platforms: array, receivers: [], action: {text:string, link: string}}} payload
    * @returns {*}
    */
-  dispatchCreateNotification(payload) {
-    return this.queue.pushTo("CreateNotification", {
+  dispatchCreateNotification (payload, extraPayload = {}) {
+    return this.queue.pushTo('CreateNotification', {
       // Add extra data here so that we can override the default values with the payload
       extraData: {
         subject: payload.title,
         title: payload.title,
-        content: payload.content
+        content: payload.content,
+        ...extraPayload
       },
-      ...payload,
       app: 'main',
-      type: 'calendarUpdate'
+      type: payload.type,
+      // set at the end so that it can override the default values
+      ...payload
     });
   }
   

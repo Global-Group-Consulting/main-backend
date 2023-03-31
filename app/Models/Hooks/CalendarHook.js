@@ -136,6 +136,8 @@ function sendNotification (title, content, receivers, link) {
     content,
     platforms: ['email'],
     receivers,
+    type: "calendarUpdate",
+    app: "main",
     action: {
       text: 'Visualizza evento',
       link: Env.get('PUBLIC_URL') + link
