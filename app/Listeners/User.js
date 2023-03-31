@@ -2,6 +2,7 @@ const { addAgentCommission } = require('./Request')
 
 /** @type {import('../../providers/Queue')} */
 const Queue = use('QueueProvider')
+const LaravelQueue = use('LaravelQueueProvider')
 const Persona = use('Persona')
 const Env = use('Env')
 const Event = use('Event')
@@ -14,6 +15,7 @@ const Logger = use('Logger')
 const UserRoles = require('../../enums/UserRoles')
 
 const { castToObjectId } = require('../Helpers/ModelFormatters')
+const moment = require('moment/moment')
 
 const User = exports = module.exports = {}
 
@@ -42,13 +44,24 @@ User.onValidated = async (user) => {
   // Event.emit("notification::userValidated", user)
 }
 
+/**
+ *
+ * @param {User} user
+ * @return {Promise<void>}
+ */
 User.onApproved = async (user) => {
   // read the existing token or generate a new one
   const token = await Persona.generateToken(user, 'email')
   const userTypeAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(+user.role)
   
   user.token = token
-  user.apps = ['main', 'club']
+  user.apps = []
+  
+  if (user.userOnlyClub) {
+    user.apps = ['club']
+  } else {
+    user.apps = ['main', 'club']
+  }
   
   await user.save()
   
@@ -64,16 +77,34 @@ User.onApproved = async (user) => {
     })
   }
   
-  await Queue.add('send_email', {
+  const company = user.userOnlyClub ? 'Global Club' : 'Global Group Consulting'
+  const url = user.userOnlyClub ? Env.get('PUBLIC_CLUB_URL') : Env.get('PUBLIC_URL')
+  
+  await LaravelQueue.dispatchCreateNotification({
+    title: `Benvenut${user.gender === 'f' ? 'a' : 'o'} in ${company}!`,
+    content: `Siamo lieti di darLe il benvenuto in ${company}!`,
+    platforms: ['email'],
+    type: 'accountApproved',
+    app: user.userOnlyClub ? 'club' : 'main',
+    receivers: [
+      user
+    ],
+    action: {
+      text: 'Imposta la password',
+      link: `${url}/auth/activate?t=${token}`
+    }
+  })
+  
+  /*await Queue.add('send_email', {
     tmpl: 'main-account-approved',
     data: {
       ...user.toJSON(),
       token,
       formLink: `${Env.get('PUBLIC_URL')}/auth/activate?t=${token}`
     }
-  })
+  })*/
   
-  Event.emit('notification::userApproved', user)
+  // Event.emit('notification::userApproved', user)
   
   user.sendOnlyEmail = false
   

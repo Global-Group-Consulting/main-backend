@@ -1,0 +1,12 @@
+import Validation = require("../Validation");
+import { ValidationException } from "../Exceptions";
+export declare function validateAll(...params: any[]): Validation;
+export declare function validate(...params: any[]): Validation;
+export declare function sanitize(...params: any[]): any;
+export declare const rule: any;
+export declare const is: any;
+export declare const sanitizor: any;
+export declare const configure: any;
+export declare const formatters: any;
+export declare function extend(rule: any, fn: any): void;
+export { ValidationException };

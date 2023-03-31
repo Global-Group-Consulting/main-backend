@@ -1,45 +1,39 @@
 'use strict'
 
-/** @typedef {import('@adonisjs/framework/src/Request')} Request */
-/** @typedef {import('@adonisjs/framework/src/Response')} Response */
-/** @typedef {import('@adonisjs/framework/src/View')} View */
-
 const { castToObjectId } = require('../../../Helpers/ModelFormatters')
-/** @type {typeof import('../../../Models/CalendarEventComment')} */
 const CalendarEventComment = use('App/Models/CalendarEventComment')
-const CalendarEventCommentPolicy = use('App/Policies/CalendarEventCommentPolicy')
 
 const AclForbiddenException = require('../../../Exceptions/Acl/AclForbiddenException')
 const WithPolicyController = require('../../../../classes/WithPolicyController')
 
 /**
- * Resourceful controller for interacting with calendareventcomments
+ * Resourceful controller for interacting with CalendarEventComments
  */
 class CalendarEventCommentController extends WithPolicyController {
   
   /**
-   * Show a list of all calendareventcomments.
-   * GET calendareventcomments
+   * Show a list of all CalendarEventComments.
+   * GET CalendarEventComments
    *
    * @param {object} ctx
    * @param {Request} ctx.request
    * @param {Response} ctx.response
    * @param {View} ctx.view
+   *
+   * @return {Promise<CalendarEventComment>}
    */
   async readForEvent ({ request, response, view, params }) {
     return CalendarEventComment.where({ 'eventId': castToObjectId(params.eventId) })
       .with('author')
       .sort({ created_at: -1 })
-      .fetch()
+      .first()
   }
   
   /**
-   * Create/save a new calendareventcomment.
-   * POST calendareventcomments
+   * Create/save a new CalendarEventComment.
+   * POST CalendarEventComments
    *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
+   * @param {ControllerContext} ctx
    */
   async upsert ({ request, response, params, auth }) {
     const eventId = params.eventId
@@ -50,7 +44,7 @@ class CalendarEventCommentController extends WithPolicyController {
     if (commentId) {
       comment = await CalendarEventComment.findOrFail(commentId)
   
-      comment.message = request.input('message').trim()
+      comment.message = request.input('message').toString().trim()
   
       // Reset the readings so that the other users can see that the comment has been updated
       comment.readings = [{
@@ -61,10 +55,13 @@ class CalendarEventCommentController extends WithPolicyController {
       await comment.save()
     } else {
       // otherwise we create a new comment
+      /**
+       * @type {CalendarEventComment}
+       */
       comment = await CalendarEventComment.create({
         eventId,
         authorId: auth.user._id,
-        message: request.input('message').trim(),
+        message: request.input('message').toString().trim(),
         readings: [
           // the author has read the comment
           {
@@ -79,12 +76,10 @@ class CalendarEventCommentController extends WithPolicyController {
   }
   
   /**
-   * Delete a calendareventcomment with id.
-   * DELETE calendareventcomments/:id
+   * Delete a CalendarEventComment with id.
+   * DELETE CalendarEventComments/:id
    *
-   * @param {object} ctx
-   * @param {Request} ctx.request
-   * @param {Response} ctx.response
+   * @param {ControllerContext} ctx
    */
   async destroy ({ params, request, response, auth }) {
     const comment = await CalendarEventComment.findOrFail(params.id)
@@ -101,10 +96,7 @@ class CalendarEventCommentController extends WithPolicyController {
   /**
    * Set the comment as read by the current user. No policy check is done here.
    *
-   * @param {id: string} params
-   * @param request
-   * @param response
-   * @param auth
+   * @param {ControllerContext<{id:string}>} ctx
    * @return {Promise<any[]>}
    */
   async markAsRead ({ params, request, response, auth }) {
