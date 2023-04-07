@@ -79,7 +79,7 @@ Route.group(() => {
   Route.put('/initialize_user_movements', 'SecretCommandController.initializeUserMovements')
   
   // commissions
-  Route.put('/block_commissions_all', 'SecretCommandController.triggerAllCommissionsBlock')
+  // Route.put('/block_commissions_all', 'SecretCommandController.triggerAllCommissionsBlock')
   Route.put('/block_commissions/:id', 'SecretCommandController.triggerSingleCommissionsBlock')
   
   // recapitalization

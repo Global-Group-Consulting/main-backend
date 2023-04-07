@@ -65,7 +65,7 @@ User.onApproved = async (user) => {
   
   await user.save()
   
-  if (!user.sendOnlyEmail && !userTypeAdmin) {
+  if (!user.sendOnlyEmail && !userTypeAdmin && !user.userOnlyClub) {
     Logger.info('add job for initializing user movements')
     
     // Triggers initial movements that will create a request with type new deposit
