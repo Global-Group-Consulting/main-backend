@@ -1,29 +1,32 @@
 'use strict'
 
-/** @typedef {import("../../@types/Request.d").Request} IRequest */
+/** @typedef {import('../../@types/Request.d').Request} IRequest */
 
-
-/** @type {import("../../providers/Queue")} */
-const Queue = use("QueueProvider")
-const Env = use("Env")
-const Event = use("Event")
+/** @type {import('../../providers/Queue')} */
+const Queue = use('QueueProvider')
+const Env = use('Env')
+const Event = use('Event')
 const Antl = use('Antl')
-const AgentBrite = use("App/Models/AgentBrite")
+const AgentBrite = use('App/Models/AgentBrite')
 
-const UserModel = use("App/Models/User")
-const RequestModel = use("App/Models/Request")
-const CommissionModel = use("App/Models/Commission")
-const SettingsProvider = use("SettingsProvider")
+const UserModel = use('App/Models/User')
+const RequestModel = use('App/Models/Request')
+const CommissionModel = use('App/Models/Commission')
+const SettingsProvider = use('SettingsProvider')
+const LaravelQueue = use('LaravelQueueProvider')
 
-const UserRoles = require("../../enums/UserRoles")
-const RequestTypes = require("../../enums/RequestTypes")
-const RequestStatus = require("../../enums/RequestStatus")
-const CommissionType = require("../../enums/CommissionType")
-const AgentTeamType = require("../../enums/AgentTeamType")
+const UserRoles = require('../../enums/UserRoles')
+const RequestTypes = require('../../enums/RequestTypes')
+const RequestStatus = require('../../enums/RequestStatus')
+const CommissionType = require('../../enums/CommissionType')
+const AgentTeamType = require('../../enums/AgentTeamType')
+const NotificationPlatformType = require('../../enums/NotificationPlatformType')
+const NotificationType = require('../../enums/NotificationType')
 
 const {
-  formatMoney,
-} = require("../Helpers/ModelFormatters")
+  formatMoney
+} = require('../Helpers/ModelFormatters')
+const { ObjectId } = require('mongodb')
 
 const Request = exports = module.exports = {
   addAgentCommission
@@ -46,25 +49,41 @@ async function onNewRequest(request) {
 
   if ([RequestTypes.RISC_INTERESSI_BRITE, RequestTypes.RISC_INTERESSI_GOLD].includes(request.type)) {
     // Get this data from the settings
-    const clubRequestNotifyEmail = SettingsProvider.get("clubRequestNotifyEmail");
-
+    const clubRequestNotifyEmail = SettingsProvider.get('clubRequestNotifyEmail')
+    
     if (!clubRequestNotifyEmail) {
-      return;
+      return
     }
-
-    //const receiverEmail = "richiestegold@globalgroup.consulting";
-    const user = await request.user().fetch();
-    const requestId = RequestTypes.get(request.type).id
-
-    await Queue.add("send_email", {
-      tmpl: "main-new-club-request",
-      data: {
+    
+    const user = await request.user().fetch()
+    const requestType = RequestTypes.get(request.type).id
+    
+    await LaravelQueue.dispatchCreateNotification({
+      title: Antl.compile('it', 'enums.NotificationType.requestGold'),
+      content: Antl.compile('it', 'enums.NotificationType.requestGoldMessage', {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        amount: formatMoney(request.amount)
+      }),
+      type: NotificationType.REQUEST_GOLD,
+      platforms: [NotificationPlatformType.EMAIL],
+      receivers: [{
+        _id: null,
         email: clubRequestNotifyEmail,
-        username: user.firstName + " " + user.lastName,
-        requestType: Antl.compile('it', `enums.RequestTypes.${requestId}`),
-        amount: formatMoney(request.amount),
-        siteLink: Env.get('PUBLIC_URL') + "/requests#" + request._id.toString()
+        firstName: 'Global Group',
+        lastName: 'Club Request'
+      }],
+      action: {
+        text: 'Vedi richiesta',
+        link: Env.get('PUBLIC_URL') + '/requests#' + request._id.toString()
       }
+    }, {
+      'user': {
+        'firstName': user.firstName,
+        'lastName': user.lastName
+      },
+      'requestType': Antl.compile('it', `enums.RequestTypes.${requestType}`),
+      'amount': formatMoney(request.amount)
     })
   }
 }
