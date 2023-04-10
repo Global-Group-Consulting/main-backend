@@ -25,6 +25,26 @@
     "message_communication": "Nuova comunicazione",
     "message_communication_message": "Hai una nuova comunicazione."
   },
+  "NotificationType": {
+    "requestDeposit": "Richiesta di versamento",
+    "requestDepositMessage": "{firstName} {lastName} desidera versare € {amount}",
+    "requestDepositCollect": "Richiesta di riscossione deposito",
+    "requestDepositCollectMessage": "{firstName} {lastName} desidera prelevare € {amount} dal suo deposito.",
+    "requestApproved": "Richiesta approvata",
+    "requestApprovedMessage": "La tua richiesta è stata approvata!",
+    "requestRejected": "Richiesta rifiutata",
+    "requestRejectedMessage": "La richiesta di {requestType} del valore di {amount} è stata rifiutata!",
+    "requestCancelled": "Richiesta annullata dall'utente",
+    "requestCancelledMessage": "{firstName} {lastName} ha annullato la sua richiesta.",
+    "requestGold": "Riscossione rendite Gold",
+    "requestGoldMessage": "{firstName} {lastName} desidera riscuotere € {amount} dalle sue rendite.",
+    "messageReport": "Segnalazione Bug!!!",
+    "messageReportMessage": "{firstName} {lastName} ha segnalato un problema.",
+    "messageChat": "Nuovo messaggio in chat",
+    "messageChatMessage": "Hai un nuovo messaggio in una chat.",
+    "messageCommunication": "Nuova comunicazione",
+    "messageCommunicationMessage": "Hai una nuova comunicazione."
+  },
   "RequestTypes": {
     "admin": "Admin",
     "versamento": "Versamento",

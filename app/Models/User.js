@@ -527,8 +527,18 @@ class User extends Model {
     return User.where({ role: UserRoles.SERV_CLIENTI, account_status: AccountStatuses.ACTIVE }).fetch()
   }
   
-  static async getAdmins () {
-    return User.where({ role: UserRoles.ADMIN, account_status: AccountStatuses.ACTIVE }).fetch()
+  /**
+   * @param {string[] | null} select
+   * @return {Promise<VanillaSerializer<AdonisModel>>}
+   */
+  static async getAdmins (select = null) {
+    const query = User.where({ role: UserRoles.ADMIN, account_status: AccountStatuses.ACTIVE })
+    
+    if (select) {
+      query.select(select)
+    }
+    
+    return query.fetch()
   }
   
   static async getUsersToRecapitalize () {
