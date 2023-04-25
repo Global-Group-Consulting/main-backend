@@ -70,7 +70,7 @@ export interface NotificationJobPayload {
     app: string,
     type: string,
     platforms: any[],
-    receivers: User[],
+    receivers: Pick<User, '_id' | 'firstName' | 'lastName' | 'email'>[],
     action: { text: string, link: string }
 }
 
@@ -88,8 +88,8 @@ export declare class LaravelQueue {
     
     getJob (job: string): Promise<AvailableJob>;
     
-    pushTo (jobName: 'SendEmail', payload: SendEmailJobPayload, options?: JobOptions): Promise<unknown>;
     pushTo (jobName: AvailableJobNames, payload?: any, options?: JobOptions): Promise<unknown>;
+    pushTo (jobName: 'SendEmail', payload: SendEmailJobPayload, options?: JobOptions): Promise<unknown>;
     
     private prepareData
     private prepareForSerialization
@@ -100,5 +100,5 @@ export declare class LaravelQueue {
 export declare class LaravelQueueProvider {
     queue: LaravelQueue
     
-    dispatchCreateNotification (payload: NotificationJobPayload, extraPayload: any): Promise<void>;
+    dispatchCreateNotification (payload: NotificationJobPayload, extraPayload?: any): Promise<void>;
 }

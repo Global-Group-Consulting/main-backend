@@ -81,7 +81,10 @@ class Message extends Model {
     const data = (await Message.where({
         $and: [
           {
-            receiverId: userId
+            $or: [
+              { receiverId: userId },
+              { receiverId: null }
+            ]
           },
           {
             type: {$not: {$in: [MessageTypes.CONVERSATION, MessageTypes.BUG_REPORT]}}
