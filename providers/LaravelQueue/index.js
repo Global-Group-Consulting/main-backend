@@ -31,6 +31,7 @@ class QueueProvider {
   /**
    *
    * @param {{title: string, content: string, app: string, type: string, platforms: array, receivers: [], action: {text:string, link: string}}} payload
+   * @param {object} extraPayload
    * @returns {*}
    */
   dispatchCreateNotification (payload, extraPayload = {}) {

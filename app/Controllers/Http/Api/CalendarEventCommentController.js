@@ -26,7 +26,7 @@ class CalendarEventCommentController extends WithPolicyController {
     return CalendarEventComment.where({ 'eventId': castToObjectId(params.eventId) })
       .with('author')
       .sort({ created_at: -1 })
-      .first()
+      .fetch()
   }
   
   /**
