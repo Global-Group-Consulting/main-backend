@@ -10,8 +10,8 @@ const { castToObjectId } = require('../../../Helpers/ModelFormatters')
 const userFields = ['_id', 'email', 'roles', 'firstName', 'lastName']
 
 const times = {
-  morning: 7,
-  evening: 17
+  morning: 5,
+  evening: 15
 }
 
 module.exports.sendCalendarReports = async () => {
