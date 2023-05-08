@@ -15,6 +15,8 @@ const rules = {
   typeClub: "string",
   notes: "string",
   clubRepayment: "boolean",
+  cryptoAddress: 'string',
+  cryptoCurrency: 'string'
 }
 
 class requestsCreate extends WhitelistValidator {
