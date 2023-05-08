@@ -132,12 +132,13 @@ class RequestController {
     const associatedUser = await UserModel.find(incomingData.userId)
     const settingsLimit = SettingsProvider.get('requestMinAmount')
     const settingsPercentage = SettingsProvider.get('requestBritePercentage')
+    const cryptoRequest = !!incomingData.cryptoCurrency;
     
     if (!associatedUser) {
       throw new UserNotFoundException()
     }
     
-    if (!associatedUser.contractIban) {
+    if (!associatedUser.contractIban && !cryptoRequest) {
       throw new RequestException('La richiesta non può essere inoltrata in quanto l\'utente non ha un IBAN associato. ')
     }
     
