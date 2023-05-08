@@ -64,6 +64,16 @@ module.exports.getReportsData = async function (filters) {
   
   // Must check cancelled movements
   const cancellationMovements = jsonData.filter(entry => [MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED].includes(entry._id.movementType))
+  /**
+   * @type {{amount:number,
+   *  created_at:string,
+   *  movements:any[],
+   *  reqNotes:string,
+   *  type:string,
+   *  user:any,
+   *  _id:string
+   * }[]}
+   */
   const normalMovements = jsonData.filter(entry => ![MovementTypes.CANCEL_DEPOSIT_COLLECTED, MovementTypes.CANCEL_INTEREST_COLLECTED].includes(entry._id.movementType))
   
   const toCancel = []
@@ -93,6 +103,19 @@ module.exports.getReportsData = async function (filters) {
     })
     
     return entry
+  })
+  
+  // handle crypto requests
+  normalMovements.map(entry => {
+    const cryptoMovements = entry.movements.filter(movement => !!movement.cryptoCurrency)
+    
+    entry.crypto = cryptoMovements.map(movement => {
+      return {
+        cryptoCurrency: movement.cryptoCurrency,
+        cryptoAddress: movement.cryptoAddress,
+        amount: movement.amountChange
+      }
+    })
   })
   
   // Return only groups that has an amount greater than 0
