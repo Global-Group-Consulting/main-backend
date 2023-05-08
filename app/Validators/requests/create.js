@@ -7,17 +7,19 @@ const {WhitelistValidator} = require("../WhitelistValidator")
 const rules = {
   amount: "required",
   goldAmount: "number",
-  userId: "required|objectId",
-  type: "required|number",
-  wallet: "required|number",
-  currency: "required|number",
-  iban: "string",
-  clubCardNumber: "string",
-  typeClub: "string",
-  notes: "string",
-  autoWithdrawlAll: "boolean",
-  autoWithdrawlAllRecursively: "boolean",
-  cards: "array"
+  userId: 'required|objectId',
+  type: 'required|number',
+  wallet: 'required|number',
+  currency: 'required|number',
+  iban: 'string',
+  clubCardNumber: 'string',
+  typeClub: 'string',
+  notes: 'string',
+  autoWithdrawlAll: 'boolean',
+  autoWithdrawlAllRecursively: 'boolean',
+  cards: 'array',
+  cryptoAddress: 'string',
+  cryptoCurrency: 'string'
 }
 
 class requestsCreate extends WhitelistValidator {

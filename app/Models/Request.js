@@ -135,7 +135,10 @@ class Request extends MongoModel {
               requestId: data._id,
               interestPercentage: +user.contractPercentage,
               cards: data.cards,
-              notes: data.notes
+              notes: data.notes,
+              currency: data.currency,
+              cryptoAddress: data.cryptoAddress,
+              cryptoCurrency: data.cryptoCurrency
             }
             
             if (data.typeClub) {
@@ -224,7 +227,9 @@ class Request extends MongoModel {
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate,
             cards: data.cards,
-            notes: data.notes
+            notes: data.notes,
+            cryptoAddress: data.cryptoAddress,
+            cryptoCurrency: data.cryptoCurrency
           }
           
           if (data.typeClub) {
