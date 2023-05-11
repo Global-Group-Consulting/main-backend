@@ -32,7 +32,7 @@ function prepareFiltersQuery (filters, map) {
     }
   })
   
-  console.log('filtering by', JSON.stringify(query))
+  // console.log('filtering by', JSON.stringify(query))
   
   return query
 }
