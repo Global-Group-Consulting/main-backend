@@ -2,7 +2,8 @@
   // Change this to match your project
   "include": [
     "app/**/*",
-    "@types/index.d.ts"
+    "@types/index.d.ts",
+    "@types/Analytics.ts"
   ],
   "compilerOptions": {
     // Tells TypeScript to read JS files, as
