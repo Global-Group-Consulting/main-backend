@@ -8,6 +8,9 @@
  *
  * @param {import('/@types/HttpRequest').RequestPagination} requestPagination
  * @param {any} [defaultSort]
+ * @return {{
+ *   [string]: number
+ * }}
  */
 module.exports.prepareSorting = function (requestPagination, defaultSort) {
   let sort = defaultSort ? defaultSort : {}

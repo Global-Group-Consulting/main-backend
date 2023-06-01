@@ -119,7 +119,9 @@ class AuthController {
       throw new UserException("Account sospeso")
     }
 
-    const newToken = await auth.generateForRefreshToken(refreshToken, true)
+    // Generate a new refresh token.
+    // Pass "false" as the second parameter to avoid adding user data to jwt payload
+    const newToken = await auth.generateForRefreshToken(refreshToken, false)
 
     return newToken
   }

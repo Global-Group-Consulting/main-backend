@@ -5,6 +5,7 @@ import Auth from './@adonisjs/auth/src/Auth/index'
 
 import { User } from '../app/Models/User'
 import { Movement } from '../app/Models/Movement'
+import { Analytic } from '../app/Models/Analytic'
 import { AdonisModel } from './AdonisModel'
 import { CalendarEventComment } from '../app/Models/CalendarEventComment'
 import CalendarEventCommentPolicy from '../app/Policies/CalendarEventCommentPolicy'
@@ -23,6 +24,7 @@ declare global {
   function use (namespace: 'App/Models/User'): typeof User
   function use (namespace: 'App/Models/Movement'): typeof Movement
   function use (namespace: 'App/Models/CalendarEventComment'): typeof CalendarEventComment
+  function use (namespace: 'App/Models/Analytic'): typeof Analytic
   
   // Exceptions
   function use (namespace: 'App/Exceptions/Acl/AclForbiddenException'): AclForbiddenException
