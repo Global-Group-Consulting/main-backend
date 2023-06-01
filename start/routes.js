@@ -43,6 +43,7 @@ const StatisticsRoutes = require('./routes/statistics')
 const CalendarEvents = require('./routes/calendarEvents')
 const calendarEventComments = require('./routes/calendarEventComments')
 const CalendarCategories = require('./routes/calendarCategories')
+const Analytics = require('./routes/analytics')
 
 Route.on('/').render('welcome')
 
@@ -72,6 +73,7 @@ calendarEventComments(Route)
 CalendarCategories(Route)
 // Set this route at the end due to the use of the wildcard
 ProxyRoutes(Route)
+Analytics(Route)
 
 // const secretRoutePath = Env.get("NODE_ENV") === "development" ? "secretRoute" : Buffer.from(Date.now().toString()).toString('base64');
 
