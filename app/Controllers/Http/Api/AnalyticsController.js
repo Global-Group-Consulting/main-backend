@@ -28,8 +28,6 @@ class AnalyticsController {
     const q = Analytic.query({})
     q.collection = 'analytics_group_users'
     
-    console.log(filters)
-
     const data = (await q.where(filters)
         // .with('user')
         .sort(sortQuery)
