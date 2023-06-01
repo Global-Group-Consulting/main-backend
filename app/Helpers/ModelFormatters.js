@@ -39,24 +39,38 @@ exports.castToIsoDate = function (value) {
   if (!value) {
     return value
   }
-
+  
   const castedDate = moment(value, true)
-
+  
   if (!castedDate.isValid()) {
     return value
   }
-
+  
   return castedDate.toDate()
+}
+
+exports.castToUTCIsoDate = function (value) {
+  if (!value) {
+    return value
+  }
+  
+  const castedDate = moment(value, true)
+  
+  if (!castedDate.isValid()) {
+    return value
+  }
+  
+  return Date.UTC(castedDate.year(), castedDate.month(), castedDate.date(), castedDate.hour(), castedDate.minute(), castedDate.second(), castedDate.millisecond())
 }
 
 exports.castToBoolean = function (value) {
   let boolVal = false
-
-  if (typeof value === "boolean") {
+  
+  if (typeof value === 'boolean') {
     boolVal = value
   }
-
-  if (typeof value === "number") {
+  
+  if (typeof value === 'number') {
     boolVal = value === 1
   }
 
