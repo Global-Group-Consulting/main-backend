@@ -23,7 +23,7 @@ class AnalyticsController {
     q.collection = 'analytics_group_users'
     
     const data = (await q.where(filters)
-        .with('user')
+        // .with('user')
         .sort(sortQuery)
         .paginate(request.pagination.page)
     ).toJSON()
