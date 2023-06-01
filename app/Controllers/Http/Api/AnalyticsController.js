@@ -11,6 +11,12 @@ class AnalyticsController {
     const sorting = prepareSorting(request.pagination)
     const sortQuery = { ...sorting }
     
+    if (!filters.day){
+      filters.day = {
+        '$gte': new Date(new Date().setHours(0, 0, 0, 0)),
+      }
+    }
+    
     // Because user is a complex object, we need to sort by user.lastName and user.firstName
     if (!!sortQuery['user']) {
       sortQuery['user.lastName'] = sortQuery['user']
@@ -23,10 +29,16 @@ class AnalyticsController {
     q.collection = 'analytics_group_users'
     
     const data = (await q.where(filters)
-        .with('user')
+        // .with('user')
         .sort(sortQuery)
         .paginate(request.pagination.page)
     ).toJSON()
+    
+    data.data = data.data.map(item => {
+      item.lastUpdate = item.updatedDates.sort((a, b) => b-a)[0]
+      
+      return item
+    })
     
     return preparePaginatedResult(data, sorting, request.pagination.filters)
   }
