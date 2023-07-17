@@ -425,7 +425,7 @@ class UserController {
   
   async confirmDraft ({ params, auth, response }) {
     const userId = params.id
-    const authUser = auth.user.toJSON()
+    const authUser = auth.user
     const authUserAdmin = [UserRoles.ADMIN, UserRoles.SERV_CLIENTI].includes(authUser.role)
     
     const user = await this._checkIncomingUser(userId)
