@@ -185,9 +185,9 @@ class UserController {
     
     // Once the signRequest has been sent, stores it in the signRequest collection adding that userId that it refers to.
     signRequest.userId = user._id
-  
+    
     await SignRequestModel.create(signRequest)
-  
+    
     return signRequest
   }
   
@@ -437,19 +437,23 @@ class UserController {
           return response.badRequest("Permissions denied.")
         }*/
         
-        const signRequest = await this._prepareAndSendSignRequest(user)
-        
-        user.contractSignRequestUuid = signRequest.uuid
-        // I set the state to validate so i won't need the validation by serv_clienti
-        // as requested in issue #32
-        user.account_status = AccountStatuses.VALIDATED
+        try {
+          const signRequest = await this._prepareAndSendSignRequest(user)
+          
+          user.contractSignRequestUuid = signRequest.uuid
+          // I set the state to validate so i won't need the validation by serv_clienti
+          // as requested in issue #32
+          user.account_status = AccountStatuses.VALIDATED
+        } catch (er) {
+          throw new Error("A causa di un errore non è possibile generare il contratto. Siete pregati di riprovare più tardi.")
+        }
       } else {
         // If the contract was imported, i skip the sign request and immediatly activate the user
         
         user.account_status = AccountStatuses.APPROVED
       }
     } else {
-      return response.badRequest('User is not CLIENTE.')
+      throw new Error("L'utente non è un agente o un cliente.")
     }
     
     await user.save()
