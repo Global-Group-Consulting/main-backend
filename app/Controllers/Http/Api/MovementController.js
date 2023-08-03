@@ -59,7 +59,7 @@ class MovementController {
     
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, MovementFiltersMap)
     
-    return await MovementModel.filter(filtersQuery, null, request.pagination)
+    return await MovementModel.filter(filtersQuery, null, request.pagination, await UserModel.find(userId))
   }
   
   /**
