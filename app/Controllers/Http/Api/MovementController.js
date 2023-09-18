@@ -59,7 +59,7 @@ class MovementController {
     
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, MovementFiltersMap)
     
-    return await MovementModel.filter(filtersQuery, null, request.pagination)
+    return await MovementModel.filter(filtersQuery, null, request.pagination, await UserModel.find(userId))
   }
   
   /**
@@ -159,7 +159,7 @@ class MovementController {
       throw new MovementErrorException('You don\'t have the permission to delete this movement.')
     }
     
-    const allowedTypes = [MovementTypes.COMMISSION_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.DEPOSIT_ADDED, MovementTypes.MANUAL_INTEREST_COLLECTED, MovementTypes.DEPOSIT_REPAYMENT]
+    const allowedTypes = [MovementTypes.COMMISSION_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.DEPOSIT_ADDED, MovementTypes.MANUAL_INTEREST_COLLECTED, MovementTypes.DEPOSIT_REPAYMENT, MovementTypes.DEPOSIT_COLLECTED]
     
     /**
      * @type {IMovement}

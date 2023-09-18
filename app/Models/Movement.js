@@ -63,6 +63,11 @@ module.exports = class Movement extends MongoModel {
           MovementTypes.CANCEL_INTEREST_COLLECTED]
           .includes(data.movementType)
         
+        if (data.subtractDeposit) {
+          lastMovement.deposit -= data.subtractDeposit
+          lastMovement.depositOld -= data.subtractDeposit
+        }
+        
         if (cancelType) {
           const methodName = `_handle${_upperFirst(_camelCase(movementTypeId))}`
           

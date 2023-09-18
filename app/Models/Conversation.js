@@ -42,18 +42,18 @@ class Conversation extends Model {
     const result = await Conversation.query()
       .where(
         {
-          watchersIds: {$elemMatch: {$eq: userId}},
+          watchersIds: { $elemMatch: { $eq: userId } },
           ...filter
         }
       )
-      .with("unreadMessages", async query => {
+      .with('unreadMessages', async query => {
         query.where({
           receiverId: castToObjectId(userId),
-          senderId: {$not: {$eq: castToObjectId(userId)}},
-          read_at: {$exists: false}
+          senderId: { $not: { $eq: castToObjectId(userId) } },
+          read_at: { $exists: false }
         })
       })
-      .with("request", query => {
+      /*.with("request", query => {
         query.with("user", query => {
           query.setVisible([
             'id',
@@ -63,29 +63,30 @@ class Conversation extends Model {
             'contractNumber'
           ])
         })
-      })
+      })*/
       .with("creator", query => {
         query.setVisible([
           'id',
           'firstName',
           'lastName',
-          'email',
+          'email'
         ])
       })
-      .with("watchers", query => {
+      .with('watchers', query => {
         query.setVisible([
           'id',
           'firstName',
           'lastName',
-          'email',
+          'email'
         ])
       })
-      .sort({"updated_at": -1, "subject": -1})
+      .sort({ 'updated_at': -1, 'subject': -1 })
       .fetch()
-
+    
+    debugger
     return result.toJSON().map(_row => {
       _row.unreadMessages = _row.unreadMessages.length
-
+      
       return _row
     })
   }
