@@ -38,6 +38,8 @@ class DocSigner {
   async _call (section, method, data) {
     return new Promise((resolve, reject) => {
       section[method](data, (error, data, response) => {
+        console.log('error', error)
+        
         if (error) {
           if (error && error.response && error.response.text) {
             error.message = error.response.text
@@ -163,13 +165,12 @@ class DocSigner {
       // message: "Messaggio del documento",
       // subject: "Richiesta di firma contratto per Mario Rossi",
     }
-    
     /**
      * @type {ISignRequestQuickCreate}
      */
     const signRequestObj = SignRequestQuickCreate.constructFromObject(signRequestData)
     const result = await this._call(this.SignrequestQuickCreateApi, 'signrequestQuickCreateCreate', signRequestObj)
-    
+
     result.sentRequest = signRequestObj
     
     return result

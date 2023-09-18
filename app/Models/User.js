@@ -1261,6 +1261,10 @@ class User extends Model {
     return roles.some(role => this.roles.includes(role))
   }
   
+  requests() {
+    return this.hasMany('App/Models/Request', '_id', 'userId')
+  }
+  
   get_id (value) {
     return value.toString()
   }

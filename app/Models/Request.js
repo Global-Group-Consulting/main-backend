@@ -62,17 +62,17 @@ const modelFields = {
 class Request extends MongoModel {
   static filter = filter
   static loadAttachments = loadAttachments
-  
+
   withAttachments = withAttachments
-  
+
   static get hidden () {
     return ['__v']
   }
-  
+
   static get computed () {
     return ['canCancel']
   }
-  
+
   static get revertableRequests () {
     return [
       RequestTypes.VERSAMENTO,
@@ -80,13 +80,13 @@ class Request extends MongoModel {
       RequestTypes.RISC_INTERESSI_BRITE,
     ]
   }
-  
+
   static async boot () {
     super.boot()
-    
+
     this.addTrait('RequestAmount')
     this.addTrait('RawDbConnection')
-    
+
     this.addHook('beforeCreate', /** @param {IRequest} data */async (data) => {
       const reqToAutoApprove = [
         RequestTypes.RISC_INTERESSI,
@@ -98,21 +98,21 @@ class Request extends MongoModel {
         RequestTypes.VERSAMENTO,
         RequestTypes.RISC_CAPITALE
       ]
-      
+
       const id = new MongoTypes.ObjectId()
-      
+
       data._id = id
-      
+
       // Auto approve some types of requests
       if (reqToAutoApprove.includes(data.type)
         || (adminReqToAutoApprove.includes(data.type) && data.createdByAdmin)
       ) {
         const typeData = RequestTypes.get(data.type)
-        
+
         try {
           const user = await UserModel.find(data.userId)
           let generatedMovement
-          
+
           if (RequestTypes.RISC_PROVVIGIONI === data.type) {
             /*
              If the request is periodic or for the current month, shouldn't generate any commission movement.
@@ -120,7 +120,7 @@ class Request extends MongoModel {
             */
             if (!data.autoWithdrawlAll) {
               Request.calcRightAmount(data)
-              
+
               generatedMovement = await CommissionModel.collectCommissions(data.userId, data.amount, null, data)
             }
           } else {
@@ -140,18 +140,18 @@ class Request extends MongoModel {
               cryptoAddress: data.cryptoAddress,
               cryptoCurrency: data.cryptoCurrency
             }
-            
+
             if (data.typeClub) {
               movementData.iban = data.iban
               movementData.clubCardNumber = data.clubCardNumber
               movementData.typeClub = data.typeClub
             }
-            
+
             generatedMovement = await MovementModel.create(movementData)
           }
-          
+
           data.movementId = generatedMovement ? generatedMovement._id : null
-          
+
           if (!data.autoWithdrawlAll) {
             data.status = RequestStatus.ACCETTATA
             data.completed_at = new Date().toISOString()
@@ -166,27 +166,27 @@ class Request extends MongoModel {
         data.status = RequestStatus.NUOVA
       }
     })
-    
+
     this.addHook('beforeSave', /** @param {IRequest} data */async (data) => {
       data.files = null
-      
+
       let lastMovement = await MovementModel.getLast(data.userId)
-      
+
       if (!lastMovement) {
         lastMovement = {
           deposit: 0,
           interestAmountOld: 0
         }
       }
-      
+
       // Store the current available amount for future reference
       if ([RequestTypes.RISC_CAPITALE,
         RequestTypes.VERSAMENTO].includes(data.type)) {
         data.availableAmount = lastMovement.deposit
-        
+
       } else if ([RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_BRITE, RequestTypes.RISC_INTERESSI_GOLD].includes(data.type)) {
         data.availableAmount = lastMovement.interestAmountOld
-        
+
       } else if ([RequestTypes.RISC_PROVVIGIONI].includes(data.type)) {
         /*
         If the request is periodic or for the current month, shouldn't generate any commission movement.
@@ -194,14 +194,14 @@ class Request extends MongoModel {
          */
         if (!data.autoWithdrawlAll) {
           const commissionMovement = await CommissionModel.find(data.movementId)
-          
+
           data.availableAmount = commissionMovement.currMonthCommissionsOld
         } else {
           data.availableAmount = await CommissionModel.getAvailableCommissions(data.userId)
         }
       } else if ([RequestTypes.COMMISSION_MANUAL_ADD, RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT]
         .includes(data.type)) {
-        
+
         if ([RequestTypes.COMMISSION_MANUAL_TRANSFER, RequestTypes.DEPOSIT_REPAYMENT].includes(data.type)) {
           const commissionMovement = await CommissionModel._getLastCommission(data.userId)
           data.availableAmount = commissionMovement.currMonthCommissions
@@ -210,15 +210,15 @@ class Request extends MongoModel {
           data.availableAmount = commissionMovement.currMonthCommissions
         }
       }
-      
+
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)
         && data.status === RequestStatus.ACCETTATA
         && !data.createdByAdmin) {
         const typeData = RequestTypes.get(data.type)
-        
+
         try {
           const user = await UserModel.find(data.userId)
-          
+
           const movementData = {
             userId: data.userId,
             movementType: data.initialMovement ? MovementTypes.INITIAL_DEPOSIT : typeData.movement,
@@ -231,20 +231,33 @@ class Request extends MongoModel {
             cryptoAddress: data.cryptoAddress,
             cryptoCurrency: data.cryptoCurrency
           }
-          
+
+          // se richiesta prelievo deposito, imposto la data del movimento uguale
+          // a quella della richiesta per avere la posizione giusta ed i calcoli retroattivi
+          if (data.type === RequestTypes.RISC_CAPITALE) {
+            movementData.created_at = data.created_at;
+          }
+
           if (data.typeClub) {
             movementData.iban = data.iban
             movementData.clubCardNumber = data.clubCardNumber
             movementData.typeClub = data.typeClub
           }
-          
+
           const movement = await MovementModel.create(movementData)
-          
+
+          if (data.type === RequestTypes.RISC_CAPITALE) {
+            // ri-salvo la data di creazione perchè in fase di salvataggio,
+            // questa non viene presa in considerazione
+            movement.created_at = data.created_at;
+            await movement.save();
+          }
+
           data.movementId = movement._id
         } catch (er) {
           // data.rejectReason = er.message
           // data.status = RequestStatus.RIFIUTATA
-          
+
           throw new RequestException('Can\'t approve the request. ' + er.message)
         }
       } else if (RequestTypes.COMMISSION_MANUAL_ADD === data.type && data.status === RequestStatus.ACCETTATA) {
@@ -259,18 +272,18 @@ class Request extends MongoModel {
             requestId: data._id,
             created_by: data.userId
           })
-          
+
           data.movementId = addedCommission._id
         } catch (er) {
           throw new RequestException('Can\'t approve the request. ' + er.message)
         }
       }
-      
+
       if (data.status === RequestStatus.ANNULLATA && !data.autoWithdrawlAll) {
         await data.cancelRequest()
       }
     })
-    
+
     this.addHook('afterCreate', async (data) => {
       this.switchIdField(data)
     })
@@ -284,24 +297,24 @@ class Request extends MongoModel {
         await this.includeFiles(inst)
       }
     })
-    
+
     this.addHook('afterDelete', async (data) => {
       await File.deleteAllWith(data.id, 'requestId')
     })
   }
-  
+
   static async includeFiles (data) {
     const files = await File.where({ requestId: data.id }).fetch()
-    
+
     data.files = files.rows || files
   }
-  
+
   static switchIdField (data) {
     data.id = data._id.toString()
-    
+
     return data
   }
-  
+
   static async reqWithUser (id) {
     const toReturn = await this.query()
       .where('_id', castToObjectId(id))
@@ -337,18 +350,18 @@ class Request extends MongoModel {
         )
       })
       .first()
-  
+
     await toReturn.withAttachments()
-  
+
     return toReturn
   }
-  
+
   static async allWithUser (sorting = {}) {
     // TODO:: i must avoid returning all this data, instead i should return the minimum data and when a request got open, return all its data
-    
+
     const currDate = moment()
     const lastMonth = moment()
-    
+
     /*lastMonth.set({
       date: 16,
       month: currDate.month(),
@@ -356,9 +369,9 @@ class Request extends MongoModel {
       minute: 0,
       second: 0
     }).subtract(1, "months")*/
-    
+
     lastMonth.subtract(40, 'days')
-    
+
     return this.query()
       .where({
         created_at: {
@@ -400,7 +413,7 @@ class Request extends MongoModel {
       .sort(sorting)
       .fetch()
   }
-  
+
   /**
    * @param {{}} match
    * @return {Promise<import('/@types/dto/GetCounters.dto').GetCountersDto[]>}
@@ -427,31 +440,31 @@ class Request extends MongoModel {
         }
       }
     ])
-    
+
     return data.reduce((acc, curr) => {
       // We merge together the counters for status ANNULLATA and RIFIUTATA
       if (curr._id === RequestStatus.ANNULLATA || curr._id === RequestStatus.RIFIUTATA) {
         let existing = acc.find(el => el._id === RequestStatus.RIFIUTATA)
-        
+
         if (!existing) {
           existing = {
             _id: RequestStatus.RIFIUTATA,
             count: 0
           }
-          
+
           acc.push(existing)
         }
-        
+
         existing.count += curr.count
-        
+
       } else {
         acc.push(curr)
       }
-      
+
       return acc
     }, [])
   }
-  
+
   static async allWithUserPaginated (sorting, page = 1, perPage = 25) {
     /**
      * @type {Request[]}
@@ -533,14 +546,14 @@ class Request extends MongoModel {
         '$limit': 1000
       }
     ])
-    
+
     const minDate = moment().date() > 15
       ? moment().set({ date: 16 }).startOf('day')
       : moment().set({ month: moment().month() - 1, date: 16 }).startOf('day')
-    
+
     return data.map(_entry => {
       _entry.canCancel = false
-      
+
       if (_entry.status === RequestStatus.ACCETTATA
         && this.revertableRequests.includes(_entry.type)
         && moment(_entry.completed_at).isAfter(minDate)
@@ -548,11 +561,11 @@ class Request extends MongoModel {
       ) {
         _entry.canCancel = true
       }
-      
+
       return _entry
     })
   }
-  
+
   /**
    * @param {string | ObjectId} userId
    * @param {{}} [sorting]
@@ -560,7 +573,7 @@ class Request extends MongoModel {
   static async allForUser (userId, sorting) {
     /** @type {IMovement} */
     const lastRecapitalization = await MovementModel.getLastRecapitalization(userId)
-    
+
     /** @type {Request} */
     const data = await Request
       .where({ userId: { $in: [userId.toString(), userId.constructor.name === 'ObjectID' ? userId : new MongoTypes.ObjectId(userId)] } })
@@ -576,23 +589,23 @@ class Request extends MongoModel {
       .with('movement')
       .with('conversation')
       .sort(sorting || { 'completed_at': -1 }).fetch()
-    
+
     return data.rows.map(_entry => {
       _entry.canCancel = false
-      
+
       const jsonData = _entry.toJSON()
       const cancellableMovements = [MovementTypes.DEPOSIT_COLLECTED, MovementTypes.INTEREST_COLLECTED, MovementTypes.COMMISSION_COLLECTED, MovementTypes.DEPOSIT_ADDED]
-      
+
       if (_entry.status === RequestStatus.ACCETTATA && jsonData.movement && jsonData.completed_at
         && cancellableMovements.includes(+jsonData.movement.movementType)) {
         _entry.canCancel = moment(_entry.completed_at).isAfter(moment(lastRecapitalization.created_at))
       }
-      
+
       return _entry
     })
-    
+
   }
-  
+
   /**
    * Fetches all the pending requests, useful for the admin dashboard
    *
@@ -617,15 +630,15 @@ class Request extends MongoModel {
       .sort({ status: 1, created_at: -1, type: 1 })
       .fetch()
   }
-  
+
   static async setToWorkingState (id) {
     const request = await this.find(id)
-    
+
     request.status = RequestStatus.LAVORAZIONE
-    
+
     await request.save()
   }
-  
+
   /**
    *
    * @param {string} date - YYYY-MM
@@ -640,7 +653,7 @@ class Request extends MongoModel {
     - Riscossione Interessi Gold (Fisico)
      */
     const reqToSearch = [RequestTypes.RISC_CAPITALE, RequestTypes.RISC_INTERESSI, RequestTypes.RISC_INTERESSI_GOLD, RequestTypes.RISC_INTERESSI_BRITE]
-    
+
     /*
     il report deve contenere 3 tab
     - Riscossione provvigioni
@@ -665,7 +678,7 @@ class Request extends MongoModel {
     Note
     Agente riferimento
      */
-    
+
     const momentDate = moment(date, 'YYYY-MM')
     const startDate = moment(momentDate).subtract(1, 'months').set({
       date: 16,
@@ -691,7 +704,7 @@ class Request extends MongoModel {
       minute: 59,
       second: 59
     }).subtract(1, 'days')
-    
+
     const query = {
       $or: [
         {
@@ -713,9 +726,9 @@ class Request extends MongoModel {
         }
       ]
     }
-    
+
     console.log(JSON.stringify(query))
-    
+
     /* const data = await this.where(query)
        .with("user")
        .sort({
@@ -723,7 +736,7 @@ class Request extends MongoModel {
          type: 1
        })
        .fetch()*/
-    
+
     const data = await this.aggregateRaw([
       {
         '$sort': {
@@ -804,23 +817,23 @@ class Request extends MongoModel {
         }
       }
     ])
-    
+
     const jsonData = data //data.toJSON()
-    
+
     //  In fase di download, se una richiesta è classic, ma l'utente è gold, inserire quella richiesta nella pagina relativa ai gold.
     for (const entry of jsonData) {
       const classicReq = entry.type === RequestTypes.RISC_INTERESSI
-      
+
       // Se un utente ha fatto classic ma è gold la richiesta viene scaricata in gold (NON FISICO)
       if (entry.user.gold && classicReq) {
         entry.typeOriginal = entry.type
         entry.type = RequestTypes.RISC_INTERESSI_BRITE
       }
     }
-    
+
     return jsonData
   }
-  
+
   /**
    *
    * @param {string} id
@@ -829,19 +842,19 @@ class Request extends MongoModel {
    */
   static async findByIdOrMovementId (id, type) {
     const objId = castToObjectId(id)
-    
+
     if (type === 'request') {
       return this.where({ _id: objId }).first()
     } else {
       return MovementModel.where({ _id: objId }).first()
     }
   }
-  
+
   static async getLastAutoWithdrawlRequest (userId) {
     return UserModel.query()
       .where({ userId: castToObjectId(userId) })
   }
-  
+
   static async getActiveAutoWithdrawlRequests (userId) {
     const requests = await this.query()
       .where({
@@ -851,41 +864,41 @@ class Request extends MongoModel {
       })
       .setVisible(['_id'])
       .fetch()
-    
+
     return requests.rows
   }
-  
+
   async cancelRequest () {
     /* const typeData = RequestTypes.get(data.type)
     const movementData = MovementTypes.get(typeData.movement) */
-    
+
     const movementRef = await MovementModel.find(this.movementId)
-    
+
     if (!movementRef) {
       throw new MovementErrorException('Movement not found.')
     }
-    
+
     // checks if the movement has already been cancelled
     const movementCancelRef = await MovementModel.where({ cancelRef: movementRef._id }).first()
-    
+
     if (movementCancelRef) {
       throw new MovementErrorException('Movement already canceled.')
     }
-    
+
     // Get the movement type eto generate for cancelling this request
     const movementType = MovementTypes.get(movementRef.movementType).cancel
     const jsonData = movementRef.toJSON()
-    
+
     if (!movementType) {
       throw new MovementErrorException('Can\'t cancel this type of movement.')
     }
-    
+
     delete jsonData._id
-    
+
     try {
       const user = await UserModel.find(this.userId)
       const lastMovement = await MovementModel.getLast(jsonData.userId)
-      
+
       const movement = await MovementModel.create({
         ...jsonData,
         movementType,
@@ -897,16 +910,16 @@ class Request extends MongoModel {
         // set the current date to avoid calculation errors
         created_at: new Date()
       })
-      
+
       if (movement.cancelRef) {
         const relativeCommission = await CommissionModel.where({ movementId: movement.cancelRef }).fetch()
-        
+
         for (let commission of relativeCommission.rows) {
           //throw new MovementErrorException("Can't find the relative commission");
           await commission.cancel(movement._id)
         }
       }
-      
+
       // Aggiorna i dati sulla richiesta attuale
       this.originalMovementId = this.movementId
       this.movementId = movement._id
@@ -915,18 +928,18 @@ class Request extends MongoModel {
       throw new MovementErrorException('Can\'t cancel this request. ' + er.message)
     }
   }
-  
+
   /**
    * @return {BelongsTo|*}
    */
   user () {
     return this.belongsTo('App/Models/User', 'userId', '_id')
   }
-  
+
   /*files () {
     return this.hasMany('App/Models/File', '_id', 'requestId')
   }*/
-  
+
   movement () {
     if (this.type === RequestTypes.RISC_PROVVIGIONI) {
       return this.hasOne('App/Models/Commission', 'movementId', '_id')
@@ -934,38 +947,38 @@ class Request extends MongoModel {
       return this.hasOne('App/Models/Movement', 'movementId', '_id')
     }
   }
-  
+
   conversation () {
     return this.hasOne('App/Models/Conversation', '_id', 'requestId')
   }
-  
+
   targetUser () {
     return this.belongsTo('App/Models/User', 'targetUserId', '_id')
   }
-  
+
   // ******************************************************
   // GETTERS
   // ******************************************************
   get_id (value) {
     return value.toString()
   }
-  
+
   getId (value) {
     return this._id.toString()
   }
-  
+
   getStatus (value) {
     return +value
   }
-  
+
   getType (value) {
     return +value
   }
-  
+
   getWallet (value) {
     return +value
   }
-  
+
   /**
    * Create a field that indicates if the current request is cancellable or not
    * @return {boolean}
@@ -974,9 +987,9 @@ class Request extends MongoModel {
     const minDate = moment().date() > 15
       ? moment().set({ date: 16 }).startOf('day')
       : moment().set({ month: moment().month() - 1, date: 16 }).startOf('day')
-    
+
     let canCancel = false
-    
+
     if (this.status === RequestStatus.ACCETTATA
       && Request.revertableRequests.includes(this.type)
       && moment(this.completed_at).isAfter(minDate)
@@ -984,62 +997,62 @@ class Request extends MongoModel {
     ) {
       canCancel = true
     }
-    
+
     return canCancel
   }
-  
+
   getCurrency (value) {
     return +value
   }
-  
+
   // ******************************************************
   // SETTERS
   // ******************************************************
-  
+
   setAmount (value) {
     return +value
   }
-  
+
   setGoldAmount (value) {
     return +value
   }
-  
+
   setCompletedAt (value) {
     return castToIsoDate(value)
   }
-  
+
   setCurrency (value) {
     return castToNumber(value)
   }
-  
+
   setType (value) {
     return +value
   }
-  
+
   setStatus (value) {
     return +value
   }
-  
+
   setWallet (value) {
     return +value
   }
-  
+
   setUserId (value) {
     return castToObjectId(value)
   }
-  
+
   setReferenceAgent (value) {
     return castToObjectId(value)
   }
-  
+
   setTargetUserId (value) {
     return castToObjectId(value)
   }
-  
+
   setPaymentDocDate (value) {
     return castToIsoDate(value)
   }
-  
+
   setLastRun (value) {
     return castToIsoDate(value)
   }
