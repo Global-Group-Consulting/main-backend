@@ -52,6 +52,8 @@ module.exports.filter = async function (filter = {}, project, requestPagination,
     }))
   }
   
+  result.data.sort((a, b) => new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? 1 : -1)
+  
   return preparePaginatedResult(result, sort, originalFilter)
 }
 
