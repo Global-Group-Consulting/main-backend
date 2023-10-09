@@ -151,9 +151,12 @@ class SecretCommandController {
       return toReturn
     }
 
+    // TOLGO QUESTA PARTE PERCHè HO MODIFICATO IL MECCANISMO QUINDI ORA VIENE CREATO UN VERO MOVIMENTO
+    // PER LE RICHIESTE RISC_CAPITALE E NON SERVE SOTTRARRE NULLA.
+
     // Cerco se l'utente ha prelievo deposito in sospeso. Se si, devo prendere l'importo prima della richiesta
     // Recupero tutte le richieste di prelievo deposito in sospeso dell'ultimo mese.
-    const pendingDepositWithdrawal = await Request.where({
+    /*const pendingDepositWithdrawal = await Request.where({
       type: RequestTypes.RISC_CAPITALE,
       status: {$in: [RequestStatus.NUOVA, RequestStatus.LAVORAZIONE]},
       userId: castToObjectId(userId),
@@ -162,7 +165,7 @@ class SecretCommandController {
 
     const pendingAmount = pendingDepositWithdrawal.rows.reduce((acc, curr) => {
       return acc + curr.amount
-    }, 0)
+    }, 0)*/
 
     /**
      * @type {IMovement}
@@ -172,7 +175,7 @@ class SecretCommandController {
       fromUUID: toReturn.uuid,
       movementType: MovementTypes.INTEREST_RECAPITALIZED,
       interestPercentage: +user.contractPercentage,
-      subtractDeposit: pendingAmount,
+      // subtractDeposit: pendingAmount,
     }
 
     /**

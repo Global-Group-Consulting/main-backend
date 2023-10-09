@@ -15,21 +15,21 @@ module.exports.filter = async function (filter = {}, project, requestPagination,
   // store original filter to use it later when returning the result
   const originalFilter = clone(filter)
   let sort = prepareSorting(requestPagination /*{ 'created_at': -1, 'updated_at': -1, 'completed_at': -1 }*/)
-  
+
   const start = Date.now()
-  
+
   const pendingRequests = await user.requests().where({ status: { $in: [RequestStatus.LAVORAZIONE, RequestStatus.NUOVA] } }).fetch()
-  
+
   let result = (await this.where(filter)
     .setVisible(project, null)
     .sort(sort)
     .paginate(requestPagination.page)).toJSON()
-  
+
   const end = Date.now()
-  
+
   result.time = end - start
-  
-  if (requestPagination.page <= 1) {
+
+ /* if (requestPagination.page <= 1) {
     result.data.unshift(...pendingRequests.rows.map(r => {
       return {
         id: r._id,
@@ -50,10 +50,10 @@ module.exports.filter = async function (filter = {}, project, requestPagination,
         userId: r.userId
       }
     }))
-  }
-  
+  }*/
+
   result.data.sort((a, b) => new Date(a.created_at).getTime() < new Date(b.created_at).getTime() ? 1 : -1)
-  
+
   return preparePaginatedResult(result, sort, originalFilter)
 }
 

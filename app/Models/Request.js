@@ -211,6 +211,7 @@ class Request extends MongoModel {
         }
       }
 
+      // Approvazione RISC_CAPITALE o VERSAMENTO
       if ([RequestTypes.RISC_CAPITALE, RequestTypes.VERSAMENTO].includes(data.type)
         && data.status === RequestStatus.ACCETTATA
         && !data.createdByAdmin) {
@@ -244,13 +245,16 @@ class Request extends MongoModel {
             movementData.typeClub = data.typeClub
           }
 
-          const movement = await MovementModel.create(movementData)
+          let movement
 
           if (data.type === RequestTypes.RISC_CAPITALE) {
-            // ri-salvo la data di creazione perchè in fase di salvataggio,
-            // questa non viene presa in considerazione
-            movement.created_at = data.created_at;
-            await movement.save();
+            movement = await MovementModel.where({"requestId": castToObjectId(data._id), approved: false}).first()
+            movement.approved = true
+
+            movement.merge(movementData);
+            movement.save();
+          } else {
+            movement = await MovementModel.create(movementData)
           }
 
           data.movementId = movement._id
