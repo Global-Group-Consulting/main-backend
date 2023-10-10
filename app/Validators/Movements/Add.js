@@ -11,6 +11,11 @@ class MovementsAdd extends WhitelistValidator {
       amountChange: "required|number",
       created_at: "date",
       notes: "string",
+      createdBy: "string",
+      requestType: "number",
+      requestId: "string",
+      interestPercentage: "number",
+      approved: "boolean",
     }
   }
 }
