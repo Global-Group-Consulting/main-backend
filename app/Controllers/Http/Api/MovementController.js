@@ -102,11 +102,15 @@ class MovementController {
     const newMovement = await MovementModel.create(newData)
 
     if (data.created_at) {
-      newMovement.created_at = data.created_at
+      try {
+        newMovement.created_at = data.created_at
 
-      await updateNextMovements(newMovement)
+        await updateNextMovements(newMovement)
+        await newMovement.save()
+      } catch (er) {
+        throw new MovementErrorException(er.error.message ?? er.message)
+      }
 
-      await newMovement.save()
     }
 
     return newMovement

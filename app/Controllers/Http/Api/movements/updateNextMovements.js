@@ -1,5 +1,6 @@
 const MovementTypes = require("../../../../../enums/MovementTypes");
 const {upperFirst: _upperFirst, camelCase: _camelCase} = require("lodash");
+const {toJSON} = require("lodash/seq");
 /** @type {typeof import('../../../Models/Movement')} */
 const MovementModel = use('App/Models/Movement')
 
@@ -45,24 +46,24 @@ module.exports = async (movementRef, isDeleting = false) => {
         promises.push(async () => {
             try {
                 // use original methods for calculating deposit and interest
-                await MovementModel[`_handle${_upperFirst(_camelCase(movementTypeId))}`](movement, lastMovement)
+                await MovementModel[`_handle${_upperFirst(_camelCase(movementTypeId))}`](movement, lastMovement, true)
 
-                if (movementRef.history && movementRef.history.length > 0) {
-                    movement.appendToHistory(movementRef.history[movementRef.history.length - 1].updatedBy, {
-                        deposit: {
-                            old: movement.depositOld,
-                            new: movement.deposit
-                        },
-                        interestAmount: {
-                            old: movement.interestAmountOld,
-                            new: movement.interestAmount
-                        },
-                    })
-                }
+                const updatedBy = movementRef.history && movementRef.history.length > 0 ? (movementRef.history[movementRef.history.length - 1].updatedBy) : null
+
+                movement.appendToHistory(updatedBy, {
+                    deposit: {
+                        old: movement.depositOld,
+                        new: movement.deposit
+                    },
+                    interestAmount: {
+                        old: movement.interestAmountOld,
+                        new: movement.interestAmount
+                    },
+                })
 
                 await movement.save()
 
-                toReturn.push(movement)
+                toReturn.push(movement.toJSON())
             } catch (e) {
                 await Promise.reject({
                     movement,
