@@ -187,7 +187,7 @@ class MovementController {
     const field = request.input('field')
     const amount = request.input('amount')
 
-    if (!field || !amount) {
+    if (!field || amount === undefined) {
       throw new MovementErrorException('Missing field or value.')
     }
 
