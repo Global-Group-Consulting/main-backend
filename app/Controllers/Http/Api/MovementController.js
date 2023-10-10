@@ -108,7 +108,7 @@ class MovementController {
         await updateNextMovements(newMovement)
         await newMovement.save()
       } catch (er) {
-        throw new MovementErrorException(er.error.message ?? er.message)
+        throw new MovementErrorException(er.error.message ? er.error.message : er.message)
       }
 
     }
