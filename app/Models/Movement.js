@@ -161,14 +161,10 @@ module.exports = class Movement extends MongoModel {
     const amountChange = +data.amountChange.toFixed(2)
     const availableAmount = +lastMovement.interestAmount.toFixed(2)
 
-    if (force) {
+    if (amountChange > availableAmount && !force) {
+      throw new InvalidMovementException('Can\'t collect more then the available interest.')
+    } else if (amountChange === availableAmount) {
       data.amountChange = lastMovement.interestAmount
-    } else {
-      if (amountChange > availableAmount) {
-        throw new InvalidMovementException('Can\'t collect more then the available interest.')
-      } else if (amountChange === availableAmount) {
-        data.amountChange = lastMovement.interestAmount
-      }
     }
 
     data.deposit = lastMovement.deposit
