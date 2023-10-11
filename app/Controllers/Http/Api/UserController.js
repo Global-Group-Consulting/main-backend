@@ -445,6 +445,7 @@ class UserController {
           // as requested in issue #32
           user.account_status = AccountStatuses.VALIDATED
         } catch (er) {
+          console.log(er)
           throw new Error("A causa di un errore non è possibile generare il contratto. Siete pregati di riprovare più tardi.")
         }
       } else {
