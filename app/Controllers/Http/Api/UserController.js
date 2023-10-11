@@ -105,7 +105,7 @@ class UserController {
       residenceCity: await formatCity(userData.legalRepresentativeCity),
       residenceProvince: await formatProvince(userData.legalRepresentativeProvince),
       fiscalCode: userData.fiscalCode,
-      mobile: userData.mobile,
+      mobile: userData.mobile.trim(),
       email: userData.email,
       contractNumber: formatContractNumber(userData.contractNumber),
       contractDate: formatDate(moment()),
