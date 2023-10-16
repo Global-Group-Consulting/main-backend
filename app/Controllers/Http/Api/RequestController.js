@@ -246,7 +246,7 @@ class RequestController {
 
     if (Object.keys(files).length > 0) {
       await FileModel.store(files, associatedUser._id, auth.user._id, {
-        requestId: newRequest.id
+        requestId: newRequest._id
       })
     }
 
@@ -325,7 +325,7 @@ class RequestController {
 
       if (Object.keys(files).length > 0) {
         await FileModel.store(files, associatedUser._id, auth.user._id, {
-          requestId: newRequest.id
+          requestId: newRequest._id
         })
       }
 
