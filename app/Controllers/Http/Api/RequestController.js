@@ -483,6 +483,12 @@ class RequestController {
 
     await foundedRequest.save()
 
+    const movement = await MovementModel.where({requestId: castToObjectId(foundedRequest._id)}).first()
+
+    if (movement) {
+      await updateNextMovements(movement)
+    }
+
     if (foundedRequest.type === RequestTypes.DEPOSIT_REPAYMENT) {
       try {
         // If is a repayment, subtract the amount of commissions and add them as deposit to the user

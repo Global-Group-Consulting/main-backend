@@ -224,6 +224,7 @@ class Request extends MongoModel {
             userId: data.userId,
             movementType: data.initialMovement ? MovementTypes.INITIAL_DEPOSIT : typeData.movement,
             requestType: data.type,
+            requestId: data._id,
             amountChange: data.amount,
             interestPercentage: +user.contractPercentage,
             paymentDocDate: data.paymentDocDate,
@@ -248,16 +249,24 @@ class Request extends MongoModel {
           let movement
 
           if (data.type === RequestTypes.RISC_CAPITALE) {
-            movement = await MovementModel.where({"requestId": castToObjectId(data._id), approved: false}).first()
-            movement.approved = true
+            movement = await MovementModel.where({"requestId": {$in: [castToObjectId(data._id), data._id.toString()]}, approved: false}).first()
 
-            movement.merge(movementData);
-            movement.save();
+            if (movement){
+              movement.approved = true
+
+              const dataToMerge = {...movementData}
+
+              // se il movimento esiste già, cambiargli la data è molto pericoloso perchè potrebbe far saltare i conti
+              delete dataToMerge.created_at
+
+              movement.merge(dataToMerge);
+              movement.save();
+            }
           } else {
             movement = await MovementModel.create(movementData)
           }
 
-          data.movementId = movement._id
+          data.movementId = movement ? movement._id : null
         } catch (er) {
           // data.rejectReason = er.message
           // data.status = RequestStatus.RIFIUTATA

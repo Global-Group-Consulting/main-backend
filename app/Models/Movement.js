@@ -498,6 +498,10 @@ module.exports = class Movement extends MongoModel {
   async relativeUser () {
     return this.hasOne('App/Models/User', 'userId', '_id')
   }
+  
+  async request() {
+    return this.belongsTo('App/Models/Request', 'requestId', '_id')
+  }
 
   async canCancel () {
     const lastRecapitalization = await Movement.where({

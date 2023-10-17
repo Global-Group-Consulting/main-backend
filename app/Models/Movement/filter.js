@@ -2,6 +2,7 @@ const { prepareSorting, preparePaginatedResult } = require('../../Utilities/Pagi
 const { AggregationBuilder } = require('../../../classes/AggregationBuilder')
 const { omit, clone } = require('lodash')
 const RequestStatus = require('../../../enums/RequestStatus')
+const { castToObjectId } = require('../../Helpers/ModelFormatters')
 
 // const Request = use('App/Models/Request')
 
@@ -17,8 +18,6 @@ module.exports.filter = async function (filter = {}, project, requestPagination,
   let sort = prepareSorting(requestPagination /*{ 'created_at': -1, 'updated_at': -1, 'completed_at': -1 }*/)
 
   const start = Date.now()
-
-  const pendingRequests = await user.requests().where({ status: { $in: [RequestStatus.LAVORAZIONE, RequestStatus.NUOVA] } }).fetch()
 
   let result = (await this.where(filter)
     .setVisible(project, null)

@@ -7,6 +7,7 @@
 
 /** @type {typeof import('../../../Models/Movement')} */
 const MovementModel = use('App/Models/Movement')
+const Request = use('App/Models/Request')
 /** @type {typeof import('../../../Models/Commission')} */
 const CommissionModel = use('App/Models/Commission')
 const UserModel = use('App/Models/User')
@@ -60,7 +61,25 @@ class MovementController {
 
     const filtersQuery = prepareFiltersQuery(request.pagination.filters, MovementFiltersMap)
 
-    return await MovementModel.filter(filtersQuery, null, request.pagination, await UserModel.find(userId))
+    const toReturn = await MovementModel.filter(filtersQuery, null, request.pagination, await UserModel.find(userId))
+    
+    const movementIds = toReturn.data.map(m => castToObjectId(m._id)).filter(f => f)
+    const movementIdStrings = movementIds.map(m => m.toString())
+    const relatedRequests = await Request.where({ movementId: {"$in": [...movementIds, ...movementIdStrings] } }).fetch()
+    
+    relatedRequests.rows.forEach(r => {
+      const movementIndex = toReturn.data.findIndex(d => {
+        if(!d.requestId) return false
+        
+        return d.requestId.toString() == r._id.toString()
+      })
+      
+      if (movementIndex >= 0) {
+        toReturn.data[movementIndex].request = r.toJSON()
+      }
+    })
+    
+    return toReturn
   }
 
   /**
