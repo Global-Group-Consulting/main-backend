@@ -263,6 +263,7 @@ class Request extends MongoModel {
               movement.save();
             }else {
               movement = await MovementModel.create(movementData)
+              movement.created_at = movementData.created_at
             }
           } else {
             movement = await MovementModel.create(movementData)
