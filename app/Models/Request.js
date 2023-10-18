@@ -261,6 +261,8 @@ class Request extends MongoModel {
 
               movement.merge(dataToMerge);
               movement.save();
+            }else {
+              movement = await MovementModel.create(movementData)
             }
           } else {
             movement = await MovementModel.create(movementData)
