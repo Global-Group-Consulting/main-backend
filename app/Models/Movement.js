@@ -135,7 +135,7 @@ module.exports = class Movement extends MongoModel {
    * @param {MovementInstance} lastMovement
    */
   static async _handleInterestRecapitalized (data, lastMovement) {
-    data.amountChange = lastMovement.interestAmount
+    data.amountChange = lastMovement.interestAmount >= 0 ? lastMovement.interestAmount : 0
     data.deposit = lastMovement.deposit + lastMovement.interestAmount
     data.interestAmount = data.deposit * (data.interestPercentage / 100)
   }
@@ -498,7 +498,7 @@ module.exports = class Movement extends MongoModel {
   async relativeUser () {
     return this.hasOne('App/Models/User', 'userId', '_id')
   }
-  
+
   async request() {
     return this.belongsTo('App/Models/Request', 'requestId', '_id')
   }
