@@ -260,10 +260,12 @@ class Request extends MongoModel {
               delete dataToMerge.created_at
 
               movement.merge(dataToMerge);
-              movement.save();
+              await movement.save();
             }else {
               movement = await MovementModel.create(movementData)
               movement.created_at = movementData.created_at
+
+              await movement.save()
             }
           } else {
             movement = await MovementModel.create(movementData)
