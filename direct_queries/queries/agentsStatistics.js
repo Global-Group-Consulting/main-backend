@@ -27,6 +27,14 @@ const { exportCsv } = require('../utils/export_csv');
         ObjectId('5fc9e6e91292050021460d85')
     ]
     
+    const addMonthField = {
+        '$addFields': {
+            'month': {
+                '$month': '$created_at'
+            }
+        }
+    }
+    
     const usersData = await db.collection('users').find({
         _id: {
             $in: userIds
@@ -53,12 +61,13 @@ const { exportCsv } = require('../utils/export_csv');
                     '$lte': new Date('2023-09-30T00:00:00.000+0000')
                 }
             }
-        },
+        }, addMonthField,
         {
             '$group': {
                 '_id': {
                     'user': '$userId',
-                    'commissionType': '$commissionType'
+                    'commissionType': '$commissionType',
+                    'month': '$month'
                 },
                 'amount': {
                     '$sum': {$abs: "$amountChange"}
@@ -88,11 +97,13 @@ const { exportCsv } = require('../utils/export_csv');
                 }
             }
         },
+        addMonthField,
         {
             '$group': {
                 '_id': {
                     'user': '$userId',
-                    'movementType': '$movementType'
+                    'movementType': '$movementType',
+                    'month': '$month'
                 },
                 'amount': {
                     '$sum': {$abs: "$amountChange"}
@@ -117,11 +128,13 @@ const { exportCsv } = require('../utils/export_csv');
                 }
             }
         },
+        addMonthField,
         {
             '$group': {
                 '_id': {
                     'user': '$userId',
-                    'type': '$type'
+                    'type': '$type',
+                    'month': '$month'
                 },
                 'amount': {
                     '$sum': '$amount'
@@ -136,17 +149,30 @@ const { exportCsv } = require('../utils/export_csv');
         const _movements = movements.filter(m => m._id.user.equals(userId))
         const _agentBrites = agentBrites.filter(a => a._id.user.equals(userId))
         
+        const months = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        
         return {
             user: {
                 firstName: _user?.firstName,
                 lastName: _user?.lastName,
             },
             userId: userId.toString(),
-            provvigioni_reinvestite: _commissions.find(c => c._id.commissionType === 'commissionsToReinvest')?.amount || 0,
-            provvigioni_ritirate: _commissions.find(c => c._id.commissionType === 'commissionsCollected')?.amount || 0,
-            brite_agente_generati: _agentBrites.find(c => c._id.type === 'from_withdrawl')?.amount || 0,
-            rendite_riscosse: _movements.find(c => c._id.movementType === 4)?.amount || 0,
-            deposito_prelevati: _movements.find(c => c._id.movementType === 5)?.amount || 0,
+            ...months.reduce((acc, month) => {
+                acc["mese_" + month] = {
+                    provvigioni_reinvestite: _commissions.find(c => c._id.commissionType === 'commissionsToReinvest' && c._id.month === month)?.amount || 0,
+                    provvigioni_ritirate: _commissions.find(c => c._id.commissionType === 'commissionsCollected' && c._id.month === month)?.amount || 0,
+                    brite_agente_generati: _agentBrites.find(c => c._id.type === 'from_withdrawl' && c._id.month === month)?.amount || 0,
+                    rendite_riscosse: _movements.find(c => c._id.movementType === 4 && c._id.month === month)?.amount || 0,
+                    deposito_prelevati: _movements.find(c => c._id.movementType === 5 && c._id.month === month)?.amount || 0
+                }
+                
+                // arrotondo i decimali
+                Object.keys(acc["mese_" + month]).forEach(key => {
+                    acc["mese_" + month][key] = acc["mese_" + month][key].toFixed(2)
+                })
+                
+                return acc
+            }, {})
         }
     })
     
