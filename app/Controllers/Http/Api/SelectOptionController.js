@@ -24,7 +24,7 @@ class SelectOptionController {
     console.log(toReturn, groups)
     
     groups.forEach((group) => {
-      if (group.length < 3) {
+      if (group.length < 2) {
         throw new RequestException('Filter text be at least 2 characters long')
       }
     })
@@ -48,7 +48,7 @@ class SelectOptionController {
       throw new AclForbiddenException()
     }
     
-    if (!filter || filter.length < 3) {
+    if (!filter || filter.length < 2) {
       throw new RequestException('Filter must be at least 2 characters long')
     }
     
@@ -100,7 +100,9 @@ class SelectOptionController {
       throw new AclForbiddenException()
     }
     
-    if (!filter || filter.length < 3) {
+    // console.log(filter, filter.length)
+    
+    if (!filter || filter.length < 2) {
       throw new RequestException('Filter must be at least 2 characters long')
     }
     
