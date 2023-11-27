@@ -119,7 +119,7 @@ class SelectOptionController {
     
     // If user is agent, can only see his team clients
     if (auth.user.isAgent()) {
-      const sugAgentIds = await User.getTeamUsersIds(auth.user, false, true)
+      const sugAgentIds = await User.getTeamUsersIds(auth.user, true, true)
       
       query['_id'] = {
         $in: sugAgentIds
