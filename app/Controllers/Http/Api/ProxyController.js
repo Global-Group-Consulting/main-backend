@@ -85,12 +85,13 @@ class ProxyController {
   /**
    * @param {String} url
    * @param {Request} req
+   * @param {Response} res
    * @param {User} user
    * @param {string} path
    * @param {string} app
    * @private
    */
-  async _forward (url, req, user, path, app) {
+  async _forward (url, req, res, user, path, app) {
     const parsedUrl = new URL(url)
     /**
      * @type {{host: string, accept: string, "client-key": string}}
@@ -99,6 +100,7 @@ class ProxyController {
     const reqBody = req.body
     // const reqParams = req.qs
     const reqParams = req.originalUrl().split('?')[1]
+    const mustDownload = headers['accept'] === 'arraybuffer'
     
     headers.host = parsedUrl.host
     headers.accept = 'application/json'
@@ -142,9 +144,24 @@ class ProxyController {
         data: {
           ...reqBody,
           _auth_user: user
-        }
+        },
+        ...(mustDownload ? { responseType: 'arraybuffer' } : {})
         // params: reqParams
       })
+      
+      if (result.headers['content-disposition']) {
+        res.header('content-disposition', result.headers['content-disposition'])
+      }
+      
+      if (result.headers['content-type']) {
+        res.header('content-type', result.headers['content-type'])
+      }
+      
+      if (result.headers['content-length']) {
+        res.header('content-length', result.headers['content-length'])
+      }
+      
+      res.header("Access-Control-Expose-Headers", "Content-Disposition, Content-Type, Content-Length")
       
       return result.data
     } catch (er) {
@@ -157,37 +174,37 @@ class ProxyController {
     }
   }
   
-  async club (request, auth, path, app) {
+  async club (request, response, auth, path, app) {
     const baseUrl = Env.get('CLUB_SERVER')
     
-    return await this._forward(baseUrl, request, auth.user, path, app)
+    return await this._forward(baseUrl, request, response, auth.user, path, app)
   }
   
-  async club2 (request, auth, path, app) {
+  async club2 (request, response, auth, path, app) {
     const baseUrl = Env.get('CLUB2_SERVER')
     
-    return await this._forward(baseUrl, request, auth.user, path, app)
+    return await this._forward(baseUrl, request, response, auth.user, path, app)
   }
   
-  async news (request, auth, path, app) {
+  async news (request, response, auth, path, app) {
     const baseUrl = Env.get('NEWS_SERVER')
     
-    return await this._forward(baseUrl, request, auth.user, path, app)
+    return await this._forward(baseUrl, request, response, auth.user, path, app)
   }
   
-  async handle ({ request, auth }) {
+  async handle ({ request, response, auth }) {
     const url = request.url().replace('/api/ext/', '')
     const destination = url.split('/')
     
     switch (destination[0]) {
       case 'club':
-        return this.club(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+        return this.club(request, response, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
       case 'club2':
-        return this.club2(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+        return this.club2(request, response, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
       case 'news':
-        return this.news(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+        return this.news(request, response, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
       case 'notifications':
-        return this.news(request, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
+        return this.news(request, response, auth, '/api' + url.slice(url.indexOf('/')), destination[0])
     }
   }
 }
