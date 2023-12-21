@@ -234,6 +234,7 @@ class Commission extends Model {
     
     // first fetch all the users that are under this agent, with all subusers/agents
     const users = await this._recursiveSubClients(userId)
+    // Ottengo la lista degli id degli utenti. Possono essere più di 1000
     const usersId = users.reduce((acc, curr) => {
       acc.push(curr._id)
       
@@ -253,29 +254,28 @@ class Commission extends Model {
       {
         '$match': {
           'userId': { '$in': usersId },
-          'movementType': { '$in': [MovementTypes.INITIAL_DEPOSIT, MovementTypes.DEPOSIT_ADDED] },
+          'movementType': { '$in': [MovementTypes.INITIAL_DEPOSIT, MovementTypes.DEPOSIT_ADDED, MovementTypes.CANCEL_DEPOSIT_ADDED] },
           'created_at': { '$gte': moment().startOf('year').toDate() }
         }
       }, {
-        // adds the cancelRefs for each movement
-        '$lookup': {
-          'from': 'movements',
-          'localField': '_id',
-          'foreignField': 'cancelRef',
-          'as': 'cancRef'
-        }
-      }, {
-        // filter out only the movements without cancellation
-        '$match': {
-          'cancRef': {
-            '$size': 0
-          }
-        }
-      }, {
         '$group': {
-          '_id': '',
-          'sum': {
-            '$sum': '$amountChange'
+          _id: "",
+          // la somma è data dalla somma di tutti gli importi meno il valore di quelli cancellati
+          sum: {
+            $sum: {
+              '$switch': {
+                'branches': [
+                  {
+                    'case': {
+                      '$in': ['$movementType', [MovementTypes.CANCEL_DEPOSIT_ADDED]]
+                    },
+                    // converto il numero in negativo
+                    'then': { $toInt: { $concat: ['-', { $toString: '$amountChange' }] } }
+                  }
+                ],
+                'default': '$amountChange'
+              }
+            }
           }
         }
       }
