@@ -270,7 +270,7 @@ class Commission extends Model {
                       '$in': ['$movementType', [MovementTypes.CANCEL_DEPOSIT_ADDED]]
                     },
                     // converto il numero in negativo
-                    'then': { $toInt: { $concat: ['-', { $toString: '$amountChange' }] } }
+                    'then': { $toDouble: { $concat: ['-', { $toString: '$amountChange' }] } }
                   }
                 ],
                 'default': '$amountChange'
